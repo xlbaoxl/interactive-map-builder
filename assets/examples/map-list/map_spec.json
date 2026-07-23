@@ -29,7 +29,12 @@
   "list": {
     "default_sort": "name",
     "collapsible": true,
-    "summary_fields": ["kind", "homes"]
+    "summary_fields": ["kind", "homes"],
+    "summary_update_with_filter": true,
+    "summary_metrics": [
+      {"type": "count", "label": "Visible neighborhoods"},
+      {"type": "sum", "field": "homes", "label": "Homes"}
+    ]
   },
   "static": {
     "enabled": true,

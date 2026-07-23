@@ -13,6 +13,8 @@ from typing import Any, Dict, Iterable, List, Union
 
 from jinja2 import Environment, FileSystemLoader, StrictUndefined, select_autoescape
 
+from .paths import resource_root
+
 
 PathLike = Union[str, Path]
 _TEMPLATE_FILES = {
@@ -22,7 +24,7 @@ _TEMPLATE_FILES = {
 
 
 def _asset_directory() -> Path:
-    return Path(__file__).resolve().parents[2] / "assets" / "templates"
+    return resource_root() / "assets" / "templates"
 
 
 def _read_inline_asset(value: PathLike, label: str) -> str:

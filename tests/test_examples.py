@@ -16,7 +16,12 @@ EXAMPLES = ROOT / "assets" / "examples"
 
 def test_all_example_specs_validate_and_sources_exist() -> None:
     specs = sorted(EXAMPLES.glob("*/map_spec.json"))
-    assert [path.parent.name for path in specs] == ["linked-by-id", "map-list", "multilayer"]
+    assert [path.parent.name for path in specs] == [
+        "csv-points",
+        "linked-by-id",
+        "map-list",
+        "multilayer",
+    ]
 
     for path in specs:
         spec, base_dir = load_spec(path)

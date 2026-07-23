@@ -341,6 +341,62 @@ select:focus-visible,
   pointer-events: none;
 }
 
+.imb-leaflet-tool {
+  border: 1px solid rgba(15, 23, 42, 0.18);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.12);
+  overflow: hidden;
+}
+
+.imb-map-tool-select,
+.imb-map-tool-button {
+  min-height: 34px;
+  border: 0;
+  background: transparent;
+  color: #0f2942;
+  font: inherit;
+}
+
+.imb-map-tool-select {
+  max-width: 180px;
+  padding: 0 28px 0 10px;
+}
+
+.imb-map-tool-button {
+  width: 36px;
+  padding: 0;
+  cursor: pointer;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.imb-map-tool-button:focus-visible,
+.imb-map-tool-select:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.35);
+  outline-offset: -3px;
+}
+
+.imb-map-wrap:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  background: #f8fafc;
+}
+
+.imb-map-wrap:fullscreen .imb-map,
+.imb-map-wrap.is-imb-fullscreen .imb-map {
+  min-height: 100vh;
+}
+
+.imb-map-wrap.is-imb-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  width: 100vw;
+  height: 100vh;
+  background: #f8fafc;
+}
+
 .imb-map-message {
   position: absolute;
   top: 12px;

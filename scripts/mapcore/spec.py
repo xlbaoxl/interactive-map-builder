@@ -9,13 +9,15 @@ from typing import Any, Dict, Tuple
 
 from jsonschema import Draft202012Validator
 
+from .paths import resource_root
+
 
 class SpecError(ValueError):
     """Raised when a map specification is invalid."""
 
 
 def skill_root() -> Path:
-    return Path(__file__).resolve().parents[2]
+    return resource_root()
 
 
 def schema_path() -> Path:
@@ -62,6 +64,21 @@ def validate_spec(spec: Dict[str, Any]) -> Dict[str, Any]:
     layer_ids = [layer["id"] for layer in resolved["layers"]]
     if len(layer_ids) != len(set(layer_ids)):
         raise SpecError("Layer ids must be unique.")
+    absolute_sources = [
+        layer["id"]
+        for layer in resolved["layers"]
+        if Path(str(layer["source"]["path"])).is_absolute()
+    ]
+    if absolute_sources:
+        raise SpecError(
+            "Source paths must be relative to the specification file: {}".format(
+                ", ".join(absolute_sources)
+            )
+        )
+    for key, value in resolved.get("outputs", {}).items():
+        output_path = Path(str(value))
+        if output_path.is_absolute() or ".." in output_path.parts:
+            raise SpecError("outputs.{} must stay inside the selected output directory.".format(key))
     if resolved["template"] == "map-list":
         primary = resolved.get("primary_layer")
         if not primary:

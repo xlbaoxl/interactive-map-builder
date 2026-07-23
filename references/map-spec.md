@@ -77,3 +77,33 @@ Validate every specification against `map-spec.schema.json`. Resolve source path
 - Define online basemaps with HTTPS URL templates and complete attribution. An empty `basemaps` list still produces a usable no-basemap view.
 
 The build writes a resolved copy containing defaults into the output directory. Treat that resolved file as the reproducible build contract.
+
+## Graduated color
+
+Use a numeric field with quantile, equal-interval, or explicit breaks. The builder resolves the breaks and colors once, stores them in the resolved spec and build report, and feeds the same categories to HTML and static renderers.
+
+```json
+{
+  "mode": "graduated",
+  "field": "score",
+  "method": "quantile",
+  "classes": 5,
+  "colors": ["#eff3ff", "#6baed6", "#08519c"],
+  "missing_color": "#9ca3af"
+}
+```
+
+For `custom_breaks`, provide strictly increasing boundaries that contain the full observed range.
+
+## Web-only simplification
+
+Set `layers[].simplify` to `none`, `light`, or `medium`. The preset changes only the interactive-map geometry copy; static figures retain the normalized unsimplified geometry. `simplify_tolerance` remains available for an explicitly confirmed expert value, but do not set both options.
+
+## Initialize from inspection
+
+```powershell
+interactive-map-builder inspect data.geojson --output inspection.json
+interactive-map-builder init-spec inspection.json --template auto --output map_spec.json
+```
+
+`init-spec` fills only unambiguous candidates. It stops for missing CRS or ambiguous tabular geometry instead of inserting placeholders or guessing.

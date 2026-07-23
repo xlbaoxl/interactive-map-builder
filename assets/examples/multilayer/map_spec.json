@@ -49,6 +49,28 @@
       }
     }
   ],
+  "basemaps": [
+    {
+      "name": "Carto Light",
+      "url": "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
+      "attribution": "© OpenStreetMap contributors © CARTO",
+      "visible": true
+    },
+    {
+      "name": "OpenStreetMap",
+      "url": "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      "attribution": "© OpenStreetMap contributors",
+      "visible": false
+    }
+  ],
+  "map": {
+    "controls": {
+      "fullscreen": true,
+      "scale": true,
+      "basemap_switcher": true,
+      "layer_control": true
+    }
+  },
   "static": {
     "enabled": true,
     "presets": ["slide-16x9", "paper"],

@@ -1,4 +1,8 @@
 interface:
   display_name: "Interactive Map Builder"
-  short_description: "Build interactive maps and report-ready figures"
-  default_prompt: "Use $interactive-map-builder to inspect spatial data and build a shareable interactive map with report-ready figures."
+  short_description: "Turn spatial data into interactive maps and report figures"
+  default_prompt: >-
+    Use $interactive-map-builder to inspect the supplied spatial or coordinate data,
+    recommend a map-list or multilayer template, ask only the grouped questions needed
+    to resolve display choices, write a reusable map spec, and build a shareable HTML map
+    plus requested report-ready figures.

@@ -16,6 +16,7 @@
         <h1 id="imb-title"></h1>
         <p id="imb-subtitle" class="imb-subtitle"></p>
       </div>
+      <div id="imb-summary" class="imb-multilayer-summary" aria-live="polite"></div>
     </header>
     <div class="imb-workspace">
       <aside id="imb-sidebar" class="imb-sidebar" aria-label="Feature browser">
@@ -46,6 +47,10 @@
       </aside>
       <section class="imb-map-wrap" aria-label="Interactive map">
         <div id="imb-map" class="imb-map"></div>
+        <section id="imb-legend" class="imb-control-card imb-legend" aria-label="Legend">
+          <h2 id="imb-legend-title" class="imb-control-title"></h2>
+          <div id="imb-legend-items"></div>
+        </section>
         <div id="imb-map-message" class="imb-map-message" role="alert"></div>
         <div id="imb-map-attribution" class="imb-map-attribution"></div>
       </section>
@@ -99,6 +104,23 @@
       document.title = title || "Interactive map";
       document.getElementById("imb-title").textContent = title;
       document.getElementById("imb-subtitle").textContent = subtitle;
+      document.getElementById("imb-legend-title").textContent = label("legend", "图例");
+      var legendItems = document.getElementById("imb-legend-items");
+      var legendEntries = IMB.categoryEntries(primarySpec);
+      if (!legendEntries.length) {
+        legendEntries = [{
+          label: IMB.layerTitle(primary, primaryIndex),
+          color: IMB.colorFor(primarySpec, {})
+        }];
+      }
+      legendEntries.forEach(function (entry) {
+        var row = IMB.element("div", undefined, "imb-legend-item");
+        var swatch = IMB.element("span", undefined, "imb-swatch");
+        swatch.style.backgroundColor = entry.color || IMB.colorFor(primarySpec, {});
+        row.appendChild(swatch);
+        row.appendChild(IMB.element("span", entry.label));
+        legendItems.appendChild(row);
+      });
 
       var collapse = document.getElementById("imb-collapse");
       collapse.textContent = label("collapse", "收起清单");
@@ -114,9 +136,6 @@
       var app = document.getElementById("imb-app");
       var map = IMB.setupMap();
       IMB.addBasemap(map, spec);
-      if (L.control && L.control.scale) {
-        L.control.scale({ imperial: false }).addTo(map);
-      }
 
       var allMapGroups = [];
       layers.forEach(function (candidate, candidateIndex) {
@@ -254,6 +273,10 @@
       var listNode = document.getElementById("imb-list");
       var resultCount = document.getElementById("imb-result-count");
       var renderCount = document.getElementById("imb-render-count");
+      var summary = document.getElementById("imb-summary");
+      var summaryMetrics = Array.isArray(listConfig.summary_metrics)
+        ? listConfig.summary_metrics
+        : [{ type: "count", label: label("features", "对象数") }];
 
       function renderLinkedView() {
         var linked = spec.linked_view;
@@ -422,6 +445,75 @@
         IMB.qa.renderedListCount = state.rendered;
       }
 
+      function metricValue(metric, sourceRecords) {
+        var type = IMB.text(IMB.firstDefined(metric.type, "count"));
+        if (type === "count") {
+          return sourceRecords.length;
+        }
+        if (type === "category_count") {
+          return sourceRecords.filter(function (record) {
+            return IMB.text(record.properties[metric.field]) === IMB.text(metric.value);
+          }).length;
+        }
+        var values = sourceRecords.map(function (record) {
+          return Number(record.properties[metric.field]);
+        }).filter(Number.isFinite).sort(function (left, right) { return left - right; });
+        if (!values.length) {
+          return null;
+        }
+        if (type === "sum") {
+          return values.reduce(function (total, value) { return total + value; }, 0);
+        }
+        if (type === "mean") {
+          return values.reduce(function (total, value) { return total + value; }, 0) / values.length;
+        }
+        if (type === "median") {
+          var midpoint = Math.floor(values.length / 2);
+          return values.length % 2
+            ? values[midpoint]
+            : (values[midpoint - 1] + values[midpoint]) / 2;
+        }
+        return null;
+      }
+
+      function formatMetric(value, metric) {
+        if (value === null) {
+          return "—";
+        }
+        if (metric.format === "percent") {
+          return new Intl.NumberFormat(undefined, {
+            style: "percent",
+            maximumFractionDigits: 1
+          }).format(value);
+        }
+        return new Intl.NumberFormat(undefined, {
+          maximumFractionDigits: Number.isInteger(value) ? 0 : 2
+        }).format(value);
+      }
+
+      function updateSummary() {
+        var sourceRecords = listConfig.summary_update_with_filter === false
+          ? records
+          : state.filtered;
+        summary.replaceChildren();
+        summaryMetrics.forEach(function (metric) {
+          if (!metric || typeof metric !== "object") {
+            return;
+          }
+          var value = metricValue(metric, sourceRecords);
+          var labelText = IMB.text(IMB.firstDefined(
+            metric.label,
+            metric.field,
+            metric.type,
+            "Metric"
+          ));
+          summary.appendChild(IMB.element(
+            "span",
+            labelText + ": " + formatMetric(value, metric)
+          ));
+        });
+      }
+
       function renderNextBatch() {
         var end = Math.min(state.filtered.length, state.rendered + batchSize);
         var fragment = document.createDocumentFragment();
@@ -451,6 +543,7 @@
         listNode.replaceChildren();
         renderNextBatch();
         setFeatureVisibility(new Set(state.filtered.map(function (record) { return record.id; })));
+        updateSummary();
       }
 
       function ensureRendered(identifier) {

@@ -49,3 +49,15 @@ def test_rejects_unknown_top_level_key():
     spec["surprise"] = True
     with pytest.raises(SpecError, match="surprise"):
         validate_spec(spec)
+
+
+def test_rejects_absolute_sources_and_escaping_outputs():
+    spec = minimal_spec()
+    spec["layers"][0]["source"]["path"] = "C:/private/data.geojson"
+    with pytest.raises(SpecError, match="Source paths must be relative"):
+        validate_spec(spec)
+
+    spec = minimal_spec()
+    spec["outputs"] = {"html": "../map.html"}
+    with pytest.raises(SpecError, match="must stay inside"):
+        validate_spec(spec)

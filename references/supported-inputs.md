@@ -22,4 +22,6 @@ or:
 
 Use explicit encodings for legacy CSV or Shapefile attributes. Treat missing CRS, empty data, non-finite coordinates, unsupported geometry, or absent required fields as blocking errors.
 
+The inspector recognizes common exact coordinate aliases such as `longitude`, `lon`, `lng`, `x`, `经度`, `latitude`, `lat`, `y`, `纬度`, plus `wkt`, `geometry`, `geom`, and `几何`. It reports all plausible candidates. `init-spec` uses them only when one unambiguous geometry mapping and an explicit CRS are available.
+
 When simplification is appropriate, set `simplify_tolerance` on the layer only after explaining that the value is in EPSG:4326 degrees in the interactive output.

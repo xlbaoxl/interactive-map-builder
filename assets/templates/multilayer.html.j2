@@ -83,8 +83,11 @@
 
       var map = IMB.setupMap();
       IMB.addBasemap(map, spec);
-      if (L.control && L.control.scale) {
-        L.control.scale({ imperial: false }).addTo(map);
+      var mapControls = spec.map && spec.map.controls && typeof spec.map.controls === "object"
+        ? spec.map.controls
+        : {};
+      if (mapControls.layer_control === false) {
+        document.getElementById("imb-layer-control").hidden = true;
       }
 
       var globalRegistry = new Map();

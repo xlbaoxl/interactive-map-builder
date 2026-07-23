@@ -11,6 +11,8 @@
     "title": {"type": "string", "minLength": 1},
     "subtitle": {"type": "string"},
     "locale": {"type": "string", "default": "zh-CN"},
+    "language": {"type": "string"},
+    "theme": {"type": "string", "default": "clean-light"},
     "primary_layer": {"type": "string"},
     "layers": {
       "type": "array",
@@ -22,6 +24,7 @@
       "items": {"$ref": "#/$defs/basemap"},
       "default": []
     },
+    "map": {"$ref": "#/$defs/map"},
     "list": {"$ref": "#/$defs/list"},
     "linked_view": {"$ref": "#/$defs/linkedView"},
     "static": {"$ref": "#/$defs/static"},
@@ -59,6 +62,9 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
+        "mode": {
+          "enum": ["single", "categorical", "graduated"]
+        },
         "color": {"type": "string", "default": "#2563eb"},
         "fill_color": {"type": "string"},
         "weight": {"type": "number", "minimum": 0, "default": 1.5},
@@ -66,6 +72,24 @@
         "fill_opacity": {"type": "number", "minimum": 0, "maximum": 1, "default": 0.55},
         "radius": {"type": "number", "exclusiveMinimum": 0, "default": 6},
         "color_field": {"type": "string"},
+        "field": {"type": "string"},
+        "method": {
+          "enum": ["quantile", "equal_interval", "custom_breaks"],
+          "default": "quantile"
+        },
+        "classes": {"type": "integer", "minimum": 2, "maximum": 9, "default": 5},
+        "breaks": {
+          "type": "array",
+          "minItems": 3,
+          "items": {"type": "number"}
+        },
+        "colors": {
+          "type": "array",
+          "minItems": 2,
+          "items": {"type": "string"}
+        },
+        "missing_color": {"type": "string", "default": "#9ca3af"},
+        "legend_title": {"type": "string"},
         "categories": {
           "type": "object",
           "additionalProperties": {"type": "string"}
@@ -91,6 +115,10 @@
         "filter_fields": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
         "card_fields": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
         "sort_fields": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "simplify": {
+          "enum": ["none", "light", "medium"],
+          "default": "none"
+        },
         "simplify_tolerance": {"type": "number", "exclusiveMinimum": 0},
         "source_note": {"type": "string"}
       }
@@ -107,6 +135,22 @@
         "max_zoom": {"type": "integer", "minimum": 1, "maximum": 24, "default": 19}
       }
     },
+    "map": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "controls": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "fullscreen": {"type": "boolean", "default": true},
+            "scale": {"type": "boolean", "default": true},
+            "basemap_switcher": {"type": "boolean", "default": true},
+            "layer_control": {"type": "boolean", "default": true}
+          }
+        }
+      }
+    },
     "list": {
       "type": "object",
       "additionalProperties": false,
@@ -114,7 +158,24 @@
         "batch_size": {"type": "integer", "minimum": 20, "maximum": 2000, "default": 200},
         "default_sort": {"type": "string"},
         "collapsible": {"type": "boolean", "default": true},
-        "summary_fields": {"type": "array", "items": {"type": "string"}, "uniqueItems": true}
+        "summary_fields": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "summary_update_with_filter": {"type": "boolean", "default": true},
+        "summary_metrics": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/summaryMetric"}
+        }
+      }
+    },
+    "summaryMetric": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "label"],
+      "properties": {
+        "type": {"enum": ["count", "category_count", "sum", "mean", "median"]},
+        "label": {"type": "string"},
+        "field": {"type": "string"},
+        "value": {},
+        "format": {"enum": ["number", "percent"]}
       }
     },
     "linkedView": {
@@ -148,7 +209,9 @@
       "properties": {
         "html": {"type": "string", "default": "map.html"},
         "report": {"type": "string", "default": "build_report.json"},
-        "resolved_spec": {"type": "string", "default": "map_spec.json"}
+        "resolved_spec": {"type": "string", "default": "map_spec.json"},
+        "inspection": {"type": "string", "default": "inspection.json"},
+        "usage": {"type": "string", "default": "README_使用说明.md"}
       }
     }
   }

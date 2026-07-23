@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "interactive-map-builder"
+version = "0.1.0"
+description = "Build interactive Leaflet maps and report-ready static figures from local spatial data."
+requires-python = ">=3.9"
+license = {text = "MIT"}
+dependencies = [
+  "geopandas>=0.12.2,<2",
+  "pandas>=1.4.4,<3",
+  "numpy>=1.23,<3",
+  "shapely>=2.0,<3",
+  "pyogrio>=0.7,<1",
+  "Jinja2>=3.0,<4",
+  "matplotlib>=3.6,<4",
+  "openpyxl>=3.0,<4",
+  "xlrd>=2.0,<3",
+  "requests>=2.28,<3",
+  "jsonschema>=4.16,<5",
+]
+
+[project.scripts]
+interactive-map-builder = "map_builder:main"
+
+[tool.setuptools]
+package-dir = {"" = "scripts"}
+py-modules = ["map_builder"]
+
+[tool.setuptools.packages.find]
+where = ["scripts"]
+include = ["mapcore*"]
+
+[tool.setuptools.data-files]
+"share/interactive-map-builder/assets/templates" = [
+  "assets/templates/map-list.html.j2",
+  "assets/templates/multilayer.html.j2",
+  "assets/templates/shared.css",
+  "assets/templates/shared.js",
+]
+"share/interactive-map-builder/assets/vendor/leaflet-1.9.4" = [
+  "assets/vendor/leaflet-1.9.4/leaflet.css",
+  "assets/vendor/leaflet-1.9.4/leaflet.js",
+  "assets/vendor/leaflet-1.9.4/LICENSE",
+]
+"share/interactive-map-builder/references" = [
+  "references/map-spec.schema.json",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

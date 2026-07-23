@@ -1,0 +1,61 @@
+{
+  "schema_version": "1.0",
+  "template": "map-list",
+  "title": "CSV 经纬度点示例",
+  "subtitle": "从非空间表格直接生成可搜索地图",
+  "locale": "zh-CN",
+  "primary_layer": "places",
+  "layers": [
+    {
+      "id": "places",
+      "name": "服务点",
+      "source": {
+        "path": "places.csv",
+        "format": "csv",
+        "crs": "EPSG:4326",
+        "geometry": {
+          "type": "lonlat",
+          "x_field": "longitude",
+          "y_field": "latitude"
+        }
+      },
+      "id_field": "place_id",
+      "label_field": "name",
+      "style": {
+        "mode": "categorical",
+        "color_field": "status",
+        "categories": {
+          "开放": "#0f766e",
+          "评估": "#d97706",
+          "规划": "#7c3aed"
+        },
+        "radius": 7
+      },
+      "tooltip_fields": ["name", "status"],
+      "popup_fields": ["name", "district", "status", "score"],
+      "search_fields": ["name", "place_id"],
+      "filter_fields": ["district", "status"],
+      "card_fields": ["district", "status", "score"],
+      "sort_fields": ["name", "score"]
+    }
+  ],
+  "basemaps": [
+    {
+      "name": "OpenStreetMap",
+      "url": "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      "attribution": "© OpenStreetMap contributors",
+      "visible": true
+    }
+  ],
+  "list": {
+    "batch_size": 100,
+    "default_sort": "name",
+    "collapsible": true,
+    "summary_fields": ["district", "status", "score"]
+  },
+  "static": {
+    "enabled": true,
+    "source_note": "Synthetic data",
+    "presets": ["slide-16x9", "paper"]
+  }
+}
