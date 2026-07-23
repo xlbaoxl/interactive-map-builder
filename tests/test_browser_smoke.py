@@ -44,7 +44,7 @@ def _copy_example(name: str, destination: Path) -> Path:
     return spec_path
 
 
-def test_map_list_browser_smoke(tmp_path: Path) -> None:
+def test_searchable_land_use_browser_smoke(tmp_path: Path) -> None:
     project = tmp_path / "project"
     spec_path = _copy_example("map-list", project)
     dist = tmp_path / "dist"
@@ -55,20 +55,33 @@ def test_map_list_browser_smoke(tmp_path: Path) -> None:
         page = browser.new_page(viewport={"width": 1280, "height": 800})
         page.goto((dist / "map.html").resolve().as_uri())
         initial = _wait_ready(page)
-        assert initial["recordCount"] == 18
+        assert initial["recordCount"] == 1699
+        assert initial["mapFeatureCount"] == 1699
 
-        page.evaluate("window.__interactiveMapBuilderQA.actions.setSearch('Central Park')")
-        assert page.evaluate("window.__interactiveMapBuilderQA.visibleRecordCount") == 1
+        page.evaluate("window.__interactiveMapBuilderQA.actions.setSearch('BROADWAY')")
+        assert page.evaluate("window.__interactiveMapBuilderQA.visibleRecordCount") == 184
+        assert page.evaluate("window.__interactiveMapBuilderQA.mapFeatureCount") == 1699
 
-        page.evaluate("window.__interactiveMapBuilderQA.actions.toggleSidebar()")
+        assert page.evaluate(
+            "window.__interactiveMapBuilderQA.actions.toggleLayer('residential', false)"
+        )
+        assert not page.locator(
+            "input[data-layer-id='residential']"
+        ).is_checked()
+        assert page.evaluate(
+            "window.__interactiveMapBuilderQA.actions.toggleLayer('residential', true)"
+        )
+
+        page.locator("#imb-collapse").click()
         assert page.locator("#imb-app").evaluate(
             "node => node.classList.contains('is-sidebar-collapsed')"
         )
 
-        page.evaluate("window.__interactiveMapBuilderQA.actions.toggleSidebar()")
-        page.locator("#imb-list [data-feature-id]").first.click()
-        assert page.evaluate("Boolean(window.__interactiveMapBuilderQA.selectedId)")
+        page.locator("#imb-collapse").click()
+        page.get_by_text("1 BROADWAY", exact=True).click()
+        assert page.evaluate("Boolean(window.__interactiveMapBuilderQA.selectedLinkId)")
         assert page.locator("#imb-list [aria-selected='true']").count() == 1
+        assert page.locator(".leaflet-popup").is_visible()
 
         page.set_viewport_size({"width": 390, "height": 844})
         assert page.locator("#imb-app").evaluate(

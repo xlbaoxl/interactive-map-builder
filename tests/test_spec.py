@@ -30,6 +30,24 @@ def test_defaults_are_applied():
     assert resolved["layers"][0]["required"] is True
 
 
+def test_multilayer_accepts_highlight_search_and_optional_legend():
+    spec = minimal_spec("multilayer")
+    spec["map"] = {
+        "search_behavior": "highlight",
+        "controls": {"legend": False},
+    }
+    resolved = validate_spec(spec)
+    assert resolved["map"]["search_behavior"] == "highlight"
+    assert resolved["map"]["controls"]["legend"] is False
+
+
+def test_rejects_unknown_search_behavior():
+    spec = minimal_spec("multilayer")
+    spec["map"] = {"search_behavior": "remove-everything"}
+    with pytest.raises(SpecError, match="search_behavior"):
+        validate_spec(spec)
+
+
 def test_map_list_requires_primary_layer():
     spec = minimal_spec()
     del spec["primary_layer"]

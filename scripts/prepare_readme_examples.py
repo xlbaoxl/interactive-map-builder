@@ -5,8 +5,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Iterable, Mapping, Sequence
 
 import geopandas as gpd
 import pandas as pd
@@ -21,9 +22,12 @@ EXAMPLES = ROOT / "assets" / "examples"
 SOCRATA_ROOT = "https://data.cityofnewyork.us/resource"
 LOCAL_CRS = "EPSG:2263"
 OUTPUT_CRS = "EPSG:4326"
+RETRIEVED = "2026-07-24"
+LAND_USE_BBOX = (-74.0150, 40.7040, -73.9950, 40.7215)
 
 DATASETS = {
-    "parks": "enfh-gkve",
+    "tax_lots": "i38t-6if2",
+    "pluto": "64uk-42ks",
     "boroughs": "gthc-hcne",
     "bike_routes": "mzxg-pwib",
     "restrooms": "i7jb-7jku",
@@ -35,6 +39,28 @@ BIKE_CLASS_NAMES = {
     "III": "Class III bike routes",
     "L": "Bike links",
 }
+
+LAND_USE_LABELS = {
+    "1": "一至二户住宅",
+    "2": "多户无电梯住宅",
+    "3": "多户电梯住宅",
+    "4": "住宅与商业混合",
+    "5": "商业与办公",
+    "6": "工业与制造",
+    "7": "交通与公用设施",
+    "8": "公共设施与机构",
+    "9": "开放空间与游憩",
+    "10": "停车设施",
+    "11": "空置地",
+}
+
+
+def _bbox_where(
+    field: str,
+    bbox: tuple[float, float, float, float],
+) -> str:
+    west, south, east, north = bbox
+    return f"within_box({field},{north},{west},{south},{east})"
 
 
 def _fetch(dataset_id: str, where: str) -> gpd.GeoDataFrame:
@@ -51,6 +77,57 @@ def _fetch(dataset_id: str, where: str) -> gpd.GeoDataFrame:
     frame.geometry = frame.geometry.map(make_valid)
     frame = frame[frame.geometry.notna() & ~frame.geometry.is_empty].copy()
     return frame
+
+
+def _fetch_pluto(
+    bbox: tuple[float, float, float, float],
+) -> Sequence[Mapping[str, Any]]:
+    west, south, east, north = bbox
+    where = (
+        f"latitude between {south} and {north} "
+        f"AND longitude between {west} and {east} AND borough='MN'"
+    )
+    fields = (
+        "bbl,address,zonedist1,landuse,lotarea,bldgarea,"
+        "numfloors,yearbuilt,builtfar,latitude,longitude"
+    )
+    response = requests.get(
+        f"{SOCRATA_ROOT}/{DATASETS['pluto']}.json",
+        params={"$where": where, "$select": fields, "$limit": 50_000},
+        timeout=120,
+    )
+    response.raise_for_status()
+    rows = response.json()
+    if not rows:
+        raise RuntimeError("NYC PLUTO returned no records.")
+    return rows
+
+
+def _bbl(value: Any) -> str:
+    if value in (None, ""):
+        return ""
+    try:
+        return str(int(Decimal(str(value))))
+    except (InvalidOperation, ValueError):
+        return str(value).strip()
+
+
+def _number(value: Any, digits: int = 1) -> Any:
+    try:
+        numeric = float(value)
+    except (TypeError, ValueError):
+        return None
+    if not numeric:
+        return None
+    return round(numeric, digits)
+
+
+def _year(value: Any) -> Any:
+    try:
+        numeric = int(float(value))
+    except (TypeError, ValueError):
+        return None
+    return numeric if 1600 <= numeric <= 2026 else None
 
 
 def _simplify(frame: gpd.GeoDataFrame, tolerance_feet: float) -> gpd.GeoDataFrame:
@@ -115,32 +192,87 @@ def _write_geojson(
     )
 
 
-def _prepare_parks() -> None:
-    parks = _fetch(
-        DATASETS["parks"],
-        "borough='M' AND retired=false AND acres>=20",
+def _prepare_land_use() -> dict[str, int]:
+    lots = _fetch(
+        DATASETS["tax_lots"],
+        _bbox_where("the_geom", LAND_USE_BBOX),
     )
-    if len(parks) != 18:
-        raise RuntimeError(f"Expected 18 Manhattan parks, received {len(parks)}.")
-    parks = parks.rename(
-        columns={
-            "gisobjid": "id",
-            "signname": "name",
-            "typecategory": "park_type",
-        }
+    lots["__join_bbl"] = lots["bbl"].map(_bbl)
+    lots = lots[lots["__join_bbl"] != ""].dissolve(
+        by="__join_bbl",
+        as_index=False,
     )
-    parks["id"] = parks["id"].astype(str)
-    parks["acres"] = pd.to_numeric(parks["acres"]).round(3)
-    parks["waterfront"] = parks["waterfront"].map(
-        lambda value: "Yes" if bool(value) else "No"
+    pluto = {_bbl(row.get("bbl")): row for row in _fetch_pluto(LAND_USE_BBOX)}
+
+    records = []
+    for _, row in lots.iterrows():
+        bbl = str(row.get("__join_bbl") or "")
+        info = pluto.get(bbl)
+        if not info:
+            continue
+        code = str(info.get("landuse") or "").strip()
+        if code in {"1", "2", "3"}:
+            category = "居住用地"
+            file_name = "residential.geojson"
+        elif code in {"4", "5"}:
+            category = "混合与商业用地"
+            file_name = "mixed-commercial.geojson"
+        else:
+            category = "公共与其他用地"
+            file_name = "civic-other.geojson"
+        address = str(info.get("address") or "").strip()
+        records.append(
+            {
+                "id": f"lot-{bbl}",
+                "name": address or f"地块 BBL {bbl}",
+                "address": address or "—",
+                "category": category,
+                "land_use": LAND_USE_LABELS.get(code, "未分类"),
+                "zoning": str(info.get("zonedist1") or "—"),
+                "lot_area_sqft": _number(info.get("lotarea"), 0),
+                "building_area_sqft": _number(info.get("bldgarea"), 0),
+                "built_far": _number(info.get("builtfar"), 2),
+                "floors": _number(info.get("numfloors")),
+                "year_built": _year(info.get("yearbuilt")),
+                "bbl": bbl,
+                "file_name": file_name,
+                "geometry": row.geometry,
+            }
+        )
+
+    frame = gpd.GeoDataFrame(records, geometry="geometry", crs=OUTPUT_CRS)
+    if frame.empty or not frame["id"].is_unique:
+        raise RuntimeError("Prepared land-use lots are empty or have duplicate IDs.")
+
+    output_fields = (
+        "id",
+        "name",
+        "address",
+        "category",
+        "land_use",
+        "zoning",
+        "lot_area_sqft",
+        "building_area_sqft",
+        "built_far",
+        "floors",
+        "year_built",
+        "bbl",
     )
-    parks = _simplify(parks, 15)
-    parks = parks.sort_values(["acres", "name"], ascending=[False, True])
-    _write_geojson(
-        parks,
-        EXAMPLES / "map-list" / "parks.geojson",
-        fields=("id", "name", "park_type", "acres", "waterfront", "location"),
-    )
+    counts: dict[str, int] = {}
+    for file_name in (
+        "residential.geojson",
+        "mixed-commercial.geojson",
+        "civic-other.geojson",
+    ):
+        subset = frame[frame["file_name"] == file_name].copy()
+        subset = subset.sort_values(["name", "bbl"])
+        _write_geojson(
+            subset,
+            EXAMPLES / "map-list" / file_name,
+            fields=output_fields,
+        )
+        counts[file_name] = len(subset)
+    return counts
 
 
 def _prepare_multilayer() -> None:
@@ -235,9 +367,12 @@ def _prepare_multilayer() -> None:
 
 
 def main() -> int:
-    _prepare_parks()
+    land_use_counts = _prepare_land_use()
     _prepare_multilayer()
-    print("Prepared README examples from NYC Open Data.")
+    print(
+        f"Prepared README examples from NYC Open Data ({RETRIEVED}): "
+        f"{land_use_counts}"
+    )
     return 0
 
 

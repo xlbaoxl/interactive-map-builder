@@ -85,6 +85,13 @@ specification file; output names are fixed by the builder.
   unsimplified normalized geometry.
 - Define HTTPS basemaps with attribution. An empty list keeps the business geometry usable.
 
+## Interactive controls
+
+For a `multilayer` map, `map.search_behavior` may be `filter` (the default, which removes
+nonmatching features from the map) or `highlight` (which keeps the full spatial context and
+dims nonmatching features). Set `map.controls.legend` to `false` when the checkbox layer
+control already explains the same classes and a second legend would be redundant.
+
 ## Static output
 
 Set `static.presets` to `["slide-16x9"]`, `["paper"]`, or both. The slide preset writes

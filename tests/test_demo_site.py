@@ -27,6 +27,9 @@ def test_demo_site_builds_without_changing_source_specs(tmp_path: Path) -> None:
         assert '"FeatureCollection"' in html
         assert "window.__interactiveMapBuilderQA" in html
         assert "dataset.imbReady" in html
+        if demo == "map-list":
+            assert "1 BROADWAY" in html
+            assert '"search_behavior":"highlight"' in html
 
     assert (site / ".nojekyll").is_file()
     root_html = (site / "index.html").read_text(encoding="utf-8")
@@ -38,6 +41,7 @@ def test_readme_links_to_both_interactive_demos() -> None:
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     assert f"{PAGES_URL}/map-list/" in readme
     assert f"{PAGES_URL}/multilayer/" in readme
+    assert "正在搜索 Broadway" in readme
 
 
 def test_pages_workflow_uses_official_actions_and_permissions() -> None:

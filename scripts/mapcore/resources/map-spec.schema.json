@@ -159,6 +159,10 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
+        "search_behavior": {
+          "enum": ["filter", "highlight"],
+          "default": "filter"
+        },
         "controls": {
           "type": "object",
           "additionalProperties": false,
@@ -166,7 +170,8 @@
             "fullscreen": {"type": "boolean", "default": true},
             "scale": {"type": "boolean", "default": true},
             "basemap_switcher": {"type": "boolean", "default": true},
-            "layer_control": {"type": "boolean", "default": true}
+            "layer_control": {"type": "boolean", "default": true},
+            "legend": {"type": "boolean", "default": true}
           }
         }
       }

@@ -85,8 +85,16 @@
       var mapControls = spec.map && spec.map.controls && typeof spec.map.controls === "object"
         ? spec.map.controls
         : {};
+      var searchBehavior = IMB.text(
+        spec.map && spec.map.search_behavior
+          ? spec.map.search_behavior
+          : "filter"
+      ).toLocaleLowerCase();
       if (mapControls.layer_control === false) {
         document.getElementById("imb-layer-control").hidden = true;
+      }
+      if (mapControls.legend === false) {
+        document.getElementById("imb-legend").hidden = true;
       }
 
       var globalRegistry = new Map();
@@ -285,15 +293,36 @@
         state.query = search.value.trim().toLocaleLowerCase();
         state.matches = [];
         runtimeLayers.forEach(function (runtime) {
-          runtime.group.clearLayers();
+          if (searchBehavior === "filter") {
+            runtime.group.clearLayers();
+          }
           runtime.entries.forEach(function (entry) {
             entry.matches = !state.query || entryText(entry).indexOf(state.query) !== -1;
-            if (entry.matches) {
+            if (searchBehavior === "highlight") {
+              if (!runtime.group.hasLayer(entry.leaflet)) {
+                runtime.group.addLayer(entry.leaflet);
+              }
+              if (entry.leaflet.setStyle) {
+                entry.leaflet.setStyle(
+                  entry.matches
+                    ? entry.baseStyle
+                    : Object.assign({}, entry.baseStyle, {
+                        opacity: 0.28,
+                        fillOpacity: 0.12
+                      })
+                );
+              }
+            } else if (entry.matches) {
               runtime.group.addLayer(entry.leaflet);
+            }
+            if (entry.matches) {
               state.matches.push(entry);
             }
           });
         });
+        IMB.qa.mapFeatureCount = runtimeLayers.reduce(function (count, runtime) {
+          return count + runtime.group.getLayers().length;
+        }, 0);
         renderSearchResults();
       }
 

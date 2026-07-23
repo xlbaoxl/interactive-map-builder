@@ -46,9 +46,15 @@ def test_behavior_evals_and_bilingual_readme_are_present():
 
 def test_readme_example_provenance_is_documented():
     sources = (ROOT / "assets" / "examples" / "SOURCES.md").read_text(encoding="utf-8")
-    for dataset_id in ("enfh-gkve", "gthc-hcne", "mzxg-pwib", "i7jb-7jku"):
+    for dataset_id in (
+        "i38t-6if2",
+        "64uk-42ks",
+        "gthc-hcne",
+        "mzxg-pwib",
+        "i7jb-7jku",
+    ):
         assert dataset_id in sources
-    assert "2026-07-23" in sources
+    assert "2026-07-24" in sources
     assert "EPSG:4326" in sources
 
 

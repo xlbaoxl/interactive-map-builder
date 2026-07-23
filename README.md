@@ -19,11 +19,12 @@ Interactive Map Builder 是一个给 Codex 和其他 AI 助手使用的地图 Sk
 [NYC Open Data](assets/examples/SOURCES.md)。
 在线演示需要联网加载街道底图。
 
-#### 可搜索的地图清单
+#### 可搜索、可分类的地块地图
 
-可以搜索公园名称，按公园类型和是否滨水筛选，并从左侧清单查看详细信息。
+搜索道路名称后，左侧会立即列出匹配地块；也可以分别开关居住、商业和公共用地，
+点击任意地块查看用途、分区、面积、容积率、楼层和建成年份。
 
-[![可搜索、筛选和排序的曼哈顿公园地图](assets/screenshots/map-list.png)](https://xlbaoxl.github.io/interactive-map-builder/map-list/)
+[![正在搜索 Broadway、带分类开关和地块详情的下曼哈顿用地地图](assets/screenshots/map-list.png)](https://xlbaoxl.github.io/interactive-map-builder/map-list/)
 
 [打开并操作这张地图](https://xlbaoxl.github.io/interactive-map-builder/map-list/)
 
@@ -87,11 +88,13 @@ interactive-map-builder --help
 如果你熟悉命令行，可以直接运行完整的检查、配置、构建和验证流程：
 
 ```powershell
-interactive-map-builder inspect assets/examples/map-list/parks.geojson `
+interactive-map-builder inspect `
+  assets/examples/map-list/residential.geojson `
+  assets/examples/map-list/mixed-commercial.geojson `
+  assets/examples/map-list/civic-other.geojson `
   --output inspection.json
 interactive-map-builder init-spec inspection.json `
-  --template map-list `
-  --primary-layer parks `
+  --template multilayer `
   --output map_spec.json
 interactive-map-builder build --spec map_spec.json --out dist
 interactive-map-builder verify --dist dist
@@ -202,11 +205,12 @@ design mockups. The examples use fixed snapshots from
 [NYC Open Data](assets/examples/SOURCES.md).
 The online demos need an internet connection to load the street basemap.
 
-#### Searchable map with a record list
+#### Searchable, classified parcel map
 
-Search park names, filter by park type or waterfront status, and inspect records from the list.
+Search for a street to populate the matching parcel list, toggle residential, commercial, and
+public land-use classes, then select any parcel to inspect zoning, area, FAR, floors, and age.
 
-[![Searchable and filterable Manhattan parks map](assets/screenshots/map-list.png)](https://xlbaoxl.github.io/interactive-map-builder/map-list/)
+[![Lower Manhattan land-use map searching Broadway with class toggles and parcel details](assets/screenshots/map-list.png)](https://xlbaoxl.github.io/interactive-map-builder/map-list/)
 
 [Open the interactive map](https://xlbaoxl.github.io/interactive-map-builder/map-list/)
 
@@ -272,11 +276,13 @@ frontend implementation.
 If you are comfortable with a terminal, run the full inspect, configure, build, and verify flow:
 
 ```bash
-interactive-map-builder inspect assets/examples/map-list/parks.geojson \
+interactive-map-builder inspect \
+  assets/examples/map-list/residential.geojson \
+  assets/examples/map-list/mixed-commercial.geojson \
+  assets/examples/map-list/civic-other.geojson \
   --output inspection.json
 interactive-map-builder init-spec inspection.json \
-  --template map-list \
-  --primary-layer parks \
+  --template multilayer \
   --output map_spec.json
 interactive-map-builder build --spec map_spec.json --out dist
 interactive-map-builder verify --dist dist

@@ -280,7 +280,10 @@
       });
     }
     if (popup.length && leafletLayer.bindPopup) {
-      leafletLayer.bindPopup(buildDetailsNode(props, popup, "imb-tooltip"));
+      leafletLayer.bindPopup(
+        buildDetailsNode(props, popup, "imb-tooltip"),
+        { minWidth: 260, maxWidth: 340 }
+      );
     }
   }
 

@@ -80,3 +80,23 @@ def test_linked_by_id_example_is_generic_and_ids_align() -> None:
     )
     for forbidden in ("safegraph", "quadrant", "四象限"):
         assert forbidden not in corpus
+
+
+def test_searchable_land_use_example_has_expected_fixed_snapshot() -> None:
+    example = EXAMPLES / "map-list"
+    spec = json.loads((example / "map_spec.json").read_text(encoding="utf-8"))
+    assert spec["template"] == "multilayer"
+    assert spec["map"]["search_behavior"] == "highlight"
+    assert spec["map"]["controls"]["legend"] is False
+
+    expected_counts = {
+        "residential.geojson": 242,
+        "mixed-commercial.geojson": 1233,
+        "civic-other.geojson": 224,
+    }
+    actual_counts = {
+        name: len(gpd.read_file(example / name))
+        for name in expected_counts
+    }
+    assert actual_counts == expected_counts
+    assert sum(actual_counts.values()) == 1699

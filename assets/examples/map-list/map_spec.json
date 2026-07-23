@@ -1,67 +1,167 @@
 {
   "schema_version": "1.0",
-  "template": "map-list",
-  "title": "曼哈顿公园导览",
-  "subtitle": "18 个面积不小于 20 英亩的公园 · NYC Open Data",
+  "template": "multilayer",
+  "title": "下曼哈顿地块与用地",
+  "subtitle": "金融区—市政中心 · 1,699 个真实税务地块 · NYC Open Data",
   "locale": "zh-CN",
-  "primary_layer": "parks",
   "layers": [
     {
-      "id": "parks",
-      "name": "曼哈顿公园",
+      "id": "residential",
+      "name": "居住用地",
       "source": {
-        "path": "parks.geojson"
+        "path": "residential.geojson"
       },
       "required": true,
+      "visible": true,
       "id_field": "id",
       "label_field": "name",
-      "field_labels": {
-        "name": "名称",
-        "park_type": "公园类型",
-        "acres": "面积（英亩）",
-        "waterfront": "滨水公园",
-        "location": "位置"
-      },
-      "source_note": "NYC Parks Properties (enfh-gkve), retrieved 2026-07-23",
       "search_fields": [
         "name",
-        "park_type",
-        "location"
+        "address",
+        "zoning",
+        "bbl"
       ],
       "tooltip_fields": [
-        "name",
-        "park_type"
+        "name"
       ],
       "popup_fields": [
-        "name",
-        "park_type",
-        "acres",
-        "waterfront"
+        "address",
+        "category",
+        "land_use",
+        "zoning",
+        "lot_area_sqft",
+        "building_area_sqft",
+        "built_far",
+        "floors",
+        "year_built",
+        "bbl"
       ],
-      "filter_fields": [
-        "park_type",
-        "waterfront"
-      ],
-      "card_fields": [
-        "park_type",
-        "acres",
-        "waterfront"
-      ],
-      "sort_fields": [
-        "name",
-        "acres"
-      ],
+      "field_labels": {
+        "name": "地块地址",
+        "address": "地址",
+        "category": "用地大类",
+        "land_use": "详细用途",
+        "zoning": "主要分区",
+        "lot_area_sqft": "地块面积（平方英尺）",
+        "building_area_sqft": "建筑面积（平方英尺）",
+        "built_far": "已建容积率",
+        "floors": "楼层数",
+        "year_built": "建成年份",
+        "bbl": "地块编号 BBL"
+      },
+      "source_note": "NYC Open Data TAX_LOT_POLYGON (i38t-6if2) joined to PLUTO (64uk-42ks), retrieved 2026-07-24",
       "style": {
-        "color_field": "park_type",
-        "weight": 1.4,
-        "fill_opacity": 0.64,
-        "categories": {
-          "Flagship Park": "#2f855a",
-          "Community Park": "#4c78a8",
-          "Neighborhood Park": "#f2c14e",
-          "Recreational Field/Courts": "#e76f51",
-          "Parkway": "#8e6c8a"
-        }
+        "color": "#3a86a8",
+        "fill_color": "#3a86a8",
+        "weight": 0.8,
+        "opacity": 0.9,
+        "fill_opacity": 0.72
+      }
+    },
+    {
+      "id": "mixed_commercial",
+      "name": "混合与商业用地",
+      "source": {
+        "path": "mixed-commercial.geojson"
+      },
+      "required": true,
+      "visible": true,
+      "id_field": "id",
+      "label_field": "name",
+      "search_fields": [
+        "name",
+        "address",
+        "zoning",
+        "bbl"
+      ],
+      "tooltip_fields": [
+        "name"
+      ],
+      "popup_fields": [
+        "address",
+        "category",
+        "land_use",
+        "zoning",
+        "lot_area_sqft",
+        "building_area_sqft",
+        "built_far",
+        "floors",
+        "year_built",
+        "bbl"
+      ],
+      "field_labels": {
+        "name": "地块地址",
+        "address": "地址",
+        "category": "用地大类",
+        "land_use": "详细用途",
+        "zoning": "主要分区",
+        "lot_area_sqft": "地块面积（平方英尺）",
+        "building_area_sqft": "建筑面积（平方英尺）",
+        "built_far": "已建容积率",
+        "floors": "楼层数",
+        "year_built": "建成年份",
+        "bbl": "地块编号 BBL"
+      },
+      "source_note": "NYC Open Data TAX_LOT_POLYGON (i38t-6if2) joined to PLUTO (64uk-42ks), retrieved 2026-07-24",
+      "style": {
+        "color": "#ef9f32",
+        "fill_color": "#ef9f32",
+        "weight": 0.8,
+        "opacity": 0.9,
+        "fill_opacity": 0.72
+      }
+    },
+    {
+      "id": "civic_other",
+      "name": "公共与其他用地",
+      "source": {
+        "path": "civic-other.geojson"
+      },
+      "required": true,
+      "visible": true,
+      "id_field": "id",
+      "label_field": "name",
+      "search_fields": [
+        "name",
+        "address",
+        "zoning",
+        "bbl"
+      ],
+      "tooltip_fields": [
+        "name"
+      ],
+      "popup_fields": [
+        "address",
+        "category",
+        "land_use",
+        "zoning",
+        "lot_area_sqft",
+        "building_area_sqft",
+        "built_far",
+        "floors",
+        "year_built",
+        "bbl"
+      ],
+      "field_labels": {
+        "name": "地块地址",
+        "address": "地址",
+        "category": "用地大类",
+        "land_use": "详细用途",
+        "zoning": "主要分区",
+        "lot_area_sqft": "地块面积（平方英尺）",
+        "building_area_sqft": "建筑面积（平方英尺）",
+        "built_far": "已建容积率",
+        "floors": "楼层数",
+        "year_built": "建成年份",
+        "bbl": "地块编号 BBL"
+      },
+      "source_note": "NYC Open Data TAX_LOT_POLYGON (i38t-6if2) joined to PLUTO (64uk-42ks), retrieved 2026-07-24",
+      "style": {
+        "color": "#8a5ca8",
+        "fill_color": "#8a5ca8",
+        "weight": 0.8,
+        "opacity": 0.9,
+        "fill_opacity": 0.72
       }
     }
   ],
@@ -80,32 +180,14 @@
     }
   ],
   "map": {
+    "search_behavior": "highlight",
     "controls": {
       "fullscreen": true,
       "scale": true,
       "basemap_switcher": true,
-      "layer_control": false
+      "layer_control": true,
+      "legend": false
     }
-  },
-  "list": {
-    "default_sort": "acres",
-    "collapsible": true,
-    "summary_fields": [
-      "park_type",
-      "acres"
-    ],
-    "summary_update_with_filter": true,
-    "summary_metrics": [
-      {
-        "type": "count",
-        "label": "公园数量"
-      },
-      {
-        "type": "sum",
-        "field": "acres",
-        "label": "总面积（英亩）"
-      }
-    ]
   },
   "static": {
     "enabled": true,
@@ -113,6 +195,6 @@
       "slide-16x9",
       "paper"
     ],
-    "source_note": "NYC Open Data: Parks Properties (enfh-gkve), retrieved 2026-07-23"
+    "source_note": "NYC Open Data: TAX_LOT_POLYGON (i38t-6if2) joined to PLUTO (64uk-42ks), retrieved 2026-07-24"
   }
 }

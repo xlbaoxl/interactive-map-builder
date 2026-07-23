@@ -4,16 +4,26 @@ The README examples use fixed, local snapshots of public datasets from
 [NYC Open Data](https://opendata.cityofnewyork.us/). Builds and tests never fetch
 these datasets at runtime.
 
-Snapshot date: **2026-07-23**
+Snapshot date: **2026-07-24**
 
-## Searchable park catalog
+## Searchable Lower Manhattan land-use map
 
-- Dataset: [Parks Properties (`enfh-gkve`)](https://data.cityofnewyork.us/d/enfh-gkve)
-- Publisher: New York City Department of Parks and Recreation
-- Selection: records where `BOROUGH = M`, `RETIRED = false`, and `ACRES >= 20`
-- Result: 18 Manhattan park properties
-- Fields retained: stable GIS object ID, sign name, type, acreage, waterfront flag,
-  and location description
+- Lot geometry: [TAX_LOT_POLYGON (`i38t-6if2`)](https://data.cityofnewyork.us/d/i38t-6if2),
+  published by the New York City Department of Finance
+- Land-use and lot attributes:
+  [Primary Land Use Tax Lot Output (PLUTO) (`64uk-42ks`)](https://data.cityofnewyork.us/d/64uk-42ks),
+  published by the New York City Department of City Planning
+- Selection: Manhattan tax lots inside `(-74.015, 40.704, -73.995, 40.7215)`
+  with a matching PLUTO record
+- Processing: duplicate tax-lot geometry is dissolved by BBL, joined to PLUTO by
+  the stable BBL identifier, validated, snapped to seven decimal places, and
+  exported in EPSG:4326
+- Classification: residential (`01`–`03`), mixed/commercial (`04`–`05`), and
+  civic/other (`06`–`11` plus unclassified records)
+- Result: 1,699 tax lots: 242 residential, 1,233 mixed/commercial, and
+  224 civic/other
+- Fields retained: stable BBL-based ID, address, broad and detailed land use,
+  zoning district, lot area, building area, built FAR, floors, and year built
 
 ## Multilayer city map
 

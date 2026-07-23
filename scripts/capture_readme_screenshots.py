@@ -41,9 +41,15 @@ def _capture(page, example_name: str, output: Path, work_root: Path) -> None:
 
     if example_name == "map-list":
         page.evaluate(
-            "window.__interactiveMapBuilderQA.actions.setSearch('Central Park')"
+            "window.__interactiveMapBuilderQA.actions.setSearch('BROADWAY')"
         )
-        page.locator("#imb-list [data-feature-id]").first.hover()
+        result = page.get_by_text("1 BROADWAY", exact=True)
+        if result.count() != 1:
+            raise RuntimeError(
+                f"Expected one 1 BROADWAY result, found {result.count()}."
+            )
+        result.click()
+        page.locator(".leaflet-popup").wait_for(state="visible", timeout=10_000)
     elif example_name == "multilayer":
         page.get_by_text("Fulton St (A-C) MTA Restroom", exact=True).first.click()
         page.locator(".leaflet-popup").wait_for(state="visible", timeout=10_000)
