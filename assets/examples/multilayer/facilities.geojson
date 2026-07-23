@@ -1,0 +1,1020 @@
+{
+  "type": "FeatureCollection",
+  "name": "facilities",
+  "crs": {
+    "type": "name",
+    "properties": {
+      "name": "urn:ogc:def:crs:OGC:1.3:CRS84"
+    }
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-b244ba89800d",
+        "name": "125th Street Library, NYPL",
+        "facility_type": "Library",
+        "operator": "NYPL",
+        "open": "Year Round",
+        "accessibility": "Fully Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.934849,
+          40.803026
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-5bb7d2012669",
+        "name": "53rd Street Library, NYPL",
+        "facility_type": "Library",
+        "operator": "NYPL",
+        "open": "Year Round",
+        "accessibility": "Fully Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.977365,
+          40.760815
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-0a1e7f799a87",
+        "name": "58th Street Library, NYPL",
+        "facility_type": "Library",
+        "operator": "NYPL",
+        "open": "Year Round",
+        "accessibility": "Partially Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.969383,
+          40.762194
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-317e3e3f2dc5",
+        "name": "67th Street Library, NYPL",
+        "facility_type": "Library",
+        "operator": "NYPL",
+        "open": "Year Round",
+        "accessibility": "Not Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.959551,
+          40.764923
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-a1ac2dd2282b",
+        "name": "96th Street Library, NYPL",
+        "facility_type": "Library",
+        "operator": "NYPL",
+        "open": "Year Round",
+        "accessibility": "Partially Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.951807,
+          40.785968
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-eed422826232",
+        "name": "Andrew Heiskell Braille and Talking Book Library, NYPL",
+        "facility_type": "Library",
+        "operator": "NYPL",
+        "open": "Year Round",
+        "accessibility": "Fully Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.993358,
+          40.740474
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-af33cfb66aec",
+        "name": "Battery Park City Library, NYPL",
+        "facility_type": "Library",
+        "operator": "NYPL",
+        "open": "Year Round",
+        "accessibility": "Fully Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.01575,
+          40.715699
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-b00112124e86",
+        "name": "Bloomingdale Library, NYPL",
+        "facility_type": "Library",
+        "operator": "NYPL",
+        "open": "Year Round",
+        "accessibility": "Fully Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.967608,
+          40.795882
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-9e740029c236",
+        "name": "Chatham Square Library, NYPL",
+        "facility_type": "Library",
+        "operator": "NYPL",
+        "open": "Year Round",
+        "accessibility": "Fully Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.996491,
+          40.713341
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-8d4d152302f3",
+        "name": "Columbus Library, NYPL",
+        "facility_type": "Library",
+        "operator": "NYPL",
+        "open": "Year Round",
+        "accessibility": "Fully Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.991222,
+          40.764943
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-ba2a578107f3",
+        "name": "Countee Cullen Library, NYPL",
+        "facility_type": "Library",
+        "operator": "NYPL",
+        "open": "Year Round",
+        "accessibility": "Fully Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.941162,
+          40.814844
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-575a64530885",
+        "name": "Epiphany Library, NYPL",
+        "facility_type": "Library",
+        "operator": "NYPL",
+        "open": "Year Round",
+        "accessibility": "Fully Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.98205,
+          40.738095
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-f3e93ae3bc95",
+        "name": "Fort Washington Library, NYPL",
+        "facility_type": "Library",
+        "operator": "NYPL",
+        "open": "Year Round",
+        "accessibility": "Fully Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.933867,
+          40.847878
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-8b2c58c99592",
+        "name": "George Bruce Library, NYPL",
+        "facility_type": "Library",
+        "operator": "NYPL",
+        "open": "Year Round",
+        "accessibility": "Fully Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.957055,
+          40.813777
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-dfea9703f72e",
+        "name": "Hamilton Grange Library, NYPL",
+        "facility_type": "Library",
+        "operator": "NYPL",
+        "open": "Year Round",
+        "accessibility": "Fully Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.948034,
+          40.825681
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-9ce7bd65836a",
+        "name": "Harlem Library, NYPL",
+        "facility_type": "Library",
+        "operator": "NYPL",
+        "open": "Year Round",
+        "accessibility": "Fully Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.943317,
+          40.806169
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-b64e92168b82",
+        "name": "Harry Belafonte 115th Street Library, NYPL",
+        "facility_type": "Library",
+        "operator": "NYPL",
+        "open": "Year Round",
+        "accessibility": "Fully Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.953532,
+          40.802988
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-9b9c96fbc5fe",
+        "name": "Hudson Park Library, NYPL",
+        "facility_type": "Library",
+        "operator": "NYPL",
+        "open": "Year Round",
+        "accessibility": "Not Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.005332,
+          40.729991
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-761fa165b0da",
+        "name": "Inwood Library, NYPL",
+        "facility_type": "Library",
+        "operator": "NYPL",
+        "open": "Year Round",
+        "accessibility": "Fully Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.924338,
+          40.866961
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-2e1f0307d062",
+        "name": "Jefferson Market Library, NYPL",
+        "facility_type": "Library",
+        "operator": "NYPL",
+        "open": "Year Round",
+        "accessibility": "Fully Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.999171,
+          40.734643
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-2a6ad33896d0",
+        "name": "Kips Bay Library, NYPL",
+        "facility_type": "Library",
+        "operator": "NYPL",
+        "open": "Year Round",
+        "accessibility": "Fully Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.979903,
+          40.743818
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-5d3c01e28e14",
+        "name": "Library for the Performing Arts, Dorothy and Lewis B. Cullman Center Library, NYPL",
+        "facility_type": "Library",
+        "operator": "NYPL",
+        "open": "Year Round",
+        "accessibility": "Fully Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.984548,
+          40.773515
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-49b9267c2bc0",
+        "name": "Macomb's Bridge Library, NYPL",
+        "facility_type": "Library",
+        "operator": "NYPL",
+        "open": "Year Round",
+        "accessibility": "Fully Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.935349,
+          40.825536
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-7bff8166d0dd",
+        "name": "Morningside Heights Library, NYPL",
+        "facility_type": "Library",
+        "operator": "NYPL",
+        "open": "Year Round",
+        "accessibility": "Fully Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.964777,
+          40.806139
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-ba800091d879",
+        "name": "Mulberry Street Library, NYPL",
+        "facility_type": "Library",
+        "operator": "NYPL",
+        "open": "Year Round",
+        "accessibility": "Fully Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.995686,
+          40.724148
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-1d1ecc8e7189",
+        "name": "New Amsterdam Library, NYPL",
+        "facility_type": "Library",
+        "operator": "NYPL",
+        "open": "Year Round",
+        "accessibility": "Fully Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.007871,
+          40.713585
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-b24a7aa5c61a",
+        "name": "Ottendorfer Library, NYPL",
+        "facility_type": "Library",
+        "operator": "NYPL",
+        "open": "Year Round",
+        "accessibility": "Not Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.987744,
+          40.728915
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-84d95da43bb6",
+        "name": "Riverside Library, NYPL",
+        "facility_type": "Library",
+        "operator": "NYPL",
+        "open": "Year Round",
+        "accessibility": "Fully Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.984514,
+          40.77424
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-9cbe70922d9e",
+        "name": "Roosevelt Island Library, NYPL",
+        "facility_type": "Library",
+        "operator": "NYPL",
+        "open": "Year Round",
+        "accessibility": "Fully Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.949446,
+          40.762333
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-2026d7361740",
+        "name": "Schomburg Center for Research in Black Culture, NYPL",
+        "facility_type": "Library",
+        "operator": "NYPL",
+        "open": "Year Round",
+        "accessibility": "Fully Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.940945,
+          40.814657
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-069467607802",
+        "name": "Seward Park Library, NYPL",
+        "facility_type": "Library",
+        "operator": "NYPL",
+        "open": "Year Round",
+        "accessibility": "Fully Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.988502,
+          40.714418
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-1daa3892a69f",
+        "name": "St. Agnes Library, NYPL",
+        "facility_type": "Library",
+        "operator": "NYPL",
+        "open": "Year Round",
+        "accessibility": "Fully Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.977454,
+          40.784843
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-927badcc0d3f",
+        "name": "Starvos Niarchos Foundation Library, NYPL",
+        "facility_type": "Library",
+        "operator": "NYPL",
+        "open": "Year Round",
+        "accessibility": "Fully Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.9817,
+          40.7519
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-ab12425682a1",
+        "name": "Stephen A. Schwarzman Building, NYPL",
+        "facility_type": "Library",
+        "operator": "NYPL",
+        "open": "Year Round",
+        "accessibility": "Fully Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.982232,
+          40.753213
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-522207ca2451",
+        "name": "Tompkins Square Library, NYPL",
+        "facility_type": "Library",
+        "operator": "NYPL",
+        "open": "Year Round",
+        "accessibility": "Fully Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.980422,
+          40.727296
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-bbb04edfd5f4",
+        "name": "Washington Heights Library, NYPL",
+        "facility_type": "Library",
+        "operator": "NYPL",
+        "open": "Year Round",
+        "accessibility": "Fully Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.939712,
+          40.834557
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-ca765b77ade7",
+        "name": "Webster Library, NYPL",
+        "facility_type": "Library",
+        "operator": "NYPL",
+        "open": "Year Round",
+        "accessibility": "Fully Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.951343,
+          40.770661
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-c3259a81ffd2",
+        "name": "Yorkville Library, NYPL",
+        "facility_type": "Library",
+        "operator": "NYPL",
+        "open": "Year Round",
+        "accessibility": "Not Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.956374,
+          40.773664
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-338f3a801bf1",
+        "name": "120 Park Avenue POPS",
+        "facility_type": "Privately Owned Public Space",
+        "operator": "Shorenstein Realty Services",
+        "open": "Year Round",
+        "accessibility": "Fully Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.978306,
+          40.751936
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-96280028e71f",
+        "name": "153 East 53rd Street POPS",
+        "facility_type": "Privately Owned Public Space",
+        "operator": "Boston Properties",
+        "open": "Year Round",
+        "accessibility": "Fully Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.970038,
+          40.758406
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-e0838326be88",
+        "name": "180 Maiden Lane POPS",
+        "facility_type": "Privately Owned Public Space",
+        "operator": "Greenberg Traurig, LLP",
+        "open": "Year Round",
+        "accessibility": "Fully Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.005516,
+          40.705277
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-132078292ac5",
+        "name": "2 Lincoln Square POPS",
+        "facility_type": "Privately Owned Public Space",
+        "operator": "Brown Harris Stevens",
+        "open": "Year Round",
+        "accessibility": "Fully Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.981429,
+          40.773165
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-11fc08993ddb",
+        "name": "55 East 52nd Street POPS",
+        "facility_type": "Privately Owned Public Space",
+        "operator": "Park Avenue Plaza Owner LLC",
+        "open": "Year Round",
+        "accessibility": "Partially Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.973672,
+          40.759132
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-9dc70902fabe",
+        "name": "550 Madison Avenue POPS",
+        "facility_type": "Privately Owned Public Space",
+        "operator": "550 Madison Property Management",
+        "open": "Year Round",
+        "accessibility": "Fully Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.973505,
+          40.76147
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-dd5c47deb0ce",
+        "name": "575 Fifth Avenue POPS",
+        "facility_type": "Privately Owned Public Space",
+        "operator": "575 Fifth Associates",
+        "open": "Year Round",
+        "accessibility": "Fully Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.978243,
+          40.756276
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-ca155cb135b9",
+        "name": "61 West 62nd Street POPS",
+        "facility_type": "Privately Owned Public Space",
+        "operator": "Lincoln Center for the Performing Arts",
+        "open": "Year Round",
+        "accessibility": "Fully Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.982838,
+          40.771123
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-437cd063fc0c",
+        "name": "645 Fifth Avenue POPS",
+        "facility_type": "Privately Owned Public Space",
+        "operator": "Oxford Properties",
+        "open": "Year Round",
+        "accessibility": "Fully Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.976087,
+          40.759207
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-282f6230e677",
+        "name": "725 Fifth Avenue POPS",
+        "facility_type": "Privately Owned Public Space",
+        "operator": "The Trump Organization",
+        "open": "Year Round",
+        "accessibility": null
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.973895,
+          40.762319
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-5990eb817fb4",
+        "name": "805 Third Avenue POPS",
+        "facility_type": "Privately Owned Public Space",
+        "operator": "Cohen Brothers Real Estate Development Corporation",
+        "open": "Year Round",
+        "accessibility": "Fully Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.970541,
+          40.755396
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-8ddd25c9df59",
+        "name": "825 Eighth Avenue POPS",
+        "facility_type": "Privately Owned Public Space",
+        "operator": "George Comfort and Sons, Inc.",
+        "open": "Year Round",
+        "accessibility": "Fully Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.986944,
+          40.762238
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-a83533c5ec3a",
+        "name": "875 Third Avenue POPS",
+        "facility_type": "Privately Owned Public Space",
+        "operator": "Boston Properties Inc.",
+        "open": "Year Round",
+        "accessibility": "Fully Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.969197,
+          40.757226
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-5b813492a952",
+        "name": "Madison Square Park APT",
+        "facility_type": "Public Plaza",
+        "operator": "NYC DOT/JCDecaux",
+        "open": "Year Round",
+        "accessibility": "Fully Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.987845,
+          40.741309
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-ccd64a911656",
+        "name": "Plaza de Las Americas APT",
+        "facility_type": "Public Plaza",
+        "operator": "NYC DOT/JCDecaux",
+        "open": "Year Round",
+        "accessibility": "Fully Accessible"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.937997,
+          40.84593
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-0505d74af3dc",
+        "name": "Fulton St (A-C) MTA Restroom",
+        "facility_type": "Transit",
+        "operator": "NYCT",
+        "open": "Year Round",
+        "accessibility": null
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.009096,
+          40.710532
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-f5832f19bf18",
+        "name": "Grand Central (Metro North) LIRR Restroom",
+        "facility_type": "Transit",
+        "operator": "LIRR-MNR",
+        "open": "Year Round",
+        "accessibility": null
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.976715,
+          40.751816
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "facility-6253aedc22ae",
+        "name": "Penn Station LIRR Restroom",
+        "facility_type": "Transit",
+        "operator": "LIRR",
+        "open": "Year Round",
+        "accessibility": null
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.993581,
+          40.750588
+        ]
+      }
+    }
+  ]
+}

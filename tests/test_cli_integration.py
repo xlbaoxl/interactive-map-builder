@@ -18,7 +18,7 @@ def test_map_list_build_and_verify_complete_bundle(tmp_path):
     spec = ROOT / "assets" / "examples" / "map-list" / "map_spec.json"
     result = build_map(spec, tmp_path)
     assert result["report"]["status"] == "pass"
-    assert result["report"]["checks"]["primary_count"] == 3
+    assert result["report"]["checks"]["primary_count"] == 18
 
     expected = {
         "map.html",

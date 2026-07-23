@@ -22,9 +22,9 @@ def _png_size(path: Path) -> tuple:
 
 def _example_layers() -> dict:
     return {
-        "districts": gpd.read_file(EXAMPLE / "districts.geojson"),
-        "routes": gpd.read_file(EXAMPLE / "routes.geojson"),
-        "places": gpd.read_file(EXAMPLE / "places.geojson"),
+        "boundary": gpd.read_file(EXAMPLE / "boundary.geojson"),
+        "bike_routes": gpd.read_file(EXAMPLE / "bike_routes.geojson"),
+        "facilities": gpd.read_file(EXAMPLE / "facilities.geojson"),
     }
 
 
@@ -46,40 +46,45 @@ def test_render_static_bundle_has_fixed_names_dimensions_and_signatures(tmp_path
 
 def test_renderer_requires_crs_and_required_layers(tmp_path: Path) -> None:
     layers = _example_layers()
-    places = layers["places"]
+    facilities = layers["facilities"]
     no_crs = gpd.GeoDataFrame(
-        places.drop(columns=places.geometry.name),
-        geometry=list(places.geometry),
+        facilities.drop(columns=facilities.geometry.name),
+        geometry=list(facilities.geometry),
         crs=None,
     )
 
     with pytest.raises(ValueError, match="no CRS"):
-        render_static_figures({"places": no_crs}, {"layers": []}, tmp_path)
+        render_static_figures({"facilities": no_crs}, {"layers": []}, tmp_path)
 
     spec = json.loads((EXAMPLE / "map_spec.json").read_text(encoding="utf-8"))
     with pytest.raises(ValueError, match="required layer"):
-        render_static_figures({"places": layers["places"]}, spec, tmp_path)
+        render_static_figures({"facilities": layers["facilities"]}, spec, tmp_path)
 
 
 def test_renderer_accepts_color_field_string_categories(tmp_path: Path) -> None:
-    layer = _example_layers()["places"]
+    layer = _example_layers()["facilities"]
     spec = {
         "title": "Categorical points",
         "layers": [
             {
-                "id": "places",
-                "name": "Places",
+                "id": "facilities",
+                "name": "Facilities",
                 "required": True,
                 "style": {
-                    "color_field": "kind",
-                    "categories": {"Civic": "#7b61a8", "Retail": "#d95f59"},
+                    "color_field": "facility_type",
+                    "categories": {
+                        "Library": "#d1495b",
+                        "Privately Owned Public Space": "#edae49",
+                        "Transit": "#6a4c93",
+                        "Public Plaza": "#00798c",
+                    },
                 },
             }
         ],
         "static": {"source_note": "Synthetic test"},
     }
 
-    outputs = render_static_figures({"places": layer}, spec, tmp_path)
+    outputs = render_static_figures({"facilities": layer}, spec, tmp_path)
 
     assert outputs["paper_pdf"].exists()
     assert outputs["slide_png"].exists()

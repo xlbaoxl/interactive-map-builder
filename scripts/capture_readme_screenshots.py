@@ -13,6 +13,8 @@ from map_builder import build_map
 
 
 ROOT = Path(__file__).resolve().parents[1]
+MAX_SCREENSHOT_BYTES = 1_500_000
+MIN_LOADED_TILES = 4
 
 
 def _capture(page, example_name: str, output: Path, work_root: Path) -> None:
@@ -22,7 +24,6 @@ def _capture(page, example_name: str, output: Path, work_root: Path) -> None:
     spec_path = project / "map_spec.json"
     spec = json.loads(spec_path.read_text(encoding="utf-8"))
     spec["static"] = {"enabled": False}
-    spec["basemaps"] = []
     spec_path.write_text(json.dumps(spec, ensure_ascii=False, indent=2), encoding="utf-8")
     dist = work_root / f"{example_name}-dist"
     build_map(spec_path, dist)
@@ -31,7 +32,44 @@ def _capture(page, example_name: str, output: Path, work_root: Path) -> None:
         "document.documentElement.dataset.imbReady === 'true'",
         timeout=15_000,
     )
+    page.wait_for_function(
+        """minimum => Array.from(document.querySelectorAll("img.leaflet-tile"))
+          .filter(tile => tile.complete && tile.naturalWidth > 0).length >= minimum""",
+        arg=MIN_LOADED_TILES,
+        timeout=30_000,
+    )
+
+    if example_name == "map-list":
+        page.evaluate(
+            "window.__interactiveMapBuilderQA.actions.setSearch('Central Park')"
+        )
+        page.locator("#imb-list [data-feature-id]").first.hover()
+    elif example_name == "multilayer":
+        page.get_by_text("Fulton St (A-C) MTA Restroom", exact=True).first.click()
+        page.locator(".leaflet-popup").wait_for(state="visible", timeout=10_000)
+    else:
+        raise ValueError(f"Unsupported README screenshot example: {example_name}")
+
+    page.wait_for_function(
+        """minimum => !document.querySelector(".leaflet-zoom-anim")
+          && Array.from(document.querySelectorAll("img.leaflet-tile"))
+            .filter(tile => tile.complete && tile.naturalWidth > 0).length >= minimum""",
+        arg=MIN_LOADED_TILES,
+        timeout=30_000,
+    )
+    page.wait_for_timeout(1_500)
     page.screenshot(path=str(output))
+    try:
+        from PIL import Image
+    except ImportError as exc:
+        raise SystemExit("Install Pillow before capturing README screenshots.") from exc
+    with Image.open(output) as image:
+        image.save(output, format="PNG", optimize=True, compress_level=9)
+    if output.stat().st_size > MAX_SCREENSHOT_BYTES:
+        raise RuntimeError(
+            f"{output.name} is {output.stat().st_size:,} bytes; "
+            f"the README budget is {MAX_SCREENSHOT_BYTES:,} bytes."
+        )
 
 
 def main() -> int:
@@ -40,7 +78,7 @@ def main() -> int:
         "--output-dir",
         default=str(ROOT / "assets" / "screenshots"),
     )
-    parser.add_argument("--width", type=int, default=1440)
+    parser.add_argument("--width", type=int, default=1600)
     parser.add_argument("--height", type=int, default=900)
     args = parser.parse_args()
     output_dir = Path(args.output_dir).resolve()

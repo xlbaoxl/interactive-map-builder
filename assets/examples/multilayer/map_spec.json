@@ -1,60 +1,127 @@
 {
   "schema_version": "1.0",
   "template": "multilayer",
-  "title": "Synthetic city layers",
+  "title": "曼哈顿骑行与公共设施",
+  "subtitle": "行政边界、自行车道与公共卫生间 · NYC Open Data",
+  "locale": "zh-CN",
   "layers": [
     {
-      "id": "districts",
-      "name": "Districts",
-      "source": {"path": "districts.geojson"},
+      "id": "boundary",
+      "name": "曼哈顿边界",
+      "source": {
+        "path": "boundary.geojson"
+      },
       "required": true,
       "id_field": "id",
       "label_field": "name",
-      "source_note": "Synthetic example data (CC0)",
-      "popup_fields": ["name", "zone"],
+      "field_labels": {
+        "name": "行政区",
+        "borough_code": "行政区代码"
+      },
+      "source_note": "NYC Borough Boundaries (gthc-hcne), retrieved 2026-07-23",
+      "tooltip_fields": [
+        "name"
+      ],
+      "popup_fields": [
+        "name",
+        "borough_code"
+      ],
       "style": {
-        "color_field": "zone",
-        "weight": 1,
+        "color": "#486581",
+        "fill_color": "#b8cbe0",
+        "weight": 1.3,
+        "opacity": 0.85,
+        "fill_opacity": 0.18
+      }
+    },
+    {
+      "id": "bike_routes",
+      "name": "自行车道",
+      "source": {
+        "path": "bike_routes.geojson"
+      },
+      "required": true,
+      "id_field": "id",
+      "label_field": "name",
+      "field_labels": {
+        "name": "线路类型",
+        "facility_class": "设施等级",
+        "segment_count": "原始线段数"
+      },
+      "source_note": "NYC Bike Routes (mzxg-pwib), retrieved 2026-07-23",
+      "search_fields": [
+        "name",
+        "facility_class"
+      ],
+      "tooltip_fields": [
+        "name"
+      ],
+      "popup_fields": [
+        "name",
+        "facility_class",
+        "segment_count"
+      ],
+      "style": {
+        "color_field": "facility_class",
+        "weight": 2.3,
+        "opacity": 0.88,
         "categories": {
-          "Residential": "#9ecae1",
-          "Mixed use": "#fdd0a2"
+          "I": "#168aad",
+          "II": "#52b788",
+          "III": "#f4a261",
+          "L": "#9b5de5"
         }
       }
     },
     {
-      "id": "routes",
-      "name": "Routes",
-      "source": {"path": "routes.geojson"},
+      "id": "facilities",
+      "name": "公共卫生间",
+      "source": {
+        "path": "facilities.geojson"
+      },
       "required": true,
       "id_field": "id",
       "label_field": "name",
-      "source_note": "Synthetic example data (CC0)",
-      "style": {"color": "#4b5563", "weight": 2.8}
-    },
-    {
-      "id": "places",
-      "name": "Places",
-      "source": {"path": "places.geojson"},
-      "required": true,
-      "id_field": "id",
-      "label_field": "name",
-      "source_note": "Synthetic example data (CC0)",
-      "search_fields": ["name", "kind"],
-      "tooltip_fields": ["name"],
-      "popup_fields": ["name", "kind"],
+      "field_labels": {
+        "name": "设施名称",
+        "facility_type": "所在场所",
+        "operator": "运营方",
+        "open": "开放时间",
+        "accessibility": "无障碍情况"
+      },
+      "source_note": "NYC Public Restrooms (i7jb-7jku), retrieved 2026-07-23",
+      "search_fields": [
+        "name",
+        "facility_type",
+        "operator"
+      ],
+      "tooltip_fields": [
+        "name"
+      ],
+      "popup_fields": [
+        "name",
+        "facility_type",
+        "operator",
+        "open",
+        "accessibility"
+      ],
       "style": {
-        "color_field": "kind",
-        "radius": 6,
+        "color_field": "facility_type",
+        "radius": 5.5,
+        "weight": 1.2,
+        "fill_opacity": 0.86,
         "categories": {
-          "Civic": "#7b61a8",
-          "Retail": "#d95f59"
+          "Library": "#d1495b",
+          "Privately Owned Public Space": "#edae49",
+          "Transit": "#6a4c93",
+          "Public Plaza": "#00798c"
         }
       }
     }
   ],
   "basemaps": [
     {
-      "name": "Carto Light",
+      "name": "Carto Positron",
       "url": "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
       "attribution": "© OpenStreetMap contributors © CARTO",
       "visible": true
@@ -76,7 +143,10 @@
   },
   "static": {
     "enabled": true,
-    "presets": ["slide-16x9", "paper"],
-    "source_note": "Synthetic example data (CC0)"
+    "presets": [
+      "slide-16x9",
+      "paper"
+    ],
+    "source_note": "NYC Open Data: Borough Boundaries, Bike Routes, and Public Restrooms; retrieved 2026-07-23"
   }
 }

@@ -55,10 +55,10 @@ def test_map_list_browser_smoke(tmp_path: Path) -> None:
         page = browser.new_page(viewport={"width": 1280, "height": 800})
         page.goto((dist / "map.html").resolve().as_uri())
         initial = _wait_ready(page)
-        assert initial["recordCount"] == 3
+        assert initial["recordCount"] == 18
 
-        page.evaluate("window.__interactiveMapBuilderQA.actions.setSearch('Renewal')")
-        assert page.evaluate("window.__interactiveMapBuilderQA.visibleRecordCount") < 3
+        page.evaluate("window.__interactiveMapBuilderQA.actions.setSearch('Central Park')")
+        assert page.evaluate("window.__interactiveMapBuilderQA.visibleRecordCount") == 1
 
         page.evaluate("window.__interactiveMapBuilderQA.actions.toggleSidebar()")
         assert page.locator("#imb-app").evaluate(

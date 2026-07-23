@@ -1,45 +1,118 @@
 {
   "schema_version": "1.0",
   "template": "map-list",
-  "title": "Synthetic neighborhood catalog",
-  "primary_layer": "neighborhoods",
+  "title": "曼哈顿公园导览",
+  "subtitle": "18 个面积不小于 20 英亩的公园 · NYC Open Data",
+  "locale": "zh-CN",
+  "primary_layer": "parks",
   "layers": [
     {
-      "id": "neighborhoods",
-      "name": "Neighborhoods",
-      "source": {"path": "neighborhoods.geojson"},
+      "id": "parks",
+      "name": "曼哈顿公园",
+      "source": {
+        "path": "parks.geojson"
+      },
       "required": true,
       "id_field": "id",
       "label_field": "name",
-      "source_note": "Synthetic example data (CC0)",
-      "search_fields": ["name", "kind"],
-      "popup_fields": ["name", "kind", "homes"],
-      "filter_fields": ["kind"],
-      "card_fields": ["homes"],
-      "sort_fields": ["name"],
+      "field_labels": {
+        "name": "名称",
+        "park_type": "公园类型",
+        "acres": "面积（英亩）",
+        "waterfront": "滨水公园",
+        "location": "位置"
+      },
+      "source_note": "NYC Parks Properties (enfh-gkve), retrieved 2026-07-23",
+      "search_fields": [
+        "name",
+        "park_type",
+        "location"
+      ],
+      "tooltip_fields": [
+        "name",
+        "park_type"
+      ],
+      "popup_fields": [
+        "name",
+        "park_type",
+        "acres",
+        "waterfront"
+      ],
+      "filter_fields": [
+        "park_type",
+        "waterfront"
+      ],
+      "card_fields": [
+        "park_type",
+        "acres",
+        "waterfront"
+      ],
+      "sort_fields": [
+        "name",
+        "acres"
+      ],
       "style": {
-        "color_field": "kind",
-        "weight": 1.2,
+        "color_field": "park_type",
+        "weight": 1.4,
+        "fill_opacity": 0.64,
         "categories": {
-          "Established": "#3b82b8",
-          "Renewal": "#e28f41"
+          "Flagship Park": "#2f855a",
+          "Community Park": "#4c78a8",
+          "Neighborhood Park": "#f2c14e",
+          "Recreational Field/Courts": "#e76f51",
+          "Parkway": "#8e6c8a"
         }
       }
     }
   ],
+  "basemaps": [
+    {
+      "name": "Carto Positron",
+      "url": "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
+      "attribution": "© OpenStreetMap contributors © CARTO",
+      "visible": true
+    },
+    {
+      "name": "OpenStreetMap",
+      "url": "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      "attribution": "© OpenStreetMap contributors",
+      "visible": false
+    }
+  ],
+  "map": {
+    "controls": {
+      "fullscreen": true,
+      "scale": true,
+      "basemap_switcher": true,
+      "layer_control": false
+    }
+  },
   "list": {
-    "default_sort": "name",
+    "default_sort": "acres",
     "collapsible": true,
-    "summary_fields": ["kind", "homes"],
+    "summary_fields": [
+      "park_type",
+      "acres"
+    ],
     "summary_update_with_filter": true,
     "summary_metrics": [
-      {"type": "count", "label": "Visible neighborhoods"},
-      {"type": "sum", "field": "homes", "label": "Homes"}
+      {
+        "type": "count",
+        "label": "公园数量"
+      },
+      {
+        "type": "sum",
+        "field": "acres",
+        "label": "总面积（英亩）"
+      }
     ]
   },
   "static": {
     "enabled": true,
-    "presets": ["slide-16x9", "paper"],
-    "source_note": "Synthetic example data (CC0)"
+    "presets": [
+      "slide-16x9",
+      "paper"
+    ],
+    "source_note": "NYC Open Data: Parks Properties (enfh-gkve), retrieved 2026-07-23"
   }
 }
