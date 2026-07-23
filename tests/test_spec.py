@@ -58,6 +58,11 @@ def test_rejects_absolute_sources_and_escaping_outputs():
         validate_spec(spec)
 
     spec = minimal_spec()
+    spec["layers"][0]["source"]["path"] = "/private/data.geojson"
+    with pytest.raises(SpecError, match="Source paths must be relative"):
+        validate_spec(spec)
+
+    spec = minimal_spec()
     spec["outputs"] = {"html": "../map.html"}
     with pytest.raises(SpecError, match="must stay inside"):
         validate_spec(spec)

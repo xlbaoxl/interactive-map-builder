@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from copy import deepcopy
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Any, Dict, Tuple
 
 from jsonschema import Draft202012Validator
@@ -27,6 +27,14 @@ def schema_path() -> Path:
 def load_schema() -> Dict[str, Any]:
     with schema_path().open("r", encoding="utf-8") as handle:
         return json.load(handle)
+
+
+def _is_absolute_on_any_platform(value: str) -> bool:
+    return (
+        Path(value).is_absolute()
+        or PurePosixPath(value).is_absolute()
+        or PureWindowsPath(value).is_absolute()
+    )
 
 
 def _apply_defaults(instance: Any, schema: Dict[str, Any], root: Dict[str, Any]) -> None:
@@ -67,7 +75,7 @@ def validate_spec(spec: Dict[str, Any]) -> Dict[str, Any]:
     absolute_sources = [
         layer["id"]
         for layer in resolved["layers"]
-        if Path(str(layer["source"]["path"])).is_absolute()
+        if _is_absolute_on_any_platform(str(layer["source"]["path"]))
     ]
     if absolute_sources:
         raise SpecError(
@@ -77,7 +85,7 @@ def validate_spec(spec: Dict[str, Any]) -> Dict[str, Any]:
         )
     for key, value in resolved.get("outputs", {}).items():
         output_path = Path(str(value))
-        if output_path.is_absolute() or ".." in output_path.parts:
+        if _is_absolute_on_any_platform(str(value)) or ".." in output_path.parts:
             raise SpecError("outputs.{} must stay inside the selected output directory.".format(key))
     if resolved["template"] == "map-list":
         primary = resolved.get("primary_layer")
