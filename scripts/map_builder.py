@@ -8,12 +8,14 @@ import json
 import math
 import shutil
 import sys
+from copy import deepcopy
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Set, Tuple
 
 import geopandas as gpd
 import pandas as pd
+import shapely
 from shapely.geometry import mapping
 
 from mapcore.arcgis import ArcGISError, download_feature_service
@@ -25,7 +27,7 @@ from mapcore.inspect_data import (
 )
 from mapcore.loaders import DataLoadError, load_source
 from mapcore.normalize import normalize_geodata
-from mapcore.paths import resource_root
+from mapcore.resource_files import read_resource_text
 from mapcore.report import (
     environment_report,
     output_entry,
@@ -42,6 +44,15 @@ from mapcore.validate import ValidationError, ensure_count_consistency, validate
 
 class BuildError(RuntimeError):
     """Raised when a build cannot meet its declared contract."""
+
+
+LIGHT_FEATURES = 5_000
+LIGHT_VERTICES = 100_000
+LIGHT_GEOJSON_BYTES = 5 * 1024 * 1024
+MEDIUM_FEATURES = 20_000
+MEDIUM_VERTICES = 500_000
+MEDIUM_GEOJSON_BYTES = 20 * 1024 * 1024
+LARGE_HTML_BYTES = 10 * 1024 * 1024
 
 
 def _json_value(value: Any) -> Any:
@@ -69,6 +80,43 @@ def _json_value(value: Any) -> Any:
     return str(value)
 
 
+def _display_label(value: Any, fallback: Any) -> str:
+    normalized = _json_value(value)
+    if normalized is None or not str(normalized).strip():
+        return str(fallback)
+    return str(normalized)
+
+
+def _vertex_count(frame: gpd.GeoDataFrame) -> int:
+    return int(
+        sum(
+            shapely.get_num_coordinates(geometry)
+            for geometry in frame.geometry
+            if geometry is not None
+        )
+    )
+
+
+def _simplification_recommendation(
+    feature_count: int,
+    vertex_count: int,
+    geojson_bytes: int,
+) -> str:
+    if (
+        feature_count > MEDIUM_FEATURES
+        or vertex_count > MEDIUM_VERTICES
+        or geojson_bytes > MEDIUM_GEOJSON_BYTES
+    ):
+        return "medium"
+    if (
+        feature_count > LIGHT_FEATURES
+        or vertex_count > LIGHT_VERTICES
+        or geojson_bytes > LIGHT_GEOJSON_BYTES
+    ):
+        return "light"
+    return "none"
+
+
 def _selected_fields(
     layer_spec: Mapping[str, Any],
     linked_view: Optional[Mapping[str, Any]],
@@ -87,6 +135,8 @@ def _selected_fields(
     for key in ("id_field", "label_field"):
         if layer_spec.get(key):
             fields.add(str(layer_spec[key]))
+    if layer_spec.get("link_key"):
+        fields.add(str(layer_spec["link_key"]))
     style = layer_spec.get("style", {})
     if style.get("color_field"):
         fields.add(str(style["color_field"]))
@@ -125,15 +175,9 @@ def _prepare_layer(
         layer_spec.update(resolved_layer_spec)
 
     render_data = normalized
-    tolerance = layer_spec.get("simplify_tolerance")
     simplify_preset = str(layer_spec.get("simplify", "none"))
-    if tolerance is not None and simplify_preset != "none":
-        raise BuildError(
-            "Layer {} declares both simplify and simplify_tolerance; choose one.".format(
-                layer_spec["id"]
-            )
-        )
-    if tolerance is None and simplify_preset in {"light", "medium"}:
+    tolerance = None
+    if simplify_preset in {"light", "medium"}:
         bounds = normalized.total_bounds
         diagonal = math.hypot(float(bounds[2] - bounds[0]), float(bounds[3] - bounds[1]))
         divisor = 5000.0 if simplify_preset == "light" else 2000.0
@@ -166,7 +210,11 @@ def _prepare_layer(
     for _, row in render_frame.iterrows():
         values = {field: _json_value(row[field]) for field in fields}
         values["__map_id"] = str(row[id_field])
-        values["__label"] = str(row[label_field]) if label_field else str(row[id_field])
+        values["__label"] = (
+            _display_label(row[label_field], row[id_field])
+            if label_field
+            else str(row[id_field])
+        )
         properties.append(values)
         features.append(
             {
@@ -177,10 +225,23 @@ def _prepare_layer(
             }
         )
     bounds = render_frame.total_bounds.tolist()
+    feature_collection = {"type": "FeatureCollection", "features": features}
+    geojson_bytes = len(
+        json.dumps(
+            feature_collection,
+            ensure_ascii=False,
+            allow_nan=False,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    )
+    vertex_count = _vertex_count(render_data)
+    recommendation = _simplification_recommendation(
+        len(features), vertex_count, geojson_bytes
+    )
     prepared = {
         "id": layer_spec["id"],
         "spec": dict(layer_spec),
-        "feature_collection": {"type": "FeatureCollection", "features": features},
+        "feature_collection": feature_collection,
         "records": properties,
         "count": len(features),
         "bounds": bounds,
@@ -193,21 +254,127 @@ def _prepare_layer(
         "rendered_count": len(features),
         "simplified": simplified,
         "simplify_preset": simplify_preset,
-        "simplify_tolerance": tolerance,
+        "performance": {
+            "feature_count": len(features),
+            "vertex_count": vertex_count,
+            "geojson_bytes": geojson_bytes,
+            "simplification_recommendation": recommendation,
+        },
         "style": style_report,
         "normalization": normalization.to_dict(),
         "validation": validation.to_dict(),
+        "warnings": [],
     }
+    if normalization.generated_id_count:
+        layer_report["warnings"].append(
+            "{} generated {} deterministic ID(s).".format(
+                layer_spec["id"], normalization.generated_id_count
+            )
+        )
+    if normalization.repaired_count:
+        layer_report["warnings"].append(
+            "{} repaired {} invalid geometr{}.".format(
+                layer_spec["id"],
+                normalization.repaired_count,
+                "y" if normalization.repaired_count == 1 else "ies",
+            )
+        )
+    for field, count in validation.null_field_counts.items():
+        layer_report["warnings"].append(
+            "{} field {!r} contains {} null display value(s).".format(
+                layer_spec["id"], field, count
+            )
+        )
+    if style_report.get("missing_count"):
+        layer_report["warnings"].append(
+            "{} mapped {} null categor{} to {!r}.".format(
+                layer_spec["id"],
+                style_report["missing_count"],
+                "y" if style_report["missing_count"] == 1 else "ies",
+                layer_spec.get("style", {}).get("missing_label", "未分类 / Missing"),
+            )
+        )
+    if not layer_spec.get("source_note"):
+        layer_report["warnings"].append(
+            "{} does not declare source_note.".format(layer_spec["id"])
+        )
+    if simplified:
+        layer_report["warnings"].append(
+            "{} used the {!r} geometry simplification preset.".format(
+                layer_spec["id"], simplify_preset
+            )
+        )
+    if recommendation != "none" and simplify_preset == "none":
+        layer_report["warnings"].append(
+            "{} may benefit from {!r} simplification.".format(
+                layer_spec["id"], recommendation
+            )
+        )
     return normalized, prepared, layer_report
 
 
-def build_map(spec_path: Path, out_dir: Path) -> Dict[str, Any]:
+def _bundle_spec_sources(
+    spec: Mapping[str, Any],
+    base_dir: Path,
+    destination: Path,
+) -> Dict[str, Any]:
+    """Copy unique source files into dist/data and rewrite source paths."""
+
+    bundled = deepcopy(dict(spec))
+    data_dir = destination / "data"
+    data_dir.mkdir(parents=True, exist_ok=True)
+    copied: Dict[Path, str] = {}
+    used_names: Dict[str, Path] = {}
+    for layer in bundled["layers"]:
+        source_value = str(layer["source"]["path"])
+        source = (base_dir / source_value).resolve()
+        if not source.is_file():
+            raise BuildError("Cannot bundle missing source: {}".format(source))
+        if source in copied:
+            layer["source"]["path"] = copied[source]
+            continue
+        candidate = source.name
+        folded = candidate.casefold()
+        if folded in used_names and used_names[folded] != source:
+            candidate = "{}-{}".format(layer["id"], source.name)
+            stem = Path(candidate).stem
+            suffix = Path(candidate).suffix
+            counter = 2
+            while candidate.casefold() in used_names:
+                candidate = "{}-{}{}".format(stem, counter, suffix)
+                counter += 1
+        target = data_dir / candidate
+        if source != target.resolve():
+            shutil.copy2(source, target)
+        relative = target.relative_to(destination).as_posix()
+        copied[source] = relative
+        used_names[candidate.casefold()] = source
+        layer["source"]["path"] = relative
+    return bundled
+
+
+def build_map(
+    spec_path: Path,
+    out_dir: Path,
+    *,
+    bundle_sources: bool = False,
+) -> Dict[str, Any]:
     from mapcore.render_figure import render_static_figures
     from mapcore.render_html import render_html
 
     spec, base_dir = load_spec(spec_path)
     destination = out_dir.resolve()
     destination.mkdir(parents=True, exist_ok=True)
+    if bundle_sources:
+        spec = _bundle_spec_sources(spec, base_dir, destination)
+        base_dir = destination
+    portable_bundle = bundle_sources or (
+        base_dir.resolve() == destination
+        and all(
+            Path(str(layer["source"]["path"])).parts[:1] == ("data",)
+            for layer in spec["layers"]
+        )
+    )
     warnings: List[str] = []
     prepared_layers: List[Dict[str, Any]] = []
     static_layers: Dict[str, gpd.GeoDataFrame] = {}
@@ -240,7 +407,11 @@ def build_map(spec_path: Path, out_dir: Path) -> Dict[str, Any]:
             raw,
             layer_spec,
             spec.get("linked_view"),
-            spec.get("list"),
+            (
+                spec.get("list")
+                if layer_spec["id"] == spec.get("primary_layer")
+                else None
+            ),
         )
         if resolved_source.is_file():
             layer_report["source"] = {
@@ -251,6 +422,7 @@ def build_map(spec_path: Path, out_dir: Path) -> Dict[str, Any]:
         prepared_layers.append(prepared)
         static_layers[str(layer_spec["id"])] = normalized
         layer_reports.append(layer_report)
+        warnings.extend(layer_report.get("warnings", []))
 
     required_ids = {layer["id"] for layer in spec["layers"] if layer.get("required", True)}
     loaded_ids = {layer["id"] for layer in prepared_layers}
@@ -273,28 +445,42 @@ def build_map(spec_path: Path, out_dir: Path) -> Dict[str, Any]:
             list_records=len(primary["records"]),
         )
 
-    vendor = resource_root() / "assets" / "vendor" / "leaflet-1.9.4"
-    outputs_spec = spec.get("outputs", {})
-    html_path = destination / outputs_spec.get("html", "map.html")
+    html_path = destination / "map.html"
     html_result = render_html(
         spec,
         prepared_layers,
         html_path,
-        (vendor / "leaflet.js").read_text(encoding="utf-8"),
-        (vendor / "leaflet.css").read_text(encoding="utf-8"),
+        read_resource_text("vendor", "leaflet-1.9.4", "leaflet.js"),
+        read_resource_text("vendor", "leaflet-1.9.4", "leaflet.css"),
     )
 
     generated_paths: List[Path] = [html_path]
+    html_bytes = html_path.stat().st_size
+    if html_bytes > LARGE_HTML_BYTES:
+        warnings.append(
+            "map.html is {:.1f} MiB; browser startup may be slow.".format(
+                html_bytes / (1024 * 1024)
+            )
+        )
     static_result: Dict[str, Path] = {}
+    static_font: Dict[str, Any] = {
+        "font": None,
+        "cjk_text_detected": False,
+        "cjk_font_found": None,
+        "warning": None,
+    }
     if spec.get("static", {}).get("enabled", True):
         static_result = render_static_figures(static_layers, spec, destination)
+        static_font = dict(static_result.font_report)
         generated_paths.extend(static_result.values())
+        if static_font.get("warning"):
+            warnings.append(str(static_font["warning"]))
 
-    resolved_spec_path = destination / outputs_spec.get("resolved_spec", "map_spec.json")
+    resolved_spec_path = destination / "map_spec.json"
     write_resolved_spec(spec, resolved_spec_path)
     generated_paths.append(resolved_spec_path)
 
-    inspection_path = destination / outputs_spec.get("inspection", "inspection.json")
+    inspection_path = destination / "inspection.json"
     build_inspection = {
         "schema_version": "1.0",
         "inputs": [
@@ -311,13 +497,14 @@ def build_map(spec_path: Path, out_dir: Path) -> Dict[str, Any]:
     write_json(build_inspection, inspection_path)
     generated_paths.append(inspection_path)
 
-    usage_path = destination / outputs_spec.get("usage", "README_使用说明.md")
+    usage_path = destination / "README_使用说明.md"
     write_usage_guide(
         usage_path,
         title=str(spec["title"]),
         html_name=html_path.name,
         figure_names=[path.name for path in static_result.values()],
         basemaps=spec.get("basemaps", []),
+        portable_bundle=portable_bundle,
     )
     generated_paths.append(usage_path)
 
@@ -328,7 +515,11 @@ def build_map(spec_path: Path, out_dir: Path) -> Dict[str, Any]:
             rendered=prepared["count"],
         )
 
-    report_path = destination / outputs_spec.get("report", "build_report.json")
+    if spec.get("basemaps"):
+        warnings.append(
+            "Configured basemap tiles require a network connection."
+        )
+    report_path = destination / "build_report.json"
     legend_item_count = sum(
         len(layer.get("style", {}).get("categories", {}))
         if isinstance(layer.get("style", {}).get("categories", {}), Mapping)
@@ -356,6 +547,25 @@ def build_map(spec_path: Path, out_dir: Path) -> Dict[str, Any]:
             "list_record_count": primary_count,
             "legend_item_count": legend_item_count,
             "html_qa": html_result,
+            "portable_bundle": portable_bundle,
+            "static_font": static_font,
+        },
+        "performance": {
+            "feature_count": sum(layer["count"] for layer in prepared_layers),
+            "vertex_count": sum(
+                layer["performance"]["vertex_count"] for layer in layer_reports
+            ),
+            "geojson_bytes": sum(
+                layer["performance"]["geojson_bytes"] for layer in layer_reports
+            ),
+            "html_bytes": html_bytes,
+            "simplification_recommendation": max(
+                (
+                    layer["performance"]["simplification_recommendation"]
+                    for layer in layer_reports
+                ),
+                key={"none": 0, "light": 1, "medium": 2}.get,
+            ),
         },
         "warnings": warnings,
         "network_dependencies": [
@@ -422,7 +632,7 @@ def _parser() -> argparse.ArgumentParser:
     inspect_parser.add_argument("--x")
     inspect_parser.add_argument("--y")
     inspect_parser.add_argument("--wkt")
-    inspect_parser.add_argument("--encoding", default="utf-8")
+    inspect_parser.add_argument("--encoding")
     inspect_parser.add_argument("--output", "--out", dest="output")
 
     init_parser = subparsers.add_parser(
@@ -434,6 +644,7 @@ def _parser() -> argparse.ArgumentParser:
         "--template", choices=("auto", "map-list", "multilayer"), default="auto"
     )
     init_parser.add_argument("--title")
+    init_parser.add_argument("--primary-layer")
     init_parser.add_argument("--output", "--out", dest="output", default="map_spec.json")
 
     fetch_parser = subparsers.add_parser(
@@ -450,6 +661,11 @@ def _parser() -> argparse.ArgumentParser:
     build_parser.add_argument("spec_path", nargs="?")
     build_parser.add_argument("--spec", dest="spec_option")
     build_parser.add_argument("--output", "--out", dest="output", default="dist")
+    build_parser.add_argument(
+        "--bundle-sources",
+        action="store_true",
+        help="Copy source files into dist/data and rewrite MapSpec paths.",
+    )
 
     verify_parser = subparsers.add_parser("verify", help="Verify a built output directory.")
     verify_parser.add_argument("--dist", default="dist")
@@ -462,13 +678,14 @@ def _parser() -> argparse.ArgumentParser:
         "--template", choices=("auto", "map-list", "multilayer"), default="auto"
     )
     run_parser.add_argument("--title")
+    run_parser.add_argument("--primary-layer")
     run_parser.add_argument("--layer")
     run_parser.add_argument("--sheet")
     run_parser.add_argument("--crs")
     run_parser.add_argument("--x")
     run_parser.add_argument("--y")
     run_parser.add_argument("--wkt")
-    run_parser.add_argument("--encoding", default="utf-8")
+    run_parser.add_argument("--encoding")
     run_parser.add_argument("--output", "--out", dest="output", default="dist")
     return parser
 
@@ -534,6 +751,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 spec_path=output_path,
                 template=args.template,
                 title=args.title,
+                primary_layer=args.primary_layer,
             )
             write_json(spec, output_path)
             print(
@@ -561,7 +779,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             print(json.dumps(result.to_dict(), ensure_ascii=False, indent=2))
         elif args.command == "build":
             spec_path = _required_path(args.spec_path, args.spec_option, "spec path")
-            result = build_map(spec_path, Path(args.output))
+            result = build_map(
+                spec_path,
+                Path(args.output),
+                bundle_sources=args.bundle_sources,
+            )
             print(
                 json.dumps(
                     {
@@ -600,6 +822,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 spec_path=spec_path,
                 template=args.template,
                 title=args.title,
+                primary_layer=args.primary_layer,
             )
             write_json(spec, spec_path)
             result = build_map(spec_path, destination)

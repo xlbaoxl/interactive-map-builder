@@ -6,10 +6,11 @@
     {
       "id": "districts",
       "name": "Districts",
-      "source": {"path": "districts.geojson", "format": "geojson"},
+      "source": {"path": "districts.geojson"},
       "required": true,
       "id_field": "id",
       "label_field": "name",
+      "source_note": "Synthetic example data (CC0)",
       "popup_fields": ["name", "zone"],
       "style": {
         "color_field": "zone",
@@ -23,19 +24,21 @@
     {
       "id": "routes",
       "name": "Routes",
-      "source": {"path": "routes.geojson", "format": "geojson"},
+      "source": {"path": "routes.geojson"},
       "required": true,
       "id_field": "id",
       "label_field": "name",
+      "source_note": "Synthetic example data (CC0)",
       "style": {"color": "#4b5563", "weight": 2.8}
     },
     {
       "id": "places",
       "name": "Places",
-      "source": {"path": "places.geojson", "format": "geojson"},
+      "source": {"path": "places.geojson"},
       "required": true,
       "id_field": "id",
       "label_field": "name",
+      "source_note": "Synthetic example data (CC0)",
       "search_fields": ["name", "kind"],
       "tooltip_fields": ["name"],
       "popup_fields": ["name", "kind"],

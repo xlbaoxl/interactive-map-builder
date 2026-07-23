@@ -183,7 +183,11 @@ def load_geodata(
         if layer is not None:
             raise DataLoadError("layer is not supported for CSV inputs.")
         try:
-            table = pd.read_csv(str(source), encoding=encoding)
+            table = pd.read_csv(str(source), encoding=encoding or "utf-8-sig")
+        except UnicodeDecodeError as exc:
+            raise DataLoadError(
+                "Could not decode CSV input as UTF-8. Specify an explicit encoding."
+            ) from exc
         except Exception as exc:
             raise DataLoadError("Could not read CSV input: {}".format(source)) from exc
         frame = _tabular_geometry(
@@ -242,13 +246,10 @@ def load_source(
         options: Dict[str, Any] = {}
     elif isinstance(source, Mapping):
         options = dict(source)
-        source_path_value = options.pop("path", options.pop("input", None))
+        source_path_value = options.pop("path", None)
         if source_path_value is None:
             raise DataLoadError("Source mapping requires a 'path' field.")
         source_path = Path(str(source_path_value))
-        # Declarative specs sometimes include a format hint; the suffix remains
-        # authoritative so a stale hint cannot select the wrong parser.
-        options.pop("format", None)
         if "sheet" in options:
             options.setdefault("sheet_name", options.pop("sheet"))
         geometry = options.pop("geometry", None)
@@ -257,36 +258,24 @@ def load_source(
                 raise DataLoadError("source.geometry must be a mapping.")
             geometry_options = dict(geometry)
             geometry_type = str(geometry_options.pop("type", "")).lower()
-            if geometry_type in {"lonlat", "xy", "coordinates"}:
+            if geometry_type == "lonlat":
                 options.setdefault(
                     "lon_field",
-                    geometry_options.pop(
-                        "lon_field",
-                        geometry_options.pop(
-                            "x_field", geometry_options.pop("lon", None)
-                        ),
-                    ),
+                    geometry_options.pop("x_field", None),
                 )
                 options.setdefault(
                     "lat_field",
-                    geometry_options.pop(
-                        "lat_field",
-                        geometry_options.pop(
-                            "y_field", geometry_options.pop("lat", None)
-                        ),
-                    ),
+                    geometry_options.pop("y_field", None),
                 )
             elif geometry_type == "wkt":
                 options.setdefault(
                     "wkt_field",
-                    geometry_options.pop("wkt_field", geometry_options.pop("field", None)),
+                    geometry_options.pop("wkt_field", None),
                 )
             else:
                 raise DataLoadError(
                     "source.geometry.type must be 'lonlat' or 'wkt'."
                 )
-            if "crs" in geometry_options:
-                options.setdefault("crs", geometry_options.pop("crs"))
             if geometry_options:
                 raise DataLoadError(
                     "Unknown source.geometry option(s): {}".format(

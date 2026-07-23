@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/xlbaoxl/interactive-map-builder/map-spec.schema.json",
-  "title": "Interactive Map Builder specification",
+  "title": "Interactive Map Builder specification v1",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema_version", "template", "title", "layers"],
@@ -11,8 +11,6 @@
     "title": {"type": "string", "minLength": 1},
     "subtitle": {"type": "string"},
     "locale": {"type": "string", "default": "zh-CN"},
-    "language": {"type": "string"},
-    "theme": {"type": "string", "default": "clean-light"},
     "primary_layer": {"type": "string"},
     "layers": {
       "type": "array",
@@ -27,8 +25,7 @@
     "map": {"$ref": "#/$defs/map"},
     "list": {"$ref": "#/$defs/list"},
     "linked_view": {"$ref": "#/$defs/linkedView"},
-    "static": {"$ref": "#/$defs/static"},
-    "outputs": {"$ref": "#/$defs/outputs"}
+    "static": {"$ref": "#/$defs/static"}
   },
   "$defs": {
     "source": {
@@ -37,14 +34,10 @@
       "required": ["path"],
       "properties": {
         "path": {"type": "string", "minLength": 1},
-        "format": {
-          "enum": ["auto", "geojson", "gpkg", "shapefile-zip", "csv", "excel"],
-          "default": "auto"
-        },
         "layer": {"type": "string"},
         "sheet": {"oneOf": [{"type": "string"}, {"type": "integer", "minimum": 0}]},
         "crs": {"type": ["string", "integer"]},
-        "encoding": {"type": "string", "default": "utf-8"},
+        "encoding": {"type": "string", "minLength": 1},
         "geometry": {
           "type": "object",
           "additionalProperties": false,
@@ -54,17 +47,34 @@
             "x_field": {"type": "string"},
             "y_field": {"type": "string"},
             "wkt_field": {"type": "string"}
-          }
+          },
+          "allOf": [
+            {
+              "if": {"properties": {"type": {"const": "lonlat"}}},
+              "then": {"required": ["x_field", "y_field"]}
+            },
+            {
+              "if": {"properties": {"type": {"const": "wkt"}}},
+              "then": {"required": ["wkt_field"]}
+            }
+          ]
         }
+      }
+    },
+    "categoryRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["color"],
+      "properties": {
+        "label": {"type": "string"},
+        "color": {"type": "string", "minLength": 1}
       }
     },
     "style": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "mode": {
-          "enum": ["single", "categorical", "graduated"]
-        },
+        "mode": {"enum": ["single", "categorical", "graduated"]},
         "color": {"type": "string", "default": "#2563eb"},
         "fill_color": {"type": "string"},
         "weight": {"type": "number", "minimum": 0, "default": 1.5},
@@ -89,10 +99,16 @@
           "items": {"type": "string"}
         },
         "missing_color": {"type": "string", "default": "#9ca3af"},
+        "missing_label": {"type": "string", "default": "未分类 / Missing"},
         "legend_title": {"type": "string"},
         "categories": {
           "type": "object",
-          "additionalProperties": {"type": "string"}
+          "additionalProperties": {
+            "oneOf": [
+              {"type": "string"},
+              {"$ref": "#/$defs/categoryRule"}
+            ]
+          }
         }
       }
     },
@@ -108,6 +124,11 @@
         "source": {"$ref": "#/$defs/source"},
         "id_field": {"type": "string"},
         "label_field": {"type": "string"},
+        "link_key": {"type": "string"},
+        "field_labels": {
+          "type": "object",
+          "additionalProperties": {"type": "string"}
+        },
         "style": {"$ref": "#/$defs/style"},
         "tooltip_fields": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
         "popup_fields": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
@@ -119,7 +140,6 @@
           "enum": ["none", "light", "medium"],
           "default": "none"
         },
-        "simplify_tolerance": {"type": "number", "exclusiveMinimum": 0},
         "source_note": {"type": "string"}
       }
     },
@@ -194,24 +214,20 @@
       "additionalProperties": false,
       "properties": {
         "enabled": {"type": "boolean", "default": true},
-        "source_note": {"type": "string"},
         "presets": {
           "type": "array",
+          "minItems": 1,
           "items": {"enum": ["slide-16x9", "paper"]},
           "uniqueItems": true,
           "default": ["slide-16x9", "paper"]
-        }
-      }
-    },
-    "outputs": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "html": {"type": "string", "default": "map.html"},
-        "report": {"type": "string", "default": "build_report.json"},
-        "resolved_spec": {"type": "string", "default": "map_spec.json"},
-        "inspection": {"type": "string", "default": "inspection.json"},
-        "usage": {"type": "string", "default": "README_使用说明.md"}
+        },
+        "title": {"type": "string"},
+        "background": {"type": "string", "default": "#f5f7f9"},
+        "legend": {"type": "boolean", "default": true},
+        "legend_title": {"type": "string"},
+        "north_arrow": {"type": "boolean", "default": true},
+        "scale_bar": {"type": "boolean", "default": true},
+        "source_note": {"type": "string"}
       }
     }
   }

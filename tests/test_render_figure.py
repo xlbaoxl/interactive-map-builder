@@ -40,6 +40,8 @@ def test_render_static_bundle_has_fixed_names_dimensions_and_signatures(tmp_path
     assert "<svg" in outputs["paper_svg"].read_text(encoding="utf-8")[:1000]
     assert outputs["paper_pdf"].read_bytes().startswith(b"%PDF-")
     assert all(path.stat().st_size > 1000 for path in outputs.values())
+    assert outputs.font_report["font"]
+    assert "cjk_font_found" in outputs.font_report
 
 
 def test_renderer_requires_crs_and_required_layers(tmp_path: Path) -> None:
@@ -81,3 +83,11 @@ def test_renderer_accepts_color_field_string_categories(tmp_path: Path) -> None:
 
     assert outputs["paper_pdf"].exists()
     assert outputs["slide_png"].exists()
+
+
+def test_static_presets_control_generated_files(tmp_path: Path) -> None:
+    spec = json.loads((EXAMPLE / "map_spec.json").read_text(encoding="utf-8"))
+    spec["static"]["presets"] = ["paper"]
+    outputs = render_static_figures(_example_layers(), spec, tmp_path)
+    assert set(outputs) == {"paper_png", "paper_svg", "paper_pdf"}
+    assert not (tmp_path / "map_slide_16x9.png").exists()

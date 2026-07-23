@@ -328,33 +328,67 @@ def _input_record(path: Path, supplied: str) -> Dict[str, Any]:
     }
 
 
-def recommend_template(layers: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
-    reasons: List[str] = []
-    geometry_families = set()
-    for layer in layers:
-        for geometry_type in layer.get("geometry_types", []):
-            folded = str(geometry_type).casefold()
-            if "point" in folded:
-                geometry_families.add("point")
-            elif "line" in folded:
-                geometry_families.add("line")
-            elif "polygon" in folded:
-                geometry_families.add("polygon")
-    if len(layers) > 1:
-        reasons.append("Multiple input layers benefit from independent visibility controls.")
-    if len(geometry_families) > 1:
-        reasons.append("Mixed geometry families are best compared in a multilayer explorer.")
-    if len(layers) > 1 or len(geometry_families) > 1:
-        return {"template": "multilayer", "reasons": reasons}
+def _primary_score(layer: Mapping[str, Any]) -> int:
+    candidates = layer.get("candidates", {})
+    return (
+        2 * bool(candidates.get("id"))
+        + 2 * bool(candidates.get("label"))
+        + bool(candidates.get("search"))
+        + bool(candidates.get("filter"))
+        + bool(candidates.get("card"))
+    )
 
-    reasons.append("One primary layer can be browsed record by record.")
-    if layers:
-        candidates = layers[0].get("candidates", {})
+
+def recommend_template(layers: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
+    """Return explicit recommendation state without deciding multi-layer intent."""
+
+    if len(layers) == 1:
+        layer = layers[0]
+        reasons = ["One layer can be browsed record by record."]
+        candidates = layer.get("candidates", {})
         if candidates.get("label") or candidates.get("id"):
             reasons.append("A likely label or ID field supports searchable list cards.")
         if candidates.get("filter"):
             reasons.append("Low-cardinality fields can drive list filters.")
-    return {"template": "map-list", "reasons": reasons}
+        return {
+            "recommended": "map-list",
+            "template_candidates": ["map-list"],
+            "primary_candidate": str(layer.get("layer_id")),
+            "context_candidates": [],
+            "confidence": "high",
+            "needs_confirmation": False,
+            "reasons": reasons,
+        }
+
+    scored = [
+        (str(layer.get("layer_id")), _primary_score(layer))
+        for layer in layers
+    ]
+    highest = max((score for _, score in scored), default=0)
+    leaders = [layer_id for layer_id, score in scored if score == highest]
+    primary = leaders[0] if len(leaders) == 1 else None
+    context = [layer_id for layer_id, _ in scored if layer_id != primary] if primary else []
+    reasons = [
+        "Multiple layers may represent one browsable layer plus context, or a true multilayer explorer.",
+        "Confirm the template instead of inferring semantic layer roles from geometry alone.",
+    ]
+    if primary:
+        reasons.append(
+            "{} has the strongest ID, label, search, filter, and card-field signals.".format(
+                primary
+            )
+        )
+    else:
+        reasons.append("No unique primary-layer candidate was found.")
+    return {
+        "recommended": None,
+        "template_candidates": ["map-list", "multilayer"],
+        "primary_candidate": primary,
+        "context_candidates": context,
+        "confidence": "medium" if primary else "low",
+        "needs_confirmation": True,
+        "reasons": reasons,
+    }
 
 
 def inspect_inputs(
@@ -366,7 +400,7 @@ def inspect_inputs(
     x_field: Optional[str] = None,
     y_field: Optional[str] = None,
     wkt_field: Optional[str] = None,
-    encoding: str = "utf-8",
+    encoding: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Inspect one or more supported inputs without guessing CRS or ambiguous geometry."""
 
@@ -410,7 +444,17 @@ def inspect_inputs(
 
         if suffix in {".csv", ".xlsx", ".xls"}:
             if suffix == ".csv":
-                tables = [(source_path.stem, pd.read_csv(source_path, encoding=encoding))]
+                try:
+                    tables = [
+                        (
+                            source_path.stem,
+                            pd.read_csv(source_path, encoding=encoding or "utf-8-sig"),
+                        )
+                    ]
+                except UnicodeDecodeError as exc:
+                    raise DataLoadError(
+                        "Could not decode CSV input as UTF-8. Re-run with --encoding."
+                    ) from exc
             else:
                 workbook = pd.ExcelFile(source_path)
                 names = [sheet] if sheet is not None else list(workbook.sheet_names)
@@ -514,7 +558,9 @@ def inspection_summary(inspection: Mapping[str, Any]) -> str:
     lines.extend(
         [
             "",
-            "Recommended template: {}".format(recommendation.get("template", "map-list")),
+            "Recommended template: {}".format(
+                recommendation.get("recommended") or "confirmation required"
+            ),
         ]
     )
     lines.extend("- {}".format(reason) for reason in recommendation.get("reasons", []))

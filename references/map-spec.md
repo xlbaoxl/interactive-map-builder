@@ -1,6 +1,8 @@
 # Map specification v1
 
-Validate every specification against `map-spec.schema.json`. Resolve source paths relative to the specification file and output paths relative to the selected output directory.
+Treat `scripts/mapcore/resources/map-spec.schema.json` as the only machine-readable
+contract. Use canonical `snake_case` keys only. Resolve source paths relative to the
+specification file; output names are fixed by the builder.
 
 ## Minimal map and list
 
@@ -14,13 +16,16 @@ Validate every specification against `map-spec.schema.json`. Resolve source path
     {
       "id": "places",
       "name": "Places",
-      "source": {"path": "places.geojson", "format": "geojson"},
+      "source": {"path": "places.geojson"},
       "id_field": "place_id",
       "label_field": "name",
+      "field_labels": {"status": "Review status"},
+      "source_note": "Author survey, 2026",
       "style": {
+        "mode": "categorical",
         "color_field": "status",
         "categories": {
-          "Ready": "#0f766e",
+          "Ready": {"label": "Ready to review", "color": "#0f766e"},
           "Review": "#d97706"
         }
       },
@@ -47,7 +52,6 @@ Validate every specification against `map-spec.schema.json`. Resolve source path
       "name": "Sites",
       "source": {
         "path": "sites.csv",
-        "format": "csv",
         "crs": "EPSG:4326",
         "geometry": {
           "type": "lonlat",
@@ -57,6 +61,7 @@ Validate every specification against `map-spec.schema.json`. Resolve source path
       },
       "id_field": "site_id",
       "label_field": "name",
+      "source_note": "Synthetic example",
       "style": {"color": "#7c3aed", "radius": 7},
       "tooltip_fields": ["name"],
       "search_fields": ["name"]
@@ -68,42 +73,37 @@ Validate every specification against `map-spec.schema.json`. Resolve source path
 ## Rules
 
 - Use unique ASCII `layers[].id` values.
-- Require `primary_layer` for `map-list`.
-- Set `required: false` only when omission is genuinely acceptable.
-- Define every observed category when `style.color_field` and `style.categories` are used.
-- Use `source.crs` for tabular or CRS-less spatial inputs; never infer it from coordinate range.
-- Set `simplify_tolerance` only after user confirmation.
-- Keep tooltip, popup, search, filter, card, and sort fields explicit to avoid leaking unused attributes.
-- Define online basemaps with HTTPS URL templates and complete attribution. An empty `basemaps` list still produces a usable no-basemap view.
+- Require `primary_layer` for `map-list`; with multiple layers, pass it explicitly to
+  `init-spec` or `run`.
+- Define every observed non-null category. Null categories use
+  `style.missing_label` and `style.missing_color`.
+- Use `source.crs` for tabular or CRS-less spatial inputs; never infer CRS from values.
+- Omit `source.encoding` to let Shapefile `.cpg`/GDAL decide and to use UTF-8 for CSV.
+- Keep tooltip, popup, search, filter, card, and sort fields explicit.
+- Use `layers[].link_key` only for an intentional cross-layer relationship.
+- Use `layers[].simplify` with `none`, `light`, or `medium`; static figures retain
+  unsimplified normalized geometry.
+- Define HTTPS basemaps with attribution. An empty list keeps the business geometry usable.
 
-The build writes a resolved copy containing defaults into the output directory. Treat that resolved file as the reproducible build contract.
+## Static output
 
-## Graduated color
+Set `static.presets` to `["slide-16x9"]`, `["paper"]`, or both. The slide preset writes
+`map_slide_16x9.png`; paper writes `map_paper.png`, `map_paper.svg`, and
+`map_paper.pdf`. Use `static.enabled: false` when no static output is needed.
 
-Use a numeric field with quantile, equal-interval, or explicit breaks. The builder resolves the breaks and colors once, stores them in the resolved spec and build report, and feeds the same categories to HTML and static renderers.
+## Build record and portable bundle
 
-```json
-{
-  "mode": "graduated",
-  "field": "score",
-  "method": "quantile",
-  "classes": 5,
-  "colors": ["#eff3ff", "#6baed6", "#08519c"],
-  "missing_color": "#9ca3af"
-}
-```
-
-For `custom_breaks`, provide strictly increasing boundaries that contain the full observed range.
-
-## Web-only simplification
-
-Set `layers[].simplify` to `none`, `light`, or `medium`. The preset changes only the interactive-map geometry copy; static figures retain the normalized unsimplified geometry. `simplify_tolerance` remains available for an explicitly confirmed expert value, but do not set both options.
+Every build writes a resolved `map_spec.json`. A normal build treats it as a build record
+whose source paths still refer to the original project layout. Use
+`build --bundle-sources` to copy sources into `dist/data`, rewrite those paths, and create
+a portable rebuild bundle. The quick `run` command bundles its inputs by default.
 
 ## Initialize from inspection
 
 ```powershell
 interactive-map-builder inspect data.geojson --output inspection.json
-interactive-map-builder init-spec inspection.json --template auto --output map_spec.json
+interactive-map-builder init-spec inspection.json --template map-list --primary-layer sites --output map_spec.json
 ```
 
-`init-spec` fills only unambiguous candidates. It stops for missing CRS or ambiguous tabular geometry instead of inserting placeholders or guessing.
+One inspected layer may use `--template auto`. Multiple layers always require explicit
+template confirmation.

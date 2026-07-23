@@ -34,7 +34,7 @@ def test_graduated_style_resolves_shared_categories(method: str) -> None:
     assert field in frame.columns
     assert report["resolved_classes"] == len(report["breaks"]) - 1
     assert layer["style"]["categories"] == report["categories"]
-    assert "Missing" in report["categories"]
+    assert "未分类 / Missing" in report["categories"]
     assert set(frame[field].dropna()) == set(report["categories"])
 
 

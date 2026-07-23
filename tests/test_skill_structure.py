@@ -23,3 +23,17 @@ def test_openai_interface_mentions_skill():
     data = yaml.safe_load(text)
     assert data["interface"]["display_name"] == "Interactive Map Builder"
     assert "$interactive-map-builder" in data["interface"]["default_prompt"]
+
+
+def test_behavior_evals_and_bilingual_readme_are_present():
+    evals = yaml.safe_load((ROOT / "evals" / "cases.yaml").read_text(encoding="utf-8"))
+    assert evals["version"] == 1
+    assert len(evals["cases"]) == 7
+    invocations = {case["expected"]["invocation"] for case in evals["cases"]}
+    assert invocations == {"trigger", "do_not_use"}
+
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    assert "## 中文" in readme
+    assert "## English" in readme
+    assert "assets/screenshots/map-list.png" in readme
+    assert "assets/screenshots/multilayer.png" in readme

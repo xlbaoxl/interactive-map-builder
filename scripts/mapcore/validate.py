@@ -25,13 +25,16 @@ class ValidationReport:
     geometry_types: Tuple[str, ...]
     id_field: str
     required_fields: Tuple[str, ...]
+    null_field_counts: Dict[str, int]
     category_field: Optional[str]
     category_values: Tuple[Any, ...]
+    category_missing_count: int
 
     def to_dict(self) -> Dict[str, Any]:
         result = asdict(self)
         result["geometry_types"] = list(self.geometry_types)
         result["required_fields"] = list(self.required_fields)
+        result["null_field_counts"] = dict(self.null_field_counts)
         result["category_values"] = list(self.category_values)
         return result
 
@@ -121,15 +124,11 @@ def validate_geodata(
         errors.append(
             "{} is missing required field(s): {}".format(layer_name, ", ".join(missing_fields))
         )
-    for field in required:
-        if field in frame.columns:
-            null_indices = frame.index[frame[field].isna()].tolist()
-            if null_indices:
-                errors.append(
-                    "{} field {!r} is null at index(es): {}".format(
-                        layer_name, field, _display_indices(null_indices)
-                    )
-                )
+    null_field_counts = {
+        field: int(frame[field].isna().sum())
+        for field in required
+        if field in frame.columns and bool(frame[field].isna().any())
+    }
 
     if id_field not in frame.columns:
         errors.append("{} is missing ID field {!r}".format(layer_name, id_field))
@@ -152,6 +151,7 @@ def validate_geodata(
             )
 
     category_values: Tuple[Any, ...] = ()
+    category_missing_count = 0
     if category_field is not None:
         if category_field not in frame.columns:
             errors.append(
@@ -164,13 +164,7 @@ def validate_geodata(
                     key=lambda value: str(value),
                 )
             )
-            null_categories = frame.index[frame[category_field].isna()].tolist()
-            if null_categories:
-                errors.append(
-                    "{} has null category at index(es): {}".format(
-                        layer_name, _display_indices(null_categories)
-                    )
-                )
+            category_missing_count = int(frame[category_field].isna().sum())
             if allowed_categories is not None:
                 if isinstance(allowed_categories, Mapping):
                     allowed_text = {str(value) for value in allowed_categories.keys()}
@@ -199,8 +193,10 @@ def validate_geodata(
         geometry_types=geometry_types,
         id_field=id_field,
         required_fields=required,
+        null_field_counts=null_field_counts,
         category_field=category_field,
         category_values=category_values,
+        category_missing_count=category_missing_count,
     )
 
 

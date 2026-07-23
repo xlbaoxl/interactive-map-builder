@@ -11,7 +11,6 @@
       "name": "服务点",
       "source": {
         "path": "places.csv",
-        "format": "csv",
         "crs": "EPSG:4326",
         "geometry": {
           "type": "lonlat",
@@ -21,11 +20,18 @@
       },
       "id_field": "place_id",
       "label_field": "name",
+      "field_labels": {
+        "name": "名称",
+        "district": "片区",
+        "status": "状态",
+        "score": "评分"
+      },
+      "source_note": "Synthetic data",
       "style": {
         "mode": "categorical",
         "color_field": "status",
         "categories": {
-          "开放": "#0f766e",
+          "开放": {"label": "开放", "color": "#0f766e"},
           "评估": "#d97706",
           "规划": "#7c3aed"
         },

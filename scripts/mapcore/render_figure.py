@@ -8,6 +8,7 @@ remain the responsibility of the common data pipeline.
 from __future__ import annotations
 
 import math
+import re
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Mapping, Sequence, Tuple
 
@@ -18,6 +19,7 @@ matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
 from matplotlib import rcParams
+from matplotlib import font_manager
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 
@@ -30,19 +32,47 @@ OUTPUT_NAMES = {
 }
 
 
-def _configure_fonts() -> None:
-    """Prefer common CJK-capable fonts while keeping a portable fallback."""
+class StaticFigureOutputs(dict):
+    """Path mapping with non-file renderer metadata attached."""
 
+    def __init__(self, paths: Mapping[str, Path], font_report: Mapping[str, Any]) -> None:
+        super().__init__(paths)
+        self.font_report = dict(font_report)
+
+
+_CJK_FONTS = (
+    "Noto Sans CJK SC",
+    "Noto Sans SC",
+    "Microsoft YaHei",
+    "SimHei",
+    "Arial Unicode MS",
+)
+
+
+def _contains_cjk(value: Any) -> bool:
+    return bool(re.search(r"[\u3400-\u9fff\uf900-\ufaff]", str(value)))
+
+
+def _configure_fonts(spec: Mapping[str, Any]) -> Dict[str, Any]:
+    """Select an installed CJK font and report portable fallback state."""
+
+    installed = {item.name for item in font_manager.fontManager.ttflist}
+    selected = next((name for name in _CJK_FONTS if name in installed), None)
     rcParams["font.family"] = "sans-serif"
-    rcParams["font.sans-serif"] = [
-        "Noto Sans CJK SC",
-        "Noto Sans SC",
-        "Microsoft YaHei",
-        "SimHei",
-        "Arial Unicode MS",
-        "DejaVu Sans",
-    ]
+    rcParams["font.sans-serif"] = ([selected] if selected else []) + ["DejaVu Sans"]
     rcParams["axes.unicode_minus"] = False
+    cjk_requested = _contains_cjk(spec)
+    warning = None
+    if cjk_requested and selected is None:
+        warning = (
+            "Static figure text contains CJK characters, but no supported CJK font was found."
+        )
+    return {
+        "font": selected or "DejaVu Sans",
+        "cjk_text_detected": cjk_requested,
+        "cjk_font_found": selected is not None,
+        "warning": warning,
+    }
 
 _DEFAULT_STYLES = {
     "point": {
@@ -155,27 +185,8 @@ def _category_config(
     layer_spec: Mapping[str, Any], spec: Mapping[str, Any]
 ) -> Tuple[Any, Mapping[str, Any]]:
     style = _style_mapping(layer_spec)
-    field = (
-        style.get("color_field")
-        or style.get("category_field")
-        or style.get("field")
-        or layer_spec.get("color_field")
-        or layer_spec.get("category_field")
-    )
-    categories = (
-        style.get("categories")
-        or style.get("color_map")
-        or layer_spec.get("categories")
-        or layer_spec.get("color_map")
-        or spec.get("categories")
-        or {}
-    )
-    if isinstance(categories, list):
-        mapped: Dict[str, Any] = {}
-        for item in categories:
-            if isinstance(item, Mapping) and "value" in item:
-                mapped[str(item["value"])] = dict(item)
-        categories = mapped
+    field = style.get("color_field")
+    categories = style.get("categories") or {}
     if not isinstance(categories, Mapping):
         categories = {}
     return field, categories
@@ -193,12 +204,6 @@ def _geometry_family(geometry_types: Iterable[str]) -> str:
 def _canonical_style(family: str, raw: Mapping[str, Any]) -> Dict[str, Any]:
     style = dict(_DEFAULT_STYLES[family])
     style.update(raw)
-    if "fillColor" in style:
-        style["fill_color"] = style["fillColor"]
-    if "strokeColor" in style:
-        style["stroke_color"] = style["strokeColor"]
-    if "line_color" in style:
-        style["color"] = style["line_color"]
     if family == "polygon" and "color" in raw and "fill_color" not in raw:
         style["fill_color"] = raw["color"]
     if family == "point" and "radius" in style and "size" not in raw:
@@ -446,9 +451,6 @@ def _render_canvas(
     axis.set_title(str(title), loc="left", fontsize=15, fontweight="bold", pad=12)
     source = (
         static.get("source_note")
-        or static.get("source")
-        or spec.get("source")
-        or spec.get("attribution")
         or "Source: not specified"
     )
     source_text = str(source)
@@ -469,7 +471,7 @@ def _render_canvas(
 
 def render_static_figures(
     layers: Any, spec: Mapping[str, Any], out_dir: Any
-) -> Dict[str, Path]:
+) -> StaticFigureOutputs:
     """Render the fixed slide and publication figure bundle.
 
     Parameters
@@ -491,46 +493,52 @@ def render_static_figures(
     """
     if not isinstance(spec, Mapping):
         raise TypeError("spec must be a mapping")
-    _configure_fonts()
+    font_report = _configure_fonts(spec)
     normalised = _normalise_layers(layers)
     ordered = _ordered_layers(normalised, spec)
     destination_crs = _plot_crs(frame for _, frame, _ in ordered)
     destination = Path(out_dir)
     destination.mkdir(parents=True, exist_ok=True)
-    paths = {key: destination / name for key, name in OUTPUT_NAMES.items()}
+    presets = set(spec.get("static", {}).get("presets", ["slide-16x9", "paper"]))
+    paths: Dict[str, Path] = {}
 
-    slide = _render_canvas(ordered, spec, destination_crs, (12.8, 7.2))
-    slide.savefig(
-        str(paths["slide_png"]),
-        format="png",
-        dpi=150,
-        metadata={"Software": "interactive-map-builder"},
-    )
-    plt.close(slide)
+    if "slide-16x9" in presets:
+        paths["slide_png"] = destination / OUTPUT_NAMES["slide_png"]
+        slide = _render_canvas(ordered, spec, destination_crs, (12.8, 7.2))
+        slide.savefig(
+            str(paths["slide_png"]),
+            format="png",
+            dpi=150,
+            metadata={"Software": "interactive-map-builder"},
+        )
+        plt.close(slide)
 
-    paper = _render_canvas(ordered, spec, destination_crs, (7.2, 5.4))
-    paper.savefig(
-        str(paths["paper_png"]),
-        format="png",
-        dpi=300,
-        metadata={"Software": "interactive-map-builder"},
-    )
-    paper.savefig(
-        str(paths["paper_svg"]),
-        format="svg",
-        metadata={"Creator": "interactive-map-builder", "Date": None},
-    )
-    paper.savefig(
-        str(paths["paper_pdf"]),
-        format="pdf",
-        metadata={
-            "Creator": "interactive-map-builder",
-            "CreationDate": None,
-            "ModDate": None,
-        },
-    )
-    plt.close(paper)
-    return paths
+    if "paper" in presets:
+        for key in ("paper_png", "paper_svg", "paper_pdf"):
+            paths[key] = destination / OUTPUT_NAMES[key]
+        paper = _render_canvas(ordered, spec, destination_crs, (7.2, 5.4))
+        paper.savefig(
+            str(paths["paper_png"]),
+            format="png",
+            dpi=300,
+            metadata={"Software": "interactive-map-builder"},
+        )
+        paper.savefig(
+            str(paths["paper_svg"]),
+            format="svg",
+            metadata={"Creator": "interactive-map-builder", "Date": None},
+        )
+        paper.savefig(
+            str(paths["paper_pdf"]),
+            format="pdf",
+            metadata={
+                "Creator": "interactive-map-builder",
+                "CreationDate": None,
+                "ModDate": None,
+            },
+        )
+        plt.close(paper)
+    return StaticFigureOutputs(paths, font_report)
 
 
 __all__ = ["OUTPUT_NAMES", "render_static_figures"]

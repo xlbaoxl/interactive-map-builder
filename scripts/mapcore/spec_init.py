@@ -181,6 +181,7 @@ def init_spec_from_inspection(
     spec_path: Path,
     template: str = "auto",
     title: Optional[str] = None,
+    primary_layer: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Convert inspection output into the smallest reusable valid MapSpec."""
 
@@ -188,13 +189,36 @@ def init_spec_from_inspection(
     if not isinstance(layers, list) or not layers:
         raise SpecInitError("Inspection contains no layers.")
     recommendation = inspection.get("template_recommendation", {})
-    selected = (
-        str(recommendation.get("template", "map-list"))
-        if template == "auto"
-        else str(template)
-    )
+    if template == "auto":
+        selected_value = recommendation.get("recommended")
+        if recommendation.get("needs_confirmation") or not selected_value:
+            raise SpecInitError(
+                "Multiple layers require an explicit --template. "
+                "Use --primary-layer as well when choosing map-list."
+            )
+        selected = str(selected_value)
+    else:
+        selected = str(template)
     if selected not in {"map-list", "multilayer"}:
         raise SpecInitError("template must be auto, map-list, or multilayer")
+    layer_ids = [str(layer["layer_id"]) for layer in layers]
+    if selected == "multilayer" and primary_layer:
+        raise SpecInitError("--primary-layer applies only to the map-list template.")
+    if selected == "map-list":
+        if primary_layer is None:
+            if len(layers) == 1:
+                primary_layer = layer_ids[0]
+            else:
+                raise SpecInitError(
+                    "map-list with multiple layers requires --primary-layer; choose one of: {}"
+                    .format(", ".join(layer_ids))
+                )
+        if primary_layer not in layer_ids:
+            raise SpecInitError(
+                "Unknown primary layer {!r}; choose one of: {}".format(
+                    primary_layer, ", ".join(layer_ids)
+                )
+            )
 
     spec_dir = spec_path.resolve().parent
     spec_layers = [_layer_spec(inspection, layer, spec_dir) for layer in layers]
@@ -218,15 +242,10 @@ def init_spec_from_inspection(
             }
         ],
         "static": {"enabled": True, "presets": ["slide-16x9", "paper"]},
-        "outputs": {
-            "html": "map.html",
-            "report": "build_report.json",
-            "resolved_spec": "map_spec.json",
-        },
     }
     if selected == "map-list":
-        spec["primary_layer"] = str(layers[0]["layer_id"])
-        primary = spec_layers[0]
+        spec["primary_layer"] = str(primary_layer)
+        primary = next(layer for layer in spec_layers if layer["id"] == primary_layer)
         default_sort = _first(primary.get("sort_fields"))
         spec["list"] = {
             "collapsible": True,

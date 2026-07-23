@@ -31,7 +31,8 @@ def test_inspect_csv_reports_samples_candidates_reasons_and_summary(tmp_path: Pa
     _write_csv(source)
 
     inspection = inspect_inputs([str(source)], crs="EPSG:4326")
-    assert inspection["template_recommendation"]["template"] == "map-list"
+    assert inspection["template_recommendation"]["recommended"] == "map-list"
+    assert inspection["template_recommendation"]["needs_confirmation"] is False
     assert inspection["template_recommendation"]["reasons"]
     layer = inspection["layers"][0]
     assert layer["candidates"]["longitude"] == ["经度"]
@@ -88,7 +89,7 @@ def test_init_spec_stops_for_ambiguous_tabular_geometry(tmp_path: Path) -> None:
         init_spec_from_inspection(inspection, spec_path=tmp_path / "map_spec.json")
 
 
-def test_multiple_inputs_recommend_multilayer(tmp_path: Path) -> None:
+def test_multiple_inputs_require_template_confirmation(tmp_path: Path) -> None:
     paths = []
     for index in range(2):
         path = tmp_path / "layer-{}.geojson".format(index)
@@ -100,7 +101,29 @@ def test_multiple_inputs_recommend_multilayer(tmp_path: Path) -> None:
         paths.append(str(path))
     inspection = inspect_inputs(paths)
     assert len(inspection["layers"]) == 2
-    assert inspection["template_recommendation"]["template"] == "multilayer"
+    recommendation = inspection["template_recommendation"]
+    assert recommendation["recommended"] is None
+    assert recommendation["template_candidates"] == ["map-list", "multilayer"]
+    assert recommendation["needs_confirmation"] is True
+    with pytest.raises(SpecInitError, match="explicit --template"):
+        init_spec_from_inspection(
+            inspection,
+            spec_path=tmp_path / "map_spec.json",
+            template="auto",
+        )
+    with pytest.raises(SpecInitError, match="requires --primary-layer"):
+        init_spec_from_inspection(
+            inspection,
+            spec_path=tmp_path / "map_spec.json",
+            template="map-list",
+        )
+    spec = init_spec_from_inspection(
+        inspection,
+        spec_path=tmp_path / "map_spec.json",
+        template="map-list",
+        primary_layer="layer-1",
+    )
+    assert spec["primary_layer"] == "layer-1"
 
 
 def test_cli_three_step_workflow_and_output_listing(tmp_path: Path, capsys) -> None:

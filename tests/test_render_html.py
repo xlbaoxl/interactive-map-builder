@@ -200,10 +200,9 @@ def test_multilayer_contains_safe_point_line_polygon_controls(tmp_path):
         ),
     ]
     spec = {
-        "template": {"name": "multilayer"},
+        "template": "multilayer",
         "title": "点线面综合图",
         "layers": [layer["spec"] for layer in layers],
-        "search_result_limit": 50,
     }
 
     result = render_html(

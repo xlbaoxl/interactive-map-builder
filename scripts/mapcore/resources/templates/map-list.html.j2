@@ -72,12 +72,11 @@
         throw new Error("The map-list template requires one prepared layer.");
       }
 
-      var labels = spec.labels && typeof spec.labels === "object" ? spec.labels : {};
-      function label(key, fallback) {
-        return IMB.text(IMB.firstDefined(labels[key], fallback));
+      function label(_key, fallback) {
+        return fallback;
       }
 
-      var requestedPrimary = IMB.text(IMB.firstDefined(spec.primary_layer, spec.primaryLayer, ""));
+      var requestedPrimary = IMB.text(spec.primary_layer);
       var primary = layers[0];
       var primaryIndex = 0;
       layers.some(function (candidate, index) {
@@ -94,13 +93,10 @@
       var listConfig = spec.list && typeof spec.list === "object" ? spec.list : {};
       var batchSize = Math.max(20, Number(IMB.firstDefined(
         listConfig.batch_size,
-        spec.list_batch_size,
-        spec.listBatchSize,
-        primarySpec.list_batch_size,
-        100
+        200
       )));
-      var title = IMB.text(IMB.firstDefined(spec.title, primarySpec.title, IMB.layerTitle(primary, 0)));
-      var subtitle = IMB.text(IMB.firstDefined(spec.subtitle, spec.description, primarySpec.description, ""));
+      var title = IMB.text(IMB.firstDefined(spec.title, IMB.layerTitle(primary, 0)));
+      var subtitle = IMB.text(IMB.firstDefined(spec.subtitle, ""));
       document.title = title || "Interactive map";
       document.getElementById("imb-title").textContent = title;
       document.getElementById("imb-subtitle").textContent = subtitle;
@@ -160,7 +156,6 @@
         });
         var visible = IMB.firstDefined(
           candidateSpec.visible,
-          candidateSpec.default_visible,
           true
         ) !== false;
         if (visible) {
@@ -201,21 +196,25 @@
       IMB.fitToGroups(map, allMapGroups);
 
       var searchFields = IMB.fieldDefinitions(
-        IMB.firstDefined(primarySpec.search_fields, spec.search_fields),
-        [IMB.labelField(primarySpec)]
+        primarySpec.search_fields,
+        [IMB.labelField(primarySpec)],
+        primarySpec
       );
       var cardFields = IMB.fieldDefinitions(
-        IMB.firstDefined(primarySpec.card_fields, listConfig.summary_fields, spec.card_fields),
-        []
+        IMB.firstDefined(primarySpec.card_fields, listConfig.summary_fields),
+        [],
+        primarySpec
       );
       var category = IMB.categoryField(primarySpec);
       var filterFields = IMB.fieldDefinitions(
-        IMB.firstDefined(primarySpec.filter_fields, spec.filter_fields, spec.filters),
-        category ? [category] : []
+        primarySpec.filter_fields,
+        category ? [category] : [],
+        primarySpec
       );
       var sortFields = IMB.fieldDefinitions(
-        IMB.firstDefined(primarySpec.sort_fields, spec.sort_fields),
-        [IMB.labelField(primarySpec)].concat(category ? [category] : [])
+        primarySpec.sort_fields,
+        [IMB.labelField(primarySpec)].concat(category ? [category] : []),
+        primarySpec
       );
       var sortSelect = document.getElementById("imb-sort");
       sortFields.forEach(function (definition) {
@@ -364,7 +363,7 @@
           circle.dataset.featureId = point.record.id;
           var pointTitle = svgNode("title");
           pointTitle.textContent = IMB.text(IMB.firstDefined(
-            point.record.properties[IMB.labelField(primarySpec)],
+            point.record.properties.__label,
             point.record.id
           )) + " — " + xField + ": " + point.x + ", " + yField + ": " + point.y;
           circle.appendChild(pointTitle);
@@ -386,8 +385,12 @@
         var rightValue = right.properties[field];
         var leftNumber = Number(leftValue);
         var rightNumber = Number(rightValue);
+        var leftMissing = leftValue === null || leftValue === undefined || !IMB.text(leftValue).trim();
+        var rightMissing = rightValue === null || rightValue === undefined || !IMB.text(rightValue).trim();
         var result;
-        if (leftValue !== "" && rightValue !== "" && Number.isFinite(leftNumber) && Number.isFinite(rightNumber)) {
+        if (leftMissing || rightMissing) {
+          result = leftMissing === rightMissing ? 0 : (leftMissing ? 1 : -1);
+        } else if (Number.isFinite(leftNumber) && Number.isFinite(rightNumber)) {
           result = leftNumber - rightNumber;
         } else {
           result = IMB.text(leftValue).localeCompare(IMB.text(rightValue), undefined, {
@@ -420,7 +423,7 @@
         card.setAttribute("aria-selected", record.id === state.selectedId ? "true" : "false");
         card.dataset.featureId = record.id;
         var cardTitle = IMB.text(IMB.firstDefined(
-          record.properties[IMB.labelField(primarySpec)],
+          record.properties.__label,
           record.id
         ));
         card.appendChild(IMB.element("span", cardTitle, "imb-card-title"));
@@ -429,7 +432,7 @@
           cardFields.forEach(function (definition) {
             var item = IMB.element("span", undefined, "imb-card-meta-item");
             item.textContent = (definition.label || IMB.fieldLabel(primarySpec, definition.field)) +
-              ": " + IMB.text(record.properties[definition.field]);
+              ": " + IMB.displayValue(record.properties[definition.field]);
             meta.appendChild(item);
           });
           card.appendChild(meta);
@@ -456,8 +459,14 @@
           }).length;
         }
         var values = sourceRecords.map(function (record) {
-          return Number(record.properties[metric.field]);
-        }).filter(Number.isFinite).sort(function (left, right) { return left - right; });
+          var raw = record.properties[metric.field];
+          if (raw === null || raw === undefined || !IMB.text(raw).trim()) {
+            return null;
+          }
+          return Number(raw);
+        }).filter(function (value) {
+          return value !== null && Number.isFinite(value);
+        }).sort(function (left, right) { return left - right; });
         if (!values.length) {
           return null;
         }
@@ -567,6 +576,7 @@
           });
         }
         state.selectedId = identifier;
+        IMB.qa.selectedId = identifier;
         IMB.markFeature(featureRegistry, identifier, true);
         IMB.applyLinkedDomState(identifier, true, true);
         var card = ensureRendered(identifier);

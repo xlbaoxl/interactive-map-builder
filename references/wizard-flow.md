@@ -9,7 +9,7 @@ Run `inspect` before asking questions. Report each candidate layer with:
 - geometry type and CRS;
 - likely ID, label, category, region, and numeric fields;
 - blocking issues;
-- recommended `map-list` or `multilayer` template.
+- template candidates, whether confirmation is required, and any non-binding primary/context candidates.
 
 Do not ask for facts the inspection already establishes.
 

@@ -7,10 +7,11 @@
     {
       "id": "neighborhoods",
       "name": "Neighborhoods",
-      "source": {"path": "neighborhoods.geojson", "format": "geojson"},
+      "source": {"path": "neighborhoods.geojson"},
       "required": true,
       "id_field": "id",
       "label_field": "name",
+      "source_note": "Synthetic example data (CC0)",
       "search_fields": ["name", "kind"],
       "popup_fields": ["name", "kind", "homes"],
       "filter_fields": ["kind"],

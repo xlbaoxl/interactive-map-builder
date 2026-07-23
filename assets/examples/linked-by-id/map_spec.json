@@ -7,10 +7,11 @@
     {
       "id": "context",
       "name": "Context",
-      "source": {"path": "context.geojson", "format": "geojson"},
+      "source": {"path": "context.geojson"},
       "required": true,
       "id_field": "id",
       "label_field": "name",
+      "source_note": "Synthetic example data (CC0)",
       "style": {"fill_color": "#e8eef5", "color": "#a8b6c7", "fill_opacity": 0.4}
     },
     {
@@ -18,7 +19,6 @@
       "name": "Features",
       "source": {
         "path": "metrics.csv",
-        "format": "csv",
         "crs": "EPSG:4326",
         "geometry": {
           "type": "lonlat",
@@ -29,6 +29,7 @@
       "required": true,
       "id_field": "id",
       "label_field": "name",
+      "source_note": "Synthetic example data (CC0)",
       "popup_fields": ["name", "group"],
       "style": {
         "color_field": "group",

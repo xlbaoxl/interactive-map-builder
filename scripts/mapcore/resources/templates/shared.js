@@ -63,6 +63,11 @@
     return String(value);
   }
 
+  function displayValue(value) {
+    var rendered = text(value);
+    return rendered.trim() ? rendered : "—";
+  }
+
   function element(tagName, value, className) {
     var node = document.createElement(tagName);
     if (className) {
@@ -99,34 +104,25 @@
 
   function layerId(layer, index) {
     var spec = layerSpec(layer);
-    return text(firstDefined(spec.id, spec.layer_id, spec.name, "layer-" + (index + 1)));
+    return text(firstDefined(spec.id, "layer-" + (index + 1)));
   }
 
   function layerTitle(layer, index) {
     var spec = layerSpec(layer);
-    return text(firstDefined(spec.title, spec.label, spec.name, spec.id, "Layer " + (index + 1)));
+    return text(firstDefined(spec.name, spec.id, "Layer " + (index + 1)));
   }
 
   function idField(spec) {
-    return text(firstDefined(spec.id_field, spec.idField, spec.feature_id_field, "__feature_id"));
+    return text(firstDefined(spec.id_field, "__map_id"));
   }
 
   function labelField(spec) {
-    return text(firstDefined(spec.label_field, spec.labelField, spec.name_field, "name"));
+    return text(firstDefined(spec.label_field, "__label"));
   }
 
   function categoryField(spec) {
     var style = spec.style && typeof spec.style === "object" ? spec.style : {};
-    var categories = spec.categories && typeof spec.categories === "object" && !Array.isArray(spec.categories)
-      ? spec.categories
-      : {};
-    return text(firstDefined(
-      spec.category_field,
-      style.color_field,
-      style.category_field,
-      categories.field,
-      ""
-    ));
+    return text(firstDefined(style.color_field, ""));
   }
 
   function featureId(feature, spec, fallback) {
@@ -136,10 +132,7 @@
     var configured = idField(spec || {});
     return text(firstDefined(
       props[configured],
-      props.__feature_id,
       props.__map_id,
-      props.feature_id,
-      props.id,
       feature && feature.id,
       fallback
     ));
@@ -166,10 +159,7 @@
       var fallback = layerId(layer, 0) + "-" + (index + 1);
       var identifier = text(firstDefined(
         props[idField(spec)],
-        props.__feature_id,
         props.__map_id,
-        props.feature_id,
-        props.id,
         featureId(feature, spec, fallback)
       ));
       return {
@@ -181,19 +171,16 @@
     });
   }
 
-  function fieldDefinitions(value, fallback) {
+  function fieldDefinitions(value, fallback, spec) {
     var definitions = list(value);
     if (!definitions.length) {
       definitions = list(fallback);
     }
     return definitions.map(function (definition) {
-      if (typeof definition === "string") {
-        return { field: definition, label: definition };
-      }
-      definition = definition && typeof definition === "object" ? definition : {};
+      definition = text(definition);
       return {
-        field: text(firstDefined(definition.field, definition.name, definition.key, "")),
-        label: text(firstDefined(definition.label, definition.title, definition.field, definition.name, ""))
+        field: definition,
+        label: fieldLabel(spec || {}, definition)
       };
     }).filter(function (definition) {
       return Boolean(definition.field);
@@ -207,12 +194,7 @@
 
   function contentFields(spec, kind) {
     var direct = spec[kind + "_fields"];
-    var nested = spec[kind];
-    if (nested && typeof nested === "object" && !Array.isArray(nested)) {
-      nested = nested.fields;
-    }
-    var fallback = kind === "tooltip" ? [labelField(spec)] : [labelField(spec)];
-    return fieldDefinitions(firstDefined(direct, nested), fallback);
+    return fieldDefinitions(direct, [labelField(spec)], spec);
   }
 
   function buildDetailsNode(properties, definitions, className) {
@@ -220,7 +202,7 @@
     definitions.forEach(function (definition) {
       var row = element("div", undefined, "imb-detail-row");
       row.appendChild(element("span", definition.label, "imb-detail-key"));
-      row.appendChild(element("span", properties[definition.field], "imb-detail-value"));
+      row.appendChild(element("span", displayValue(properties[definition.field]), "imb-detail-value"));
       container.appendChild(row);
     });
     return container;
@@ -228,29 +210,16 @@
 
   function categoryEntries(spec) {
     var style = spec.style && typeof spec.style === "object" ? spec.style : {};
-    var categories = firstDefined(spec.categories, style.categories);
+    var categories = style.categories;
     var output = [];
-    if (Array.isArray(categories)) {
-      categories.forEach(function (item) {
-        if (item && typeof item === "object") {
-          var value = text(firstDefined(item.value, item.key, item.id, item.label));
-          output.push({
-            value: value,
-            label: text(firstDefined(item.label, item.title, value)),
-            color: text(firstDefined(item.color, item.fillColor, item.fill_color, ""))
-          });
-        } else {
-          output.push({ value: text(item), label: text(item), color: "" });
-        }
-      });
-    } else if (categories && typeof categories === "object") {
+    if (categories && typeof categories === "object") {
       Object.keys(categories).forEach(function (key) {
         var item = categories[key];
         if (item && typeof item === "object") {
           output.push({
             value: text(key),
-            label: text(firstDefined(item.label, item.title, key)),
-            color: text(firstDefined(item.color, item.fillColor, item.fill_color, ""))
+            label: text(firstDefined(item.label, key)),
+            color: text(item.color)
           });
         } else {
           output.push({ value: text(key), label: text(key), color: text(item) });
@@ -280,10 +249,8 @@
       }
     }
     return text(firstDefined(
-      style.fillColor,
       style.fill_color,
       style.color,
-      spec.color,
       palette[hash(category || layerTitle({ spec: spec }, 0)) % palette.length]
     ));
   }
@@ -293,12 +260,12 @@
     var style = spec.style && typeof spec.style === "object" ? spec.style : {};
     var color = colorFor(spec, properties);
     return {
-      color: text(firstDefined(style.strokeColor, style.stroke_color, style.color, color)),
-      weight: Number(firstDefined(style.weight, style.stroke_width, 2)),
+      color: text(firstDefined(style.color, color)),
+      weight: Number(firstDefined(style.weight, 2)),
       opacity: Number(firstDefined(style.opacity, 0.9)),
-      fillColor: text(firstDefined(style.fillColor, style.fill_color, color)),
-      fillOpacity: Number(firstDefined(style.fillOpacity, style.fill_opacity, 0.55)),
-      radius: Number(firstDefined(style.radius, spec.radius, 7))
+      fillColor: text(firstDefined(style.fill_color, color)),
+      fillOpacity: Number(firstDefined(style.fill_opacity, 0.55)),
+      radius: Number(firstDefined(style.radius, 7))
     };
   }
 
@@ -318,14 +285,11 @@
   }
 
   function addBasemap(map, spec) {
-    var basemaps = [];
-    if (spec && Array.isArray(spec.basemaps)) {
-      basemaps = spec.basemaps.filter(function (candidate) {
-        return candidate && text(firstDefined(candidate.url, candidate.tiles, candidate.tile_url, ""));
-      });
-    } else if (spec && spec.basemap && typeof spec.basemap === "object") {
-      basemaps = [spec.basemap];
-    }
+    var basemaps = spec && Array.isArray(spec.basemaps)
+      ? spec.basemaps.filter(function (candidate) {
+        return candidate && text(candidate.url);
+      })
+      : [];
     var activeLayer = null;
     var activeIndex = -1;
     var attribution = document.getElementById("imb-map-attribution");
@@ -339,11 +303,10 @@
         map.removeLayer(activeLayer);
       }
       activeLayer = L.tileLayer(
-        text(firstDefined(basemap.url, basemap.tiles, basemap.tile_url, "")),
+        text(basemap.url),
         {
-          minZoom: Number(firstDefined(basemap.min_zoom, basemap.minZoom, 0)),
-          maxZoom: Number(firstDefined(basemap.max_zoom, basemap.maxZoom, 19)),
-          subdomains: firstDefined(basemap.subdomains, "abc"),
+          minZoom: 0,
+          maxZoom: Number(firstDefined(basemap.max_zoom, 19)),
           attribution: ""
         }
       ).addTo(map);
@@ -354,9 +317,6 @@
       if (attribution) {
         attribution.textContent = text(firstDefined(
           basemap.attribution,
-          spec.attribution,
-          spec.data_source,
-          spec.source,
           spec.static && spec.static.source_note,
           ""
         ));
@@ -372,8 +332,6 @@
       activate(requested >= 0 ? requested : 0);
     } else if (attribution) {
       attribution.textContent = text(firstDefined(
-        spec && spec.attribution,
-        spec && spec.data_source,
         spec && spec.static && spec.static.source_note,
         ""
       ));
@@ -390,10 +348,7 @@
         var container = element("div", undefined, "imb-leaflet-tool");
         var select = document.createElement("select");
         select.className = "imb-map-tool-select";
-        select.setAttribute("aria-label", text(firstDefined(
-          spec.labels && spec.labels.basemap,
-          "底图"
-        )));
+        select.setAttribute("aria-label", "底图");
         basemaps.forEach(function (candidate, index) {
           var option = document.createElement("option");
           option.value = String(index);
@@ -425,10 +380,7 @@
         var button = element("button", "⛶", "imb-map-tool-button");
         fullscreenButtonNode = button;
         button.type = "button";
-        button.title = text(firstDefined(
-          spec.labels && spec.labels.fullscreen,
-          "全屏地图"
-        ));
+        button.title = "全屏地图";
         button.setAttribute("aria-label", button.title);
         function toggleFallback(target) {
           var active = target.classList.toggle("is-imb-fullscreen");
@@ -636,6 +588,7 @@
     categoryField: categoryField,
     colorFor: colorFor,
     contentFields: contentFields,
+    displayValue: displayValue,
     element: element,
     featureId: featureId,
     fieldDefinitions: fieldDefinitions,

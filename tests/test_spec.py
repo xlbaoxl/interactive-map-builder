@@ -14,7 +14,7 @@ def minimal_spec(template: str = "map-list"):
             {
                 "id": "places",
                 "name": "地点",
-                "source": {"path": "places.geojson", "format": "geojson"},
+                "source": {"path": "places.geojson"},
             }
         ],
     }
@@ -51,7 +51,7 @@ def test_rejects_unknown_top_level_key():
         validate_spec(spec)
 
 
-def test_rejects_absolute_sources_and_escaping_outputs():
+def test_rejects_absolute_sources_and_removed_outputs():
     spec = minimal_spec()
     spec["layers"][0]["source"]["path"] = "C:/private/data.geojson"
     with pytest.raises(SpecError, match="Source paths must be relative"):
@@ -63,6 +63,6 @@ def test_rejects_absolute_sources_and_escaping_outputs():
         validate_spec(spec)
 
     spec = minimal_spec()
-    spec["outputs"] = {"html": "../map.html"}
-    with pytest.raises(SpecError, match="must stay inside"):
+    spec["outputs"] = {"html": "map.html"}
+    with pytest.raises(SpecError, match="outputs"):
         validate_spec(spec)

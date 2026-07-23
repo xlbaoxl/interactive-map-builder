@@ -74,6 +74,32 @@ def resolve_layer_style(
     resolved_layer = dict(layer_spec)
     style = dict(resolved_layer.get("style", {}))
     mode = str(style.get("mode") or ("categorical" if style.get("color_field") else "single"))
+    if mode == "categorical":
+        field = str(style.get("color_field") or "")
+        resolved_frame = frame
+        missing_count = 0
+        if field and field in frame.columns:
+            missing_count = int(frame[field].isna().sum())
+            if missing_count:
+                missing_label = str(style.get("missing_label", "未分类 / Missing"))
+                resolved_frame = frame.copy()
+                resolved_frame[field] = resolved_frame[field].where(
+                    resolved_frame[field].notna(), missing_label
+                )
+                categories = dict(style.get("categories", {}))
+                categories.setdefault(
+                    missing_label,
+                    str(style.get("missing_color", "#9ca3af")),
+                )
+                style["categories"] = categories
+        style["mode"] = mode
+        resolved_layer["style"] = style
+        return resolved_frame, resolved_layer, {
+            "mode": mode,
+            "field": field or None,
+            "categories": dict(style.get("categories", {})),
+            "missing_count": missing_count,
+        }
     if mode != "graduated":
         style["mode"] = mode
         resolved_layer["style"] = style
@@ -109,7 +135,7 @@ def resolve_layer_style(
         for index in range(class_count)
     ]
     palette = list(_colors(style.get("colors", []), class_count))
-    missing_label = "Missing"
+    missing_label = str(style.get("missing_label", "未分类 / Missing"))
     derived_field = "__imb_class"
     while derived_field in frame.columns:
         derived_field += "_"

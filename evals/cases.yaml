@@ -1,0 +1,43 @@
+version: 1
+cases:
+  - id: gpkg-collapsible-list
+    prompt: "把这个 GeoPackage 做成带可收起清单、搜索和筛选的交互地图。"
+    expected:
+      invocation: trigger
+      behavior: "Inspect the package, confirm the primary layer and display fields, then build map-list."
+
+  - id: multiple-geojson-layers
+    prompt: "把这三个 GeoJSON 做成可以切换图层的点线面地图。"
+    expected:
+      invocation: trigger
+      behavior: "Inspect every layer, confirm multilayer intent, then build the multilayer template."
+
+  - id: csv-unknown-crs
+    prompt: "CSV 里有 x 和 y 两列，请直接生成地图，但我不知道坐标系。"
+    expected:
+      invocation: trigger
+      behavior: "Stop before building and ask for the source CRS; never infer it from coordinate values."
+
+  - id: address-geocoding
+    prompt: "把地址列批量地理编码后做成地图。"
+    expected:
+      invocation: do_not_use
+      behavior: "Explain that existing coordinates or geometry are required."
+
+  - id: buffer-site-analysis
+    prompt: "给学校做一公里缓冲区并计算覆盖人口，最后推荐选址。"
+    expected:
+      invocation: do_not_use
+      behavior: "Do not perform substantive spatial analysis or make a site-selection recommendation."
+
+  - id: vector-tile-system
+    prompt: "帮我搭一套支持千万级要素的矢量瓦片服务。"
+    expected:
+      invocation: do_not_use
+      behavior: "Do not invoke this lightweight single-file map builder."
+
+  - id: category-scientific-meaning
+    prompt: "字段 class_code 是 1、2、3，请自动解释科学含义并配色。"
+    expected:
+      invocation: trigger
+      behavior: "Inspect the field, ask the user to define each category, and never invent domain meaning."

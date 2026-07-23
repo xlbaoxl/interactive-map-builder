@@ -33,21 +33,17 @@ py-modules = ["map_builder"]
 where = ["scripts"]
 include = ["mapcore*"]
 
-[tool.setuptools.data-files]
-"share/interactive-map-builder/assets/templates" = [
-  "assets/templates/map-list.html.j2",
-  "assets/templates/multilayer.html.j2",
-  "assets/templates/shared.css",
-  "assets/templates/shared.js",
-]
-"share/interactive-map-builder/assets/vendor/leaflet-1.9.4" = [
-  "assets/vendor/leaflet-1.9.4/leaflet.css",
-  "assets/vendor/leaflet-1.9.4/leaflet.js",
-  "assets/vendor/leaflet-1.9.4/LICENSE",
-]
-"share/interactive-map-builder/references" = [
-  "references/map-spec.schema.json",
+[tool.setuptools.package-data]
+mapcore = [
+  "resources/*.json",
+  "resources/templates/*.j2",
+  "resources/templates/*.css",
+  "resources/templates/*.js",
+  "resources/vendor/leaflet-1.9.4/*",
 ]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+  "browser: Chromium smoke tests that require Playwright and an installed browser",
+]

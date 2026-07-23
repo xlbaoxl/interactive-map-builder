@@ -132,6 +132,16 @@ def test_numeric_categories_match_json_object_keys():
     assert report.category_values == (1, 2)
 
 
+def test_required_display_fields_may_be_null_and_are_reported():
+    frame = gpd.GeoDataFrame(
+        {"feature_id": ["one", "two"], "name": [None, "Beta"]},
+        geometry=[Point(0, 0), Point(1, 1)],
+        crs="EPSG:4326",
+    )
+    report = validate_geodata(frame, required_fields=["name"])
+    assert report.null_field_counts == {"name": 1}
+
+
 def test_validation_fails_if_id_field_is_absent():
     frame = gpd.GeoDataFrame({"name": ["x"]}, geometry=[Point(0, 0)], crs=4326)
     with pytest.raises(ValidationError, match="missing ID field"):

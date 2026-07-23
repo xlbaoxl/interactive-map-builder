@@ -20,8 +20,12 @@ or:
 {"type": "wkt", "wkt_field": "geometry_wkt"}
 ```
 
-Use explicit encodings for legacy CSV or Shapefile attributes. Treat missing CRS, empty data, non-finite coordinates, unsupported geometry, or absent required fields as blocking errors.
+Omit encoding for Shapefile ZIP so GDAL and `.cpg` metadata can decide. CSV defaults to
+UTF-8 with BOM support; use `--encoding` only for a legacy encoding. Treat missing CRS,
+empty data, non-finite coordinates, unsupported geometry, or absent configured fields as
+blocking errors.
 
 The inspector recognizes common exact coordinate aliases such as `longitude`, `lon`, `lng`, `x`, `经度`, `latitude`, `lat`, `y`, `纬度`, plus `wkt`, `geometry`, `geom`, and `几何`. It reports all plausible candidates. `init-spec` uses them only when one unambiguous geometry mapping and an explicit CRS are available.
 
-When simplification is appropriate, set `simplify_tolerance` on the layer only after explaining that the value is in EPSG:4326 degrees in the interactive output.
+When the inspection report recommends simplification, set `simplify` to `light` or
+`medium` after explaining that only the interactive geometry copy changes.

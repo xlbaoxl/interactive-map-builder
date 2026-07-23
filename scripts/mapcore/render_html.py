@@ -11,9 +11,9 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Union
 
-from jinja2 import Environment, FileSystemLoader, StrictUndefined, select_autoescape
+from jinja2 import DictLoader, Environment, StrictUndefined, select_autoescape
 
-from .paths import resource_root
+from .resource_files import read_resource_text
 
 
 PathLike = Union[str, Path]
@@ -21,10 +21,6 @@ _TEMPLATE_FILES = {
     "map-list": "map-list.html.j2",
     "multilayer": "multilayer.html.j2",
 }
-
-
-def _asset_directory() -> Path:
-    return resource_root() / "assets" / "templates"
 
 
 def _read_inline_asset(value: PathLike, label: str) -> str:
@@ -142,14 +138,7 @@ def _coerce_layers(prepared_layers: Any) -> List[Dict[str, Any]]:
 
 
 def _template_name(spec: Mapping[str, Any]) -> str:
-    configured: Any = spec.get("template")
-    if isinstance(configured, Mapping):
-        configured = configured.get("name") or configured.get("type")
-    if not configured:
-        html_options = spec.get("html")
-        if isinstance(html_options, Mapping):
-            configured = html_options.get("template")
-    name = str(configured or "").strip().lower()
+    name = str(spec.get("template") or "").strip().lower()
     if name not in _TEMPLATE_FILES:
         supported = ", ".join(sorted(_TEMPLATE_FILES))
         raise ValueError(f"Unsupported HTML template {name!r}; choose one of: {supported}")
@@ -157,11 +146,7 @@ def _template_name(spec: Mapping[str, Any]) -> str:
 
 
 def _layer_keys(layer_spec: Mapping[str, Any]) -> set:
-    return {
-        str(layer_spec[key])
-        for key in ("id", "layer_id", "name")
-        if layer_spec.get(key) not in (None, "")
-    }
+    return {str(layer_spec["id"])} if layer_spec.get("id") not in (None, "") else set()
 
 
 def _validate_required_layers(
@@ -218,7 +203,7 @@ def _safe_style_source(source: str) -> str:
 
 
 def _language(spec: Mapping[str, Any]) -> str:
-    configured = str(spec.get("language") or spec.get("locale") or "zh-CN")
+    configured = str(spec.get("locale") or "zh-CN")
     if re.fullmatch(r"[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*", configured):
         return configured
     return "zh-CN"
@@ -244,9 +229,12 @@ def render_html(
     layers = _coerce_layers(prepared_layers)
     _validate_required_layers(selected_template, spec, layers)
 
-    assets = _asset_directory()
+    template_sources = {
+        name: read_resource_text("templates", name)
+        for name in set(_TEMPLATE_FILES.values())
+    }
     environment = Environment(
-        loader=FileSystemLoader(str(assets)),
+        loader=DictLoader(template_sources),
         autoescape=select_autoescape(("html", "j2")),
         undefined=StrictUndefined,
         keep_trailing_newline=True,
@@ -265,10 +253,10 @@ def render_html(
         leaflet_js=_safe_script_source(_read_inline_asset(leaflet_js, "Leaflet JavaScript")),
         leaflet_css=_safe_style_source(_read_inline_asset(leaflet_css, "Leaflet CSS")),
         shared_js=_safe_script_source(
-            (assets / "shared.js").read_text(encoding="utf-8")
+            read_resource_text("templates", "shared.js")
         ),
         shared_css=_safe_style_source(
-            (assets / "shared.css").read_text(encoding="utf-8")
+            read_resource_text("templates", "shared.css")
         ),
     )
 
@@ -279,12 +267,7 @@ def render_html(
     layer_counts = {}
     for index, layer in enumerate(layers):
         layer_spec = layer.get("spec", {})
-        identifier = (
-            layer_spec.get("id")
-            or layer_spec.get("layer_id")
-            or layer_spec.get("name")
-            or f"layer-{index + 1}"
-        )
+        identifier = layer_spec.get("id") or f"layer-{index + 1}"
         layer_counts[str(identifier)] = int(layer["count"])
     return {
         "path": destination.name,

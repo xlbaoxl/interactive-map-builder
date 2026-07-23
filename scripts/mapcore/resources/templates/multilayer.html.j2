@@ -63,13 +63,12 @@
         throw new Error("The multilayer template requires at least one prepared layer.");
       }
 
-      var labels = spec.labels && typeof spec.labels === "object" ? spec.labels : {};
-      function label(key, fallback) {
-        return IMB.text(IMB.firstDefined(labels[key], fallback));
+      function label(_key, fallback) {
+        return fallback;
       }
 
       var title = IMB.text(IMB.firstDefined(spec.title, "Interactive map"));
-      var subtitle = IMB.text(IMB.firstDefined(spec.subtitle, spec.description, ""));
+      var subtitle = IMB.text(IMB.firstDefined(spec.subtitle, ""));
       document.title = title;
       document.getElementById("imb-title").textContent = title;
       document.getElementById("imb-subtitle").textContent = subtitle;
@@ -101,8 +100,6 @@
         var featureCollection = layer.feature_collection || { type: "FeatureCollection", features: [] };
         var enabled = IMB.firstDefined(
           layerSpec.visible,
-          layerSpec.default_visible,
-          layerSpec.defaultVisible,
           true
         ) !== false;
         var runtime = {
@@ -114,8 +111,9 @@
           group: null,
           entries: [],
           searchFields: IMB.fieldDefinitions(
-            IMB.firstDefined(layerSpec.search_fields, spec.search_fields),
-            [IMB.labelField(layerSpec)]
+            layerSpec.search_fields,
+            [IMB.labelField(layerSpec)],
+            layerSpec
           )
         };
         runtime.group = L.geoJSON(featureCollection, {
@@ -126,14 +124,22 @@
             return L.circleMarker(latlng, IMB.geometryStyle(layerSpec, feature));
           },
           onEachFeature: function (feature, leafletLayer) {
-            var identifier = IMB.featureId(
+            var featureIdentifier = IMB.featureId(
               feature,
               layerSpec,
               layerIdentifier + "-" + (runtime.entries.length + 1)
             );
+            var runtimeIdentifier = layerIdentifier + "::" + featureIdentifier;
+            var properties = feature && feature.properties ? feature.properties : {};
+            var linkValue = layerSpec.link_key
+              ? IMB.text(properties[layerSpec.link_key]).trim()
+              : "";
+            var identifier = linkValue ? "link::" + linkValue : runtimeIdentifier;
             var baseStyle = IMB.geometryStyle(layerSpec, feature);
             var entry = {
               id: identifier,
+              runtimeId: runtimeIdentifier,
+              featureId: featureIdentifier,
               feature: feature,
               leaflet: leafletLayer,
               baseStyle: baseStyle,
@@ -226,7 +232,7 @@
       var resultCount = document.getElementById("imb-result-count");
       var resultLimit = document.getElementById("imb-result-limit");
       var summary = document.getElementById("imb-summary");
-      var resultLimitValue = Math.max(20, Number(IMB.firstDefined(spec.search_result_limit, 200)));
+      var resultLimitValue = 200;
       var state = {
         query: "",
         matches: [],
@@ -254,7 +260,7 @@
           card.dataset.featureId = entry.id;
           card.appendChild(IMB.element(
             "span",
-            IMB.firstDefined(props[IMB.labelField(entry.runtime.spec)], entry.id),
+            IMB.firstDefined(props.__label, entry.featureId),
             "imb-card-title"
           ));
           var meta = IMB.element("span", undefined, "imb-card-meta");
@@ -322,6 +328,7 @@
           });
         }
         state.selectedId = identifier;
+        IMB.qa.selectedLinkId = identifier;
         IMB.markFeature(globalRegistry, identifier, true);
         IMB.applyLinkedDomState(identifier, true, true);
         var matchingNode = Array.prototype.find.call(
@@ -414,6 +421,13 @@
         setLayerEnabled(runtime, enabled);
         return true;
       };
+      IMB.qa.actions.selectFeature = function (identifier) {
+        if (!globalRegistry.has(IMB.text(identifier))) {
+          return false;
+        }
+        selectFeature(IMB.text(identifier), "qa");
+        return true;
+      };
       IMB.finish("multilayer", {
         recordCount: totalFeatures,
         visibleRecordCount: state.matches.length,
@@ -421,6 +435,10 @@
         layerCounts: runtimeLayers.reduce(function (counts, runtime) {
           counts[runtime.id] = Number(runtime.source.count || runtime.entries.length);
           return counts;
+        }, {}),
+        linkGroupSizes: Array.from(globalRegistry.entries()).reduce(function (sizes, pair) {
+          sizes[pair[0]] = pair[1].length;
+          return sizes;
         }, {})
       });
     });
