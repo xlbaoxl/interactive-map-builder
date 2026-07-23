@@ -1,0 +1,5 @@
+id,name,group,longitude,latitude,x,y
+sample-01,Sample A,North,116.30,39.97,1.2,3.8
+sample-02,Sample B,South,116.34,39.91,2.1,1.7
+sample-03,Sample C,North,116.40,39.96,3.4,4.2
+sample-04,Sample D,South,116.42,39.90,4.5,2.6

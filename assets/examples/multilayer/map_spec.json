@@ -1,0 +1,57 @@
+{
+  "schema_version": "1.0",
+  "template": "multilayer",
+  "title": "Synthetic city layers",
+  "layers": [
+    {
+      "id": "districts",
+      "name": "Districts",
+      "source": {"path": "districts.geojson", "format": "geojson"},
+      "required": true,
+      "id_field": "id",
+      "label_field": "name",
+      "popup_fields": ["name", "zone"],
+      "style": {
+        "color_field": "zone",
+        "weight": 1,
+        "categories": {
+          "Residential": "#9ecae1",
+          "Mixed use": "#fdd0a2"
+        }
+      }
+    },
+    {
+      "id": "routes",
+      "name": "Routes",
+      "source": {"path": "routes.geojson", "format": "geojson"},
+      "required": true,
+      "id_field": "id",
+      "label_field": "name",
+      "style": {"color": "#4b5563", "weight": 2.8}
+    },
+    {
+      "id": "places",
+      "name": "Places",
+      "source": {"path": "places.geojson", "format": "geojson"},
+      "required": true,
+      "id_field": "id",
+      "label_field": "name",
+      "search_fields": ["name", "kind"],
+      "tooltip_fields": ["name"],
+      "popup_fields": ["name", "kind"],
+      "style": {
+        "color_field": "kind",
+        "radius": 6,
+        "categories": {
+          "Civic": "#7b61a8",
+          "Retail": "#d95f59"
+        }
+      }
+    }
+  ],
+  "static": {
+    "enabled": true,
+    "presets": ["slide-16x9", "paper"],
+    "source_note": "Synthetic example data (CC0)"
+  }
+}

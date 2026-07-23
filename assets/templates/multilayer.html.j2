@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="{{ language }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>{{ page_title }}</title>
+  <style>{{ leaflet_css | safe }}</style>
+  <style>{{ shared_css | safe }}</style>
+</head>
+<body>
+  <main id="imb-app" class="imb-app multilayer-app">
+    <header class="imb-header">
+      <button id="imb-collapse" class="imb-button" type="button" aria-controls="imb-sidebar" aria-expanded="true"></button>
+      <div class="imb-heading">
+        <h1 id="imb-title"></h1>
+        <p id="imb-subtitle" class="imb-subtitle"></p>
+      </div>
+      <div id="imb-summary" class="imb-multilayer-summary" aria-live="polite"></div>
+    </header>
+    <div class="imb-workspace">
+      <aside id="imb-sidebar" class="imb-sidebar" aria-label="Search map layers">
+        <div class="imb-toolbar">
+          <div class="imb-field">
+            <label id="imb-search-label" for="imb-search"></label>
+            <input id="imb-search" class="imb-input" type="search" autocomplete="off">
+          </div>
+        </div>
+        <div class="imb-status" aria-live="polite">
+          <span id="imb-result-count"></span>
+          <span id="imb-result-limit"></span>
+        </div>
+        <div id="imb-list" class="imb-list" role="listbox" aria-label="Search results"></div>
+      </aside>
+      <section class="imb-map-wrap" aria-label="Interactive multilayer map">
+        <div id="imb-map" class="imb-map"></div>
+        <section id="imb-layer-control" class="imb-control-card imb-layer-control" aria-label="Layer control">
+          <h2 id="imb-layer-title" class="imb-control-title"></h2>
+          <div id="imb-layer-options" class="imb-control-list"></div>
+        </section>
+        <section id="imb-legend" class="imb-control-card imb-legend" aria-label="Legend">
+          <h2 id="imb-legend-title" class="imb-control-title"></h2>
+          <div id="imb-legend-groups"></div>
+        </section>
+        <div id="imb-map-message" class="imb-map-message" role="alert"></div>
+        <div id="imb-map-attribution" class="imb-map-attribution"></div>
+      </section>
+    </div>
+  </main>
+  <script id="imb-data" type="application/json">{{ payload_json | safe }}</script>
+  <script>{{ leaflet_js | safe }}</script>
+  <script>{{ shared_js | safe }}</script>
+  <script>
+  (function () {
+    "use strict";
+
+    InteractiveMapBuilder.onReady(function () {
+      var IMB = InteractiveMapBuilder;
+      var payload = IMB.parsePayload();
+      var spec = payload.spec || {};
+      var layers = Array.isArray(payload.layers) ? payload.layers : [];
+      if (!layers.length) {
+        throw new Error("The multilayer template requires at least one prepared layer.");
+      }
+
+      var labels = spec.labels && typeof spec.labels === "object" ? spec.labels : {};
+      function label(key, fallback) {
+        return IMB.text(IMB.firstDefined(labels[key], fallback));
+      }
+
+      var title = IMB.text(IMB.firstDefined(spec.title, "Interactive map"));
+      var subtitle = IMB.text(IMB.firstDefined(spec.subtitle, spec.description, ""));
+      document.title = title;
+      document.getElementById("imb-title").textContent = title;
+      document.getElementById("imb-subtitle").textContent = subtitle;
+      document.getElementById("imb-layer-title").textContent = label("layers", "图层");
+      document.getElementById("imb-legend-title").textContent = label("legend", "图例");
+      var collapse = document.getElementById("imb-collapse");
+      collapse.textContent = label("collapse", "收起搜索");
+      var search = document.getElementById("imb-search");
+      document.getElementById("imb-search-label").textContent = label("search", "跨图层搜索");
+      search.placeholder = label("search_placeholder", "输入名称或属性");
+
+      var map = IMB.setupMap();
+      IMB.addBasemap(map, spec);
+      if (L.control && L.control.scale) {
+        L.control.scale({ imperial: false }).addTo(map);
+      }
+
+      var globalRegistry = new Map();
+      var runtimeLayers = [];
+      var totalFeatures = 0;
+
+      layers.forEach(function (layer, layerIndex) {
+        var layerSpec = IMB.layerSpec(layer);
+        var layerIdentifier = IMB.layerId(layer, layerIndex);
+        var layerName = IMB.layerTitle(layer, layerIndex);
+        var featureCollection = layer.feature_collection || { type: "FeatureCollection", features: [] };
+        var enabled = IMB.firstDefined(
+          layerSpec.visible,
+          layerSpec.default_visible,
+          layerSpec.defaultVisible,
+          true
+        ) !== false;
+        var runtime = {
+          id: layerIdentifier,
+          title: layerName,
+          spec: layerSpec,
+          source: layer,
+          enabled: enabled,
+          group: null,
+          entries: [],
+          searchFields: IMB.fieldDefinitions(
+            IMB.firstDefined(layerSpec.search_fields, spec.search_fields),
+            [IMB.labelField(layerSpec)]
+          )
+        };
+        runtime.group = L.geoJSON(featureCollection, {
+          style: function (feature) {
+            return IMB.geometryStyle(layerSpec, feature);
+          },
+          pointToLayer: function (feature, latlng) {
+            return L.circleMarker(latlng, IMB.geometryStyle(layerSpec, feature));
+          },
+          onEachFeature: function (feature, leafletLayer) {
+            var identifier = IMB.featureId(
+              feature,
+              layerSpec,
+              layerIdentifier + "-" + (runtime.entries.length + 1)
+            );
+            var baseStyle = IMB.geometryStyle(layerSpec, feature);
+            var entry = {
+              id: identifier,
+              feature: feature,
+              leaflet: leafletLayer,
+              baseStyle: baseStyle,
+              runtime: runtime,
+              matches: true
+            };
+            runtime.entries.push(entry);
+            if (!globalRegistry.has(identifier)) {
+              globalRegistry.set(identifier, []);
+            }
+            globalRegistry.get(identifier).push(entry);
+            IMB.attachFeatureContent(leafletLayer, feature, layerSpec);
+            leafletLayer.on("mouseover", function () {
+              IMB.link_by_id.emit("highlight", identifier, {
+                source: "map",
+                layerId: layerIdentifier
+              });
+            });
+            leafletLayer.on("mouseout", function () {
+              IMB.link_by_id.clear(identifier, {
+                source: "map",
+                layerId: layerIdentifier
+              });
+            });
+            leafletLayer.on("click", function () {
+              IMB.link_by_id.emit("select", identifier, {
+                source: "map",
+                layerId: layerIdentifier
+              });
+            });
+          }
+        });
+        totalFeatures += runtime.entries.length;
+        if (enabled) {
+          runtime.group.addTo(map);
+        }
+        runtimeLayers.push(runtime);
+      });
+
+      IMB.fitToGroups(map, runtimeLayers.filter(function (runtime) {
+        return runtime.enabled;
+      }).map(function (runtime) {
+        return runtime.group;
+      }));
+
+      var layerOptions = document.getElementById("imb-layer-options");
+      runtimeLayers.forEach(function (runtime) {
+        var wrapper = IMB.element("label", undefined, "imb-layer-option");
+        var checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.checked = runtime.enabled;
+        checkbox.dataset.layerId = runtime.id;
+        checkbox.addEventListener("change", function () {
+          setLayerEnabled(runtime, checkbox.checked);
+        });
+        var swatch = IMB.element("span", undefined, "imb-swatch");
+        var sampleProperties = runtime.entries.length && runtime.entries[0].feature.properties
+          ? runtime.entries[0].feature.properties
+          : {};
+        swatch.style.backgroundColor = IMB.colorFor(runtime.spec, sampleProperties);
+        wrapper.appendChild(checkbox);
+        wrapper.appendChild(swatch);
+        wrapper.appendChild(IMB.element("span", runtime.title));
+        layerOptions.appendChild(wrapper);
+      });
+
+      var legendGroups = document.getElementById("imb-legend-groups");
+      runtimeLayers.forEach(function (runtime) {
+        var groupNode = IMB.element("div", undefined, "imb-legend-group");
+        groupNode.appendChild(IMB.element("div", runtime.title, "imb-legend-group-title"));
+        var entries = IMB.categoryEntries(runtime.spec);
+        if (!entries.length) {
+          entries = [{
+            label: runtime.title,
+            color: IMB.colorFor(runtime.spec, {})
+          }];
+        }
+        entries.forEach(function (entry) {
+          var row = IMB.element("div", undefined, "imb-legend-item");
+          var swatch = IMB.element("span", undefined, "imb-swatch");
+          swatch.style.backgroundColor = entry.color || IMB.colorFor(runtime.spec, {});
+          row.appendChild(swatch);
+          row.appendChild(IMB.element("span", entry.label));
+          groupNode.appendChild(row);
+        });
+        legendGroups.appendChild(groupNode);
+      });
+
+      var listNode = document.getElementById("imb-list");
+      var resultCount = document.getElementById("imb-result-count");
+      var resultLimit = document.getElementById("imb-result-limit");
+      var summary = document.getElementById("imb-summary");
+      var resultLimitValue = Math.max(20, Number(IMB.firstDefined(spec.search_result_limit, 200)));
+      var state = {
+        query: "",
+        matches: [],
+        selectedId: "",
+        hoveredId: ""
+      };
+
+      function entryText(entry) {
+        var props = entry.feature && entry.feature.properties ? entry.feature.properties : {};
+        return entry.runtime.searchFields.map(function (definition) {
+          return IMB.text(props[definition.field]);
+        }).join(" ").toLocaleLowerCase();
+      }
+
+      function renderSearchResults() {
+        listNode.replaceChildren();
+        var visibleMatches = state.matches.slice(0, resultLimitValue);
+        var fragment = document.createDocumentFragment();
+        visibleMatches.forEach(function (entry) {
+          var props = entry.feature && entry.feature.properties ? entry.feature.properties : {};
+          var card = IMB.element("button", undefined, "imb-list-card");
+          card.type = "button";
+          card.setAttribute("role", "option");
+          card.setAttribute("aria-selected", entry.id === state.selectedId ? "true" : "false");
+          card.dataset.featureId = entry.id;
+          card.appendChild(IMB.element(
+            "span",
+            IMB.firstDefined(props[IMB.labelField(entry.runtime.spec)], entry.id),
+            "imb-card-title"
+          ));
+          var meta = IMB.element("span", undefined, "imb-card-meta");
+          meta.appendChild(IMB.element("span", entry.runtime.title, "imb-card-meta-item"));
+          card.appendChild(meta);
+          fragment.appendChild(card);
+        });
+        listNode.appendChild(fragment);
+        IMB.bindLinkedElements(listNode);
+        if (!state.matches.length) {
+          listNode.appendChild(IMB.element("p", label("empty", "没有符合条件的要素"), "imb-empty"));
+        }
+        resultCount.textContent = label("results", "匹配") + ": " + state.matches.length;
+        resultLimit.textContent = state.matches.length > resultLimitValue
+          ? label("limited", "仅显示前") + " " + resultLimitValue
+          : "";
+        IMB.qa.visibleRecordCount = state.matches.length;
+        IMB.qa.renderedListCount = visibleMatches.length;
+      }
+
+      function applySearch() {
+        state.query = search.value.trim().toLocaleLowerCase();
+        state.matches = [];
+        runtimeLayers.forEach(function (runtime) {
+          runtime.group.clearLayers();
+          runtime.entries.forEach(function (entry) {
+            entry.matches = !state.query || entryText(entry).indexOf(state.query) !== -1;
+            if (entry.matches) {
+              runtime.group.addLayer(entry.leaflet);
+              state.matches.push(entry);
+            }
+          });
+        });
+        renderSearchResults();
+      }
+
+      function setLayerEnabled(runtime, enabled) {
+        runtime.enabled = Boolean(enabled);
+        if (runtime.enabled) {
+          if (!map.hasLayer(runtime.group)) {
+            runtime.group.addTo(map);
+          }
+        } else if (map.hasLayer(runtime.group)) {
+          map.removeLayer(runtime.group);
+        }
+        updateSummary();
+      }
+
+      function updateSummary() {
+        var enabledCount = runtimeLayers.filter(function (runtime) {
+          return runtime.enabled;
+        }).length;
+        summary.replaceChildren(
+          IMB.element("span", label("visible_layers", "可见图层") + ": " + enabledCount),
+          IMB.element("span", label("features", "要素") + ": " + totalFeatures)
+        );
+      }
+
+      function selectFeature(identifier, source) {
+        if (state.selectedId && state.selectedId !== identifier) {
+          IMB.markFeature(globalRegistry, state.selectedId, false);
+          IMB.applyLinkedDomState(state.selectedId, false, false);
+          Array.prototype.forEach.call(listNode.querySelectorAll("[aria-selected='true']"), function (node) {
+            node.setAttribute("aria-selected", "false");
+          });
+        }
+        state.selectedId = identifier;
+        IMB.markFeature(globalRegistry, identifier, true);
+        IMB.applyLinkedDomState(identifier, true, true);
+        var matchingNode = Array.prototype.find.call(
+          listNode.querySelectorAll("[data-feature-id]"),
+          function (node) { return node.dataset.featureId === identifier; }
+        );
+        if (matchingNode) {
+          matchingNode.setAttribute("aria-selected", "true");
+          if (source !== "dom" && source !== "keyboard") {
+            matchingNode.scrollIntoView({ block: "nearest", behavior: "smooth" });
+          }
+        }
+        var entries = globalRegistry.get(identifier) || [];
+        var visibleEntry = entries.find(function (entry) {
+          return entry.runtime.enabled && entry.matches;
+        }) || entries[0];
+        if (visibleEntry && source !== "map") {
+          if (!visibleEntry.runtime.enabled) {
+            var checkbox = Array.prototype.find.call(
+              layerOptions.querySelectorAll("input[data-layer-id]"),
+              function (node) { return node.dataset.layerId === visibleEntry.runtime.id; }
+            );
+            if (checkbox) {
+              checkbox.checked = true;
+            }
+            setLayerEnabled(visibleEntry.runtime, true);
+          }
+          if (visibleEntry.leaflet.getBounds && visibleEntry.leaflet.getBounds().isValid()) {
+            map.fitBounds(visibleEntry.leaflet.getBounds(), { padding: [40, 40], maxZoom: 16 });
+          } else if (visibleEntry.leaflet.getLatLng) {
+            map.panTo(visibleEntry.leaflet.getLatLng());
+          }
+          if (visibleEntry.leaflet.openPopup) {
+            visibleEntry.leaflet.openPopup();
+          }
+        }
+      }
+
+      IMB.link_by_id.on("highlight", function (event) {
+        if (state.hoveredId && state.hoveredId !== state.selectedId && state.hoveredId !== event.id) {
+          IMB.markFeature(globalRegistry, state.hoveredId, false);
+          IMB.applyLinkedDomState(state.hoveredId, false, false);
+        }
+        state.hoveredId = event.id;
+        IMB.markFeature(globalRegistry, event.id, true);
+        IMB.applyLinkedDomState(event.id, true, false);
+      });
+      IMB.link_by_id.on("clear", function (event) {
+        if (event.id !== state.selectedId) {
+          IMB.markFeature(globalRegistry, event.id, false);
+          IMB.applyLinkedDomState(event.id, false, false);
+        }
+        if (state.hoveredId === event.id) {
+          state.hoveredId = "";
+        }
+      });
+      IMB.link_by_id.on("select", function (event) {
+        selectFeature(event.id, event.source);
+      });
+
+      search.addEventListener("input", applySearch);
+      collapse.addEventListener("click", function () {
+        var app = document.getElementById("imb-app");
+        var collapsed = app.classList.toggle("is-sidebar-collapsed");
+        collapse.setAttribute("aria-expanded", collapsed ? "false" : "true");
+        collapse.textContent = collapsed ? label("expand", "展开搜索") : label("collapse", "收起搜索");
+        window.setTimeout(function () { map.invalidateSize(); }, 220);
+      });
+
+      updateSummary();
+      applySearch();
+      IMB.qa.actions.setSearch = function (value) {
+        search.value = IMB.text(value);
+        applySearch();
+      };
+      IMB.qa.actions.toggleLayer = function (layerIdentifier, enabled) {
+        var runtime = runtimeLayers.find(function (candidate) {
+          return candidate.id === IMB.text(layerIdentifier);
+        });
+        if (!runtime) {
+          return false;
+        }
+        var checkbox = Array.prototype.find.call(
+          layerOptions.querySelectorAll("input[data-layer-id]"),
+          function (node) { return node.dataset.layerId === runtime.id; }
+        );
+        if (checkbox) {
+          checkbox.checked = Boolean(enabled);
+        }
+        setLayerEnabled(runtime, enabled);
+        return true;
+      };
+      IMB.finish("multilayer", {
+        recordCount: totalFeatures,
+        visibleRecordCount: state.matches.length,
+        renderedListCount: Math.min(state.matches.length, resultLimitValue),
+        layerCounts: runtimeLayers.reduce(function (counts, runtime) {
+          counts[runtime.id] = Number(runtime.source.count || runtime.entries.length);
+          return counts;
+        }, {})
+      });
+    });
+  }());
+  </script>
+</body>
+</html>

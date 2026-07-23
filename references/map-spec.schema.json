@@ -1,0 +1,155 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/xlbaoxl/interactive-map-builder/map-spec.schema.json",
+  "title": "Interactive Map Builder specification",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "template", "title", "layers"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "template": {"enum": ["map-list", "multilayer"]},
+    "title": {"type": "string", "minLength": 1},
+    "subtitle": {"type": "string"},
+    "locale": {"type": "string", "default": "zh-CN"},
+    "primary_layer": {"type": "string"},
+    "layers": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/layer"}
+    },
+    "basemaps": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/basemap"},
+      "default": []
+    },
+    "list": {"$ref": "#/$defs/list"},
+    "linked_view": {"$ref": "#/$defs/linkedView"},
+    "static": {"$ref": "#/$defs/static"},
+    "outputs": {"$ref": "#/$defs/outputs"}
+  },
+  "$defs": {
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "format": {
+          "enum": ["auto", "geojson", "gpkg", "shapefile-zip", "csv", "excel"],
+          "default": "auto"
+        },
+        "layer": {"type": "string"},
+        "sheet": {"oneOf": [{"type": "string"}, {"type": "integer", "minimum": 0}]},
+        "crs": {"type": ["string", "integer"]},
+        "encoding": {"type": "string", "default": "utf-8"},
+        "geometry": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type"],
+          "properties": {
+            "type": {"enum": ["lonlat", "wkt"]},
+            "x_field": {"type": "string"},
+            "y_field": {"type": "string"},
+            "wkt_field": {"type": "string"}
+          }
+        }
+      }
+    },
+    "style": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "color": {"type": "string", "default": "#2563eb"},
+        "fill_color": {"type": "string"},
+        "weight": {"type": "number", "minimum": 0, "default": 1.5},
+        "opacity": {"type": "number", "minimum": 0, "maximum": 1, "default": 1},
+        "fill_opacity": {"type": "number", "minimum": 0, "maximum": 1, "default": 0.55},
+        "radius": {"type": "number", "exclusiveMinimum": 0, "default": 6},
+        "color_field": {"type": "string"},
+        "categories": {
+          "type": "object",
+          "additionalProperties": {"type": "string"}
+        }
+      }
+    },
+    "layer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "source"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"},
+        "name": {"type": "string", "minLength": 1},
+        "required": {"type": "boolean", "default": true},
+        "visible": {"type": "boolean", "default": true},
+        "source": {"$ref": "#/$defs/source"},
+        "id_field": {"type": "string"},
+        "label_field": {"type": "string"},
+        "style": {"$ref": "#/$defs/style"},
+        "tooltip_fields": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "popup_fields": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "search_fields": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "filter_fields": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "card_fields": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "sort_fields": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "simplify_tolerance": {"type": "number", "exclusiveMinimum": 0},
+        "source_note": {"type": "string"}
+      }
+    },
+    "basemap": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "url", "attribution"],
+      "properties": {
+        "name": {"type": "string"},
+        "url": {"type": "string", "pattern": "^https://"},
+        "attribution": {"type": "string"},
+        "visible": {"type": "boolean", "default": false},
+        "max_zoom": {"type": "integer", "minimum": 1, "maximum": 24, "default": 19}
+      }
+    },
+    "list": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "batch_size": {"type": "integer", "minimum": 20, "maximum": 2000, "default": 200},
+        "default_sort": {"type": "string"},
+        "collapsible": {"type": "boolean", "default": true},
+        "summary_fields": {"type": "array", "items": {"type": "string"}, "uniqueItems": true}
+      }
+    },
+    "linkedView": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["layer", "x_field", "y_field"],
+      "properties": {
+        "layer": {"type": "string"},
+        "x_field": {"type": "string"},
+        "y_field": {"type": "string"},
+        "title": {"type": "string"}
+      }
+    },
+    "static": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {"type": "boolean", "default": true},
+        "source_note": {"type": "string"},
+        "presets": {
+          "type": "array",
+          "items": {"enum": ["slide-16x9", "paper"]},
+          "uniqueItems": true,
+          "default": ["slide-16x9", "paper"]
+        }
+      }
+    },
+    "outputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "html": {"type": "string", "default": "map.html"},
+        "report": {"type": "string", "default": "build_report.json"},
+        "resolved_spec": {"type": "string", "default": "map_spec.json"}
+      }
+    }
+  }
+}

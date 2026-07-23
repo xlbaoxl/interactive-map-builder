@@ -1,85 +1,69 @@
 ---
 name: interactive-map-builder
-description: [TODO: Complete and informative explanation of what the skill does and when to use it. Include WHEN to use this skill - specific scenarios, file types, or tasks that trigger it.]
+description: Build lightweight, shareable interactive HTML maps and report-ready PNG, SVG, and PDF figures from GeoJSON, GeoPackage, zipped Shapefile, CSV, Excel, or ArcGIS FeatureServer data. Use when Codex needs to create a map with a collapsible searchable list, a multi-layer point/line/polygon explorer, linked map and chart selections, legends, filters, sorting, tooltips, popups, basic CRS or geometry cleanup, or presentation and paper map exports. Require existing coordinates or geometry; do not use for geocoding, substantive spatial analysis, vector-tile systems, or offline basemap acquisition.
 ---
 
 # Interactive Map Builder
 
-## Overview
+Create a configuration-driven map without a frontend build system. Keep acquisition separate from rendering, preserve data provenance, and make every cleanup visible in the build report.
 
-[TODO: 1-2 sentences explaining what this skill enables]
+## Workflow
 
-## Structuring This Skill
+1. Inspect inputs before proposing a map.
 
-[TODO: Choose the structure that best fits this skill's purpose. Common patterns:
+   ```powershell
+   python scripts/map_builder.py inspect <input>
+   ```
 
-**1. Workflow-Based** (best for sequential processes)
-- Works well when there are clear step-by-step procedures
-- Example: DOCX skill with "Workflow Decision Tree" -> "Reading" -> "Creating" -> "Editing"
-- Structure: ## Overview -> ## Workflow Decision Tree -> ## Step 1 -> ## Step 2...
+   For GeoPackage, zipped Shapefile, CSV, Excel, and field-mapping details, read [supported-inputs.md](references/supported-inputs.md).
 
-**2. Task-Based** (best for tool collections)
-- Works well when the skill offers different operations/capabilities
-- Example: PDF skill with "Quick Start" -> "Merge PDFs" -> "Split PDFs" -> "Extract Text"
-- Structure: ## Overview -> ## Quick Start -> ## Task Category 1 -> ## Task Category 2...
+2. Present one compact inspection summary per candidate layer: feature count, geometry type, CRS, likely ID/label/category fields, and recommended template.
 
-**3. Reference/Guidelines** (best for standards or specifications)
-- Works well for brand guidelines, coding standards, or requirements
-- Example: Brand styling with "Brand Guidelines" -> "Colors" -> "Typography" -> "Features"
-- Structure: ## Overview -> ## Guidelines -> ## Specifications -> ## Usage...
+3. Ask one consolidated round of questions only for unresolved intent: primary layer, label, color category, filters, card fields, title, and requested outputs. Never guess a missing CRS.
 
-**4. Capabilities-Based** (best for integrated systems)
-- Works well when the skill provides multiple interrelated features
-- Example: Product Management with "Core Capabilities" -> numbered capability list
-- Structure: ## Overview -> ## Core Capabilities -> ### 1. Feature -> ### 2. Feature...
+4. Write `map_spec.json` using [map-spec.md](references/map-spec.md) and validate it against `references/map-spec.schema.json`.
 
-Patterns can be mixed and matched as needed. Most skills combine patterns (e.g., start with task-based, add workflow for complex operations).
+5. If the source is ArcGIS FeatureServer, download it first and then build from the saved GeoJSON. Read [arcgis.md](references/arcgis.md).
 
-Delete this entire "Structuring This Skill" section when done - it's just guidance.]
+   ```powershell
+   python scripts/map_builder.py fetch-arcgis --url <layer-url> --out data/source.geojson
+   ```
 
-## [TODO: Replace with the first main section based on chosen structure]
+6. Build once from the resolved specification.
 
-[TODO: Add content here. See examples in existing skills:
-- Code samples for technical skills
-- Decision trees for complex workflows
-- Concrete examples with realistic user requests
-- References to scripts/templates/references as needed]
+   ```powershell
+   python scripts/map_builder.py build --spec map_spec.json --out dist
+   ```
 
-## Resources (optional)
+7. Verify outputs, inspect `build_report.json`, and open `map.html` in a browser.
 
-Create only the resource directories this skill actually needs. Delete this section if no resources are required.
+   ```powershell
+   python scripts/map_builder.py verify --dist dist
+   ```
 
-### scripts/
-Executable code (Python/Bash/etc.) that can be run directly to perform specific operations.
+8. Exercise search, filters, sorting, layer visibility, hover/click linkage, keyboard selection, panel collapse, and narrow-screen layout. Read [design-guidelines.md](references/design-guidelines.md) for the visual acceptance checklist.
 
-**Examples from other skills:**
-- PDF skill: `fill_fillable_fields.py`, `extract_form_field_info.py` - utilities for PDF manipulation
-- DOCX skill: `document.py`, `utilities.py` - Python modules for document processing
+9. Deliver the whole `dist` directory and summarize repairs, discarded geometries, generated IDs, warnings, online basemap dependencies, and source attribution.
 
-**Appropriate for:** Python scripts, shell scripts, or any executable code that performs automation, data processing, or specific operations.
+## Template choice
 
-**Note:** Scripts may be executed without loading into context, but can still be read by Codex for patching or environment adjustments.
+- Choose `map-list` for one primary layer whose records need browsing, filtering, sorting, and map-to-card selection.
+- Choose `multilayer` for mixed point, line, or polygon layers where layer visibility and cross-layer inspection are primary.
+- Add `linked_view` only when records already contain meaningful x/y variables. Read [linked-analysis.md](references/linked-analysis.md); do not invent quadrant or statistical interpretations.
 
-### references/
-Documentation and reference material intended to be loaded into context to inform Codex's process and thinking.
+## Non-negotiable checks
 
-**Examples from other skills:**
-- Product management: `communication.md`, `context_building.md` - detailed workflow guides
-- BigQuery: API reference documentation and query examples
-- Finance: Schema documentation, company policies
+- Fail when data cannot be read or is empty.
+- Require a declared CRS and normalize geometry to EPSG:4326.
+- Repair invalid geometry with `make_valid`, report every repair or drop, and never simplify silently.
+- Require a unique primary-layer ID; generate a deterministic ID only when the user has not provided one and report that choice.
+- Match input, normalized, rendered-map, list-record, and declared-layer counts.
 
-**Appropriate for:** In-depth documentation, API references, database schemas, comprehensive guides, or any detailed information that Codex should reference while working.
+Also fail on missing required fields, unknown configured categories, unsafe archive paths, or ArcGIS pagination mismatches. Escape all user-provided text before placing it in HTML.
 
-### assets/
-Files not intended to be loaded into context, but rather used within the output Codex produces.
+## Resources
 
-**Examples from other skills:**
-- Brand styling: PowerPoint template files (.pptx), logo files
-- Frontend builder: HTML/React boilerplate project directories
-- Typography: Font files (.ttf, .woff2)
-
-**Appropriate for:** Templates, boilerplate code, document templates, images, icons, fonts, or any files meant to be copied or used in the final output.
-
----
-
-**Not every skill requires all three types of resources.**
+- Read [wizard-flow.md](references/wizard-flow.md) when leading a non-expert through setup.
+- Read [data-provenance.md](references/data-provenance.md) when remote or redistributable data is involved.
+- Reuse the synthetic specifications under `assets/examples/` for smoke tests; do not substitute them for the user's data.
+- Run scripts from the skill root so relative assets and schema paths resolve consistently.

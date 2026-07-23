@@ -1,0 +1,39 @@
+{
+  "schema_version": "1.0",
+  "template": "map-list",
+  "title": "Synthetic neighborhood catalog",
+  "primary_layer": "neighborhoods",
+  "layers": [
+    {
+      "id": "neighborhoods",
+      "name": "Neighborhoods",
+      "source": {"path": "neighborhoods.geojson", "format": "geojson"},
+      "required": true,
+      "id_field": "id",
+      "label_field": "name",
+      "search_fields": ["name", "kind"],
+      "popup_fields": ["name", "kind", "homes"],
+      "filter_fields": ["kind"],
+      "card_fields": ["homes"],
+      "sort_fields": ["name"],
+      "style": {
+        "color_field": "kind",
+        "weight": 1.2,
+        "categories": {
+          "Established": "#3b82b8",
+          "Renewal": "#e28f41"
+        }
+      }
+    }
+  ],
+  "list": {
+    "default_sort": "name",
+    "collapsible": true,
+    "summary_fields": ["kind", "homes"]
+  },
+  "static": {
+    "enabled": true,
+    "presets": ["slide-16x9", "paper"],
+    "source_note": "Synthetic example data (CC0)"
+  }
+}

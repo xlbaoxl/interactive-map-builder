@@ -1,0 +1,22 @@
+{
+  "type": "FeatureCollection",
+  "name": "places",
+  "crs": {"type": "name", "properties": {"name": "urn:ogc:def:crs:OGC:1.3:CRS84"}},
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {"id": "place-a", "name": "Central Library", "kind": "Civic"},
+      "geometry": {"type": "Point", "coordinates": [116.32, 39.94]}
+    },
+    {
+      "type": "Feature",
+      "properties": {"id": "place-b", "name": "Market Hall", "kind": "Retail"},
+      "geometry": {"type": "Point", "coordinates": [116.39, 39.93]}
+    },
+    {
+      "type": "Feature",
+      "properties": {"id": "place-c", "name": "Community Center", "kind": "Civic"},
+      "geometry": {"type": "Point", "coordinates": [116.37, 39.97]}
+    }
+  ]
+}

@@ -1,0 +1,565 @@
+<!doctype html>
+<html lang="{{ language }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>{{ page_title }}</title>
+  <style>{{ leaflet_css | safe }}</style>
+  <style>{{ shared_css | safe }}</style>
+</head>
+<body>
+  <main id="imb-app" class="imb-app map-list-app">
+    <header class="imb-header">
+      <button id="imb-collapse" class="imb-button" type="button" aria-controls="imb-sidebar" aria-expanded="true"></button>
+      <div class="imb-heading">
+        <h1 id="imb-title"></h1>
+        <p id="imb-subtitle" class="imb-subtitle"></p>
+      </div>
+    </header>
+    <div class="imb-workspace">
+      <aside id="imb-sidebar" class="imb-sidebar" aria-label="Feature browser">
+        <div class="imb-toolbar">
+          <div class="imb-field">
+            <label id="imb-search-label" for="imb-search"></label>
+            <input id="imb-search" class="imb-input" type="search" autocomplete="off">
+          </div>
+          <div id="imb-filters" class="imb-filter-grid"></div>
+          <div class="imb-inline-fields">
+            <div class="imb-field">
+              <label id="imb-sort-label" for="imb-sort"></label>
+              <select id="imb-sort" class="imb-select"></select>
+            </div>
+            <button id="imb-sort-direction" class="imb-button" type="button"></button>
+          </div>
+        </div>
+        <section id="imb-linked-view" class="imb-linked-view" hidden>
+          <h2 id="imb-linked-view-title" class="imb-linked-view-title"></h2>
+          <svg id="imb-linked-chart" class="imb-linked-chart" viewBox="0 0 320 180" role="img"></svg>
+        </section>
+        <div class="imb-status" aria-live="polite">
+          <span id="imb-result-count"></span>
+          <span id="imb-render-count"></span>
+        </div>
+        <div id="imb-list" class="imb-list" role="listbox" aria-label="Map features"></div>
+        <button id="imb-load-more" class="imb-button imb-load-more" type="button"></button>
+      </aside>
+      <section class="imb-map-wrap" aria-label="Interactive map">
+        <div id="imb-map" class="imb-map"></div>
+        <div id="imb-map-message" class="imb-map-message" role="alert"></div>
+        <div id="imb-map-attribution" class="imb-map-attribution"></div>
+      </section>
+    </div>
+  </main>
+  <script id="imb-data" type="application/json">{{ payload_json | safe }}</script>
+  <script>{{ leaflet_js | safe }}</script>
+  <script>{{ shared_js | safe }}</script>
+  <script>
+  (function () {
+    "use strict";
+
+    InteractiveMapBuilder.onReady(function () {
+      var IMB = InteractiveMapBuilder;
+      var payload = IMB.parsePayload();
+      var spec = payload.spec || {};
+      var layers = Array.isArray(payload.layers) ? payload.layers : [];
+      if (!layers.length) {
+        throw new Error("The map-list template requires one prepared layer.");
+      }
+
+      var labels = spec.labels && typeof spec.labels === "object" ? spec.labels : {};
+      function label(key, fallback) {
+        return IMB.text(IMB.firstDefined(labels[key], fallback));
+      }
+
+      var requestedPrimary = IMB.text(IMB.firstDefined(spec.primary_layer, spec.primaryLayer, ""));
+      var primary = layers[0];
+      var primaryIndex = 0;
+      layers.some(function (candidate, index) {
+        if (requestedPrimary && IMB.layerId(candidate, index) === requestedPrimary) {
+          primary = candidate;
+          primaryIndex = index;
+          return true;
+        }
+        return false;
+      });
+      var primarySpec = IMB.layerSpec(primary);
+      var records = IMB.normalizedRecords(primary);
+      var featureCollection = primary.feature_collection || { type: "FeatureCollection", features: [] };
+      var listConfig = spec.list && typeof spec.list === "object" ? spec.list : {};
+      var batchSize = Math.max(20, Number(IMB.firstDefined(
+        listConfig.batch_size,
+        spec.list_batch_size,
+        spec.listBatchSize,
+        primarySpec.list_batch_size,
+        100
+      )));
+      var title = IMB.text(IMB.firstDefined(spec.title, primarySpec.title, IMB.layerTitle(primary, 0)));
+      var subtitle = IMB.text(IMB.firstDefined(spec.subtitle, spec.description, primarySpec.description, ""));
+      document.title = title || "Interactive map";
+      document.getElementById("imb-title").textContent = title;
+      document.getElementById("imb-subtitle").textContent = subtitle;
+
+      var collapse = document.getElementById("imb-collapse");
+      collapse.textContent = label("collapse", "收起清单");
+      collapse.hidden = listConfig.collapsible === false;
+      var search = document.getElementById("imb-search");
+      document.getElementById("imb-search-label").textContent = label("search", "搜索");
+      search.placeholder = label("search_placeholder", "输入名称或属性");
+      document.getElementById("imb-sort-label").textContent = label("sort", "排序");
+      var sortDirection = document.getElementById("imb-sort-direction");
+      var loadMore = document.getElementById("imb-load-more");
+      loadMore.textContent = label("load_more", "加载更多");
+
+      var app = document.getElementById("imb-app");
+      var map = IMB.setupMap();
+      IMB.addBasemap(map, spec);
+      if (L.control && L.control.scale) {
+        L.control.scale({ imperial: false }).addTo(map);
+      }
+
+      var allMapGroups = [];
+      layers.forEach(function (candidate, candidateIndex) {
+        if (candidate === primary) {
+          return;
+        }
+        var candidateSpec = IMB.layerSpec(candidate);
+        var candidateCollection = candidate.feature_collection || {
+          type: "FeatureCollection",
+          features: []
+        };
+        var contextGroup = L.geoJSON(candidateCollection, {
+          style: function (feature) {
+            return IMB.geometryStyle(candidateSpec, feature);
+          },
+          pointToLayer: function (feature, latlng) {
+            return L.circleMarker(latlng, IMB.geometryStyle(candidateSpec, feature));
+          },
+          onEachFeature: function (feature, leafletLayer) {
+            IMB.attachFeatureContent(leafletLayer, feature, candidateSpec);
+          }
+        });
+        var visible = IMB.firstDefined(
+          candidateSpec.visible,
+          candidateSpec.default_visible,
+          true
+        ) !== false;
+        if (visible) {
+          contextGroup.addTo(map);
+          allMapGroups.push(contextGroup);
+        }
+      });
+
+      var featureRegistry = new Map();
+      var featureGroup = L.geoJSON(featureCollection, {
+        style: function (feature) {
+          return IMB.geometryStyle(primarySpec, feature);
+        },
+        pointToLayer: function (feature, latlng) {
+          return L.circleMarker(latlng, IMB.geometryStyle(primarySpec, feature));
+        },
+        onEachFeature: function (feature, leafletLayer) {
+          var identifier = IMB.featureId(feature, primarySpec, "feature-" + (featureRegistry.size + 1));
+          var baseStyle = IMB.geometryStyle(primarySpec, feature);
+          var entry = { leaflet: leafletLayer, baseStyle: baseStyle, visible: true };
+          if (!featureRegistry.has(identifier)) {
+            featureRegistry.set(identifier, []);
+          }
+          featureRegistry.get(identifier).push(entry);
+          IMB.attachFeatureContent(leafletLayer, feature, primarySpec);
+          leafletLayer.on("mouseover", function () {
+            IMB.link_by_id.emit("highlight", identifier, { source: "map" });
+          });
+          leafletLayer.on("mouseout", function () {
+            IMB.link_by_id.clear(identifier, { source: "map" });
+          });
+          leafletLayer.on("click", function () {
+            IMB.link_by_id.emit("select", identifier, { source: "map" });
+          });
+        }
+      }).addTo(map);
+      allMapGroups.push(featureGroup);
+      IMB.fitToGroups(map, allMapGroups);
+
+      var searchFields = IMB.fieldDefinitions(
+        IMB.firstDefined(primarySpec.search_fields, spec.search_fields),
+        [IMB.labelField(primarySpec)]
+      );
+      var cardFields = IMB.fieldDefinitions(
+        IMB.firstDefined(primarySpec.card_fields, listConfig.summary_fields, spec.card_fields),
+        []
+      );
+      var category = IMB.categoryField(primarySpec);
+      var filterFields = IMB.fieldDefinitions(
+        IMB.firstDefined(primarySpec.filter_fields, spec.filter_fields, spec.filters),
+        category ? [category] : []
+      );
+      var sortFields = IMB.fieldDefinitions(
+        IMB.firstDefined(primarySpec.sort_fields, spec.sort_fields),
+        [IMB.labelField(primarySpec)].concat(category ? [category] : [])
+      );
+      var sortSelect = document.getElementById("imb-sort");
+      sortFields.forEach(function (definition) {
+        var option = document.createElement("option");
+        option.value = definition.field;
+        option.textContent = definition.label || IMB.fieldLabel(primarySpec, definition.field);
+        sortSelect.appendChild(option);
+      });
+      if (listConfig.default_sort && Array.prototype.some.call(sortSelect.options, function (option) {
+        return option.value === listConfig.default_sort;
+      })) {
+        sortSelect.value = listConfig.default_sort;
+      }
+
+      var filterState = {};
+      var filtersContainer = document.getElementById("imb-filters");
+      filterFields.forEach(function (definition) {
+        var wrapper = IMB.element("div", undefined, "imb-field");
+        var identifier = "imb-filter-" + definition.field.replace(/[^A-Za-z0-9_-]/g, "-");
+        var fieldLabel = IMB.element("label", definition.label || IMB.fieldLabel(primarySpec, definition.field));
+        fieldLabel.setAttribute("for", identifier);
+        var select = IMB.element("select", undefined, "imb-select");
+        select.id = identifier;
+        var allOption = document.createElement("option");
+        allOption.value = "";
+        allOption.textContent = label("all", "全部");
+        select.appendChild(allOption);
+        var values = Array.from(new Set(records.map(function (record) {
+          return IMB.text(record.properties[definition.field]);
+        }).filter(Boolean))).sort(function (left, right) {
+          return left.localeCompare(right, undefined, { numeric: true });
+        });
+        values.forEach(function (value) {
+          var option = document.createElement("option");
+          option.value = value;
+          option.textContent = value;
+          select.appendChild(option);
+        });
+        select.addEventListener("change", function () {
+          filterState[definition.field] = select.value;
+          applyFilters();
+        });
+        wrapper.appendChild(fieldLabel);
+        wrapper.appendChild(select);
+        filtersContainer.appendChild(wrapper);
+      });
+
+      var state = {
+        filtered: records.slice(),
+        rendered: 0,
+        ascending: true,
+        hoveredId: "",
+        selectedId: ""
+      };
+      var listNode = document.getElementById("imb-list");
+      var resultCount = document.getElementById("imb-result-count");
+      var renderCount = document.getElementById("imb-render-count");
+
+      function renderLinkedView() {
+        var linked = spec.linked_view;
+        if (!linked || typeof linked !== "object") {
+          return;
+        }
+        if (IMB.text(linked.layer) !== IMB.layerId(primary, primaryIndex)) {
+          return;
+        }
+        var xField = IMB.text(linked.x_field);
+        var yField = IMB.text(linked.y_field);
+        var points = records.map(function (record) {
+          return {
+            record: record,
+            x: Number(record.properties[xField]),
+            y: Number(record.properties[yField])
+          };
+        }).filter(function (point) {
+          return Number.isFinite(point.x) && Number.isFinite(point.y);
+        });
+        if (!points.length) {
+          return;
+        }
+        var panel = document.getElementById("imb-linked-view");
+        var svg = document.getElementById("imb-linked-chart");
+        var svgNamespace = "http://www.w3.org/2000/svg";
+        var titleNode = document.getElementById("imb-linked-view-title");
+        titleNode.textContent = IMB.text(IMB.firstDefined(linked.title, xField + " × " + yField));
+        svg.setAttribute("aria-label", titleNode.textContent);
+        var xValues = points.map(function (point) { return point.x; });
+        var yValues = points.map(function (point) { return point.y; });
+        var minX = Math.min.apply(null, xValues);
+        var maxX = Math.max.apply(null, xValues);
+        var minY = Math.min.apply(null, yValues);
+        var maxY = Math.max.apply(null, yValues);
+        if (minX === maxX) {
+          minX -= 0.5;
+          maxX += 0.5;
+        }
+        if (minY === maxY) {
+          minY -= 0.5;
+          maxY += 0.5;
+        }
+        var left = 30;
+        var right = 306;
+        var top = 12;
+        var bottom = 151;
+        function svgNode(name, attributes, className) {
+          var node = document.createElementNS(svgNamespace, name);
+          Object.keys(attributes || {}).forEach(function (key) {
+            node.setAttribute(key, IMB.text(attributes[key]));
+          });
+          if (className) {
+            node.setAttribute("class", className);
+          }
+          return node;
+        }
+        svg.appendChild(svgNode("line", {
+          x1: left, y1: bottom, x2: right, y2: bottom
+        }, "imb-linked-axis"));
+        svg.appendChild(svgNode("line", {
+          x1: left, y1: top, x2: left, y2: bottom
+        }, "imb-linked-axis"));
+        var xLabel = svgNode("text", {
+          x: right, y: 171, "text-anchor": "end"
+        }, "imb-linked-axis-label");
+        xLabel.textContent = xField;
+        svg.appendChild(xLabel);
+        var yLabel = svgNode("text", {
+          x: 5, y: top + 2
+        }, "imb-linked-axis-label");
+        yLabel.textContent = yField;
+        svg.appendChild(yLabel);
+        points.forEach(function (point) {
+          var cx = left + ((point.x - minX) / (maxX - minX)) * (right - left);
+          var cy = bottom - ((point.y - minY) / (maxY - minY)) * (bottom - top);
+          var circle = svgNode("circle", {
+            cx: cx,
+            cy: cy,
+            r: 5,
+            fill: IMB.colorFor(primarySpec, point.record.properties),
+            tabindex: 0,
+            role: "button"
+          }, "imb-linked-point");
+          circle.dataset.featureId = point.record.id;
+          var pointTitle = svgNode("title");
+          pointTitle.textContent = IMB.text(IMB.firstDefined(
+            point.record.properties[IMB.labelField(primarySpec)],
+            point.record.id
+          )) + " — " + xField + ": " + point.x + ", " + yField + ": " + point.y;
+          circle.appendChild(pointTitle);
+          svg.appendChild(circle);
+        });
+        panel.hidden = false;
+        IMB.bindLinkedElements(svg);
+      }
+
+      function searchableText(record) {
+        return searchFields.map(function (definition) {
+          return IMB.text(record.properties[definition.field]);
+        }).join(" ").toLocaleLowerCase();
+      }
+
+      function compareRecords(left, right) {
+        var field = sortSelect.value || IMB.labelField(primarySpec);
+        var leftValue = left.properties[field];
+        var rightValue = right.properties[field];
+        var leftNumber = Number(leftValue);
+        var rightNumber = Number(rightValue);
+        var result;
+        if (leftValue !== "" && rightValue !== "" && Number.isFinite(leftNumber) && Number.isFinite(rightNumber)) {
+          result = leftNumber - rightNumber;
+        } else {
+          result = IMB.text(leftValue).localeCompare(IMB.text(rightValue), undefined, {
+            numeric: true,
+            sensitivity: "base"
+          });
+        }
+        return state.ascending ? result : -result;
+      }
+
+      function setFeatureVisibility(visibleIds) {
+        featureRegistry.forEach(function (entries, identifier) {
+          var shouldShow = visibleIds.has(identifier);
+          entries.forEach(function (entry) {
+            if (shouldShow && !entry.visible) {
+              featureGroup.addLayer(entry.leaflet);
+              entry.visible = true;
+            } else if (!shouldShow && entry.visible) {
+              featureGroup.removeLayer(entry.leaflet);
+              entry.visible = false;
+            }
+          });
+        });
+      }
+
+      function createCard(record) {
+        var card = IMB.element("button", undefined, "imb-list-card");
+        card.type = "button";
+        card.setAttribute("role", "option");
+        card.setAttribute("aria-selected", record.id === state.selectedId ? "true" : "false");
+        card.dataset.featureId = record.id;
+        var cardTitle = IMB.text(IMB.firstDefined(
+          record.properties[IMB.labelField(primarySpec)],
+          record.id
+        ));
+        card.appendChild(IMB.element("span", cardTitle, "imb-card-title"));
+        if (cardFields.length) {
+          var meta = IMB.element("span", undefined, "imb-card-meta");
+          cardFields.forEach(function (definition) {
+            var item = IMB.element("span", undefined, "imb-card-meta-item");
+            item.textContent = (definition.label || IMB.fieldLabel(primarySpec, definition.field)) +
+              ": " + IMB.text(record.properties[definition.field]);
+            meta.appendChild(item);
+          });
+          card.appendChild(meta);
+        }
+        return card;
+      }
+
+      function updateCounts() {
+        resultCount.textContent = label("results", "结果") + ": " + state.filtered.length;
+        renderCount.textContent = label("rendered", "已显示") + ": " + state.rendered;
+        loadMore.hidden = state.rendered >= state.filtered.length;
+        IMB.qa.visibleRecordCount = state.filtered.length;
+        IMB.qa.renderedListCount = state.rendered;
+      }
+
+      function renderNextBatch() {
+        var end = Math.min(state.filtered.length, state.rendered + batchSize);
+        var fragment = document.createDocumentFragment();
+        for (var index = state.rendered; index < end; index += 1) {
+          fragment.appendChild(createCard(state.filtered[index]));
+        }
+        listNode.appendChild(fragment);
+        state.rendered = end;
+        IMB.bindLinkedElements(listNode);
+        if (!state.filtered.length && !listNode.firstChild) {
+          listNode.appendChild(IMB.element("p", label("empty", "没有符合条件的记录"), "imb-empty"));
+        }
+        updateCounts();
+      }
+
+      function applyFilters() {
+        var query = search.value.trim().toLocaleLowerCase();
+        state.filtered = records.filter(function (record) {
+          if (query && searchableText(record).indexOf(query) === -1) {
+            return false;
+          }
+          return Object.keys(filterState).every(function (field) {
+            return !filterState[field] || IMB.text(record.properties[field]) === filterState[field];
+          });
+        }).sort(compareRecords);
+        state.rendered = 0;
+        listNode.replaceChildren();
+        renderNextBatch();
+        setFeatureVisibility(new Set(state.filtered.map(function (record) { return record.id; })));
+      }
+
+      function ensureRendered(identifier) {
+        var targetIndex = state.filtered.findIndex(function (record) {
+          return record.id === identifier;
+        });
+        while (targetIndex >= state.rendered && state.rendered < state.filtered.length) {
+          renderNextBatch();
+        }
+        return Array.prototype.find.call(listNode.querySelectorAll("[data-feature-id]"), function (node) {
+          return node.dataset.featureId === identifier;
+        });
+      }
+
+      function selectFeature(identifier, source) {
+        if (state.selectedId && state.selectedId !== identifier) {
+          IMB.markFeature(featureRegistry, state.selectedId, false);
+          IMB.applyLinkedDomState(state.selectedId, false, false);
+          Array.prototype.forEach.call(listNode.querySelectorAll("[aria-selected='true']"), function (node) {
+            node.setAttribute("aria-selected", "false");
+          });
+        }
+        state.selectedId = identifier;
+        IMB.markFeature(featureRegistry, identifier, true);
+        IMB.applyLinkedDomState(identifier, true, true);
+        var card = ensureRendered(identifier);
+        if (card) {
+          card.setAttribute("aria-selected", "true");
+          if (source !== "dom" && source !== "keyboard") {
+            card.scrollIntoView({ block: "nearest", behavior: "smooth" });
+          }
+        }
+        var mapEntries = featureRegistry.get(identifier) || [];
+        if (mapEntries.length && source !== "map") {
+          var leafletLayer = mapEntries[0].leaflet;
+          if (leafletLayer.getBounds && leafletLayer.getBounds().isValid()) {
+            map.fitBounds(leafletLayer.getBounds(), { padding: [40, 40], maxZoom: 16 });
+          } else if (leafletLayer.getLatLng) {
+            map.panTo(leafletLayer.getLatLng());
+          }
+          if (leafletLayer.openPopup) {
+            leafletLayer.openPopup();
+          }
+        }
+      }
+
+      IMB.link_by_id.on("highlight", function (event) {
+        if (state.hoveredId && state.hoveredId !== state.selectedId && state.hoveredId !== event.id) {
+          IMB.markFeature(featureRegistry, state.hoveredId, false);
+          IMB.applyLinkedDomState(state.hoveredId, false, false);
+        }
+        state.hoveredId = event.id;
+        IMB.markFeature(featureRegistry, event.id, true);
+        IMB.applyLinkedDomState(event.id, true, false);
+      });
+      IMB.link_by_id.on("clear", function (event) {
+        if (event.id !== state.selectedId) {
+          IMB.markFeature(featureRegistry, event.id, false);
+          IMB.applyLinkedDomState(event.id, false, false);
+        }
+        if (state.hoveredId === event.id) {
+          state.hoveredId = "";
+        }
+      });
+      IMB.link_by_id.on("select", function (event) {
+        selectFeature(event.id, event.source);
+      });
+
+      search.addEventListener("input", applyFilters);
+      sortSelect.addEventListener("change", applyFilters);
+      sortDirection.addEventListener("click", function () {
+        state.ascending = !state.ascending;
+        sortDirection.textContent = state.ascending
+          ? label("ascending", "升序")
+          : label("descending", "降序");
+        applyFilters();
+      });
+      sortDirection.textContent = label("ascending", "升序");
+      loadMore.addEventListener("click", renderNextBatch);
+      collapse.addEventListener("click", function () {
+        var collapsed = app.classList.toggle("is-sidebar-collapsed");
+        collapse.setAttribute("aria-expanded", collapsed ? "false" : "true");
+        collapse.textContent = collapsed ? label("expand", "展开清单") : label("collapse", "收起清单");
+        window.setTimeout(function () { map.invalidateSize(); }, 220);
+      });
+
+      renderLinkedView();
+      applyFilters();
+      IMB.qa.actions.setSearch = function (value) {
+        search.value = IMB.text(value);
+        applyFilters();
+      };
+      IMB.qa.actions.toggleSidebar = function () {
+        collapse.click();
+      };
+      IMB.finish("map-list", {
+        recordCount: records.length,
+        visibleRecordCount: state.filtered.length,
+        renderedListCount: state.rendered,
+        layerCounts: layers.reduce(function (counts, layer, index) {
+          var featureCount = layer.feature_collection && Array.isArray(layer.feature_collection.features)
+            ? layer.feature_collection.features.length
+            : 0;
+          counts[IMB.layerId(layer, index)] = Number(layer.count || featureCount);
+          return counts;
+        }, {})
+      });
+    });
+  }());
+  </script>
+</body>
+</html>
