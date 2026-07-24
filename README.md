@@ -13,6 +13,8 @@ Interactive Map Builder 是一个给 Codex 和其他 AI 助手使用的地图 Sk
 空间数据交给它，它会先检查数据和需要确认的选项，再生成可直接打开的交互地图、汇报图片
 和论文矢量图。
 
+[查看更新日志](CHANGELOG.md)。
+
 ### 做出来是什么样
 
 下面两张图都是本工具生成的真实 HTML 页面截图，不是另外制作的设计稿。示例数据来自
@@ -198,6 +200,8 @@ interactive-map-builder verify --dist dist
 Interactive Map Builder is a map Skill for Codex and other AI assistants. Give it existing
 coordinates or spatial data; it checks the inputs and confirms uncertain choices before
 generating an interactive map plus presentation- and publication-ready figures.
+
+[Read the changelog](CHANGELOG.md).
 
 ### What the output looks like
 
