@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "interactive-map-builder"
-version = "0.1.0"
+version = "0.2.0"
 description = "Build interactive Leaflet maps and report-ready static figures from local spatial data."
 requires-python = ">=3.9"
 license = {text = "MIT"}

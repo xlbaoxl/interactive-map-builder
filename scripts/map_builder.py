@@ -529,7 +529,7 @@ def build_map(
     report: Dict[str, Any] = {
         "schema_version": "1.0",
         "built_at": datetime.now(timezone.utc).isoformat(),
-        "engine_version": "0.1.0",
+        "engine_version": "0.2.0",
         "status": "pass",
         "template": spec["template"],
         "title": spec["title"],
