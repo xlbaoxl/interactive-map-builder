@@ -63,8 +63,38 @@
         throw new Error("The multilayer template requires at least one prepared layer.");
       }
 
-      function label(_key, fallback) {
-        return fallback;
+      var locale = IMB.text(spec.locale || document.documentElement.lang || "zh-CN");
+      var language = locale.toLocaleLowerCase().indexOf("zh") === 0 ? "zh" : "en";
+      var strings = {
+        zh: {
+          layers: "图层",
+          legend: "图例",
+          collapse: "收起搜索",
+          expand: "展开搜索",
+          search: "跨图层搜索",
+          search_placeholder: "输入名称或属性",
+          empty: "没有符合条件的要素",
+          results: "匹配",
+          limited: "仅显示前",
+          visible_layers: "可见图层",
+          features: "要素"
+        },
+        en: {
+          layers: "Layers",
+          legend: "Legend",
+          collapse: "Collapse search",
+          expand: "Expand search",
+          search: "Search across layers",
+          search_placeholder: "Search names or attributes",
+          empty: "No features match the current search",
+          results: "Matches",
+          limited: "Showing first",
+          visible_layers: "Visible layers",
+          features: "Features"
+        }
+      };
+      function label(key, fallback) {
+        return strings[language][key] || fallback;
       }
 
       var title = IMB.text(IMB.firstDefined(spec.title, "Interactive map"));
@@ -192,6 +222,14 @@
       }).map(function (runtime) {
         return runtime.group;
       }));
+      window.setTimeout(function () {
+        map.invalidateSize();
+        IMB.fitToGroups(map, runtimeLayers.filter(function (runtime) {
+          return runtime.enabled;
+        }).map(function (runtime) {
+          return runtime.group;
+        }));
+      }, 220);
 
       var layerOptions = document.getElementById("imb-layer-options");
       runtimeLayers.forEach(function (runtime) {

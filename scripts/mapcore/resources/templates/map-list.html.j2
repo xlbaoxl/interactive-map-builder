@@ -9,53 +9,82 @@
   <style>{{ shared_css | safe }}</style>
 </head>
 <body>
-  <main id="imb-app" class="imb-app map-list-app">
+  <main id="imb-app" class="imb-app imb-atlas-app map-list-app">
     <header class="imb-header">
-      <button id="imb-collapse" class="imb-button" type="button" aria-controls="imb-sidebar" aria-expanded="true"></button>
+      <button id="imb-collapse" class="imb-icon-button imb-sidebar-toggle" type="button"
+        aria-controls="imb-sidebar" aria-expanded="true">
+        <span aria-hidden="true">☰</span>
+        <span class="imb-visually-hidden" id="imb-collapse-label"></span>
+      </button>
       <div class="imb-heading">
+        <div id="imb-eyebrow" class="imb-eyebrow"></div>
         <h1 id="imb-title"></h1>
         <p id="imb-subtitle" class="imb-subtitle"></p>
       </div>
-      <div id="imb-summary" class="imb-multilayer-summary" aria-live="polite"></div>
+      <div id="imb-summary" class="imb-kpi-strip" aria-live="polite"></div>
+      <div class="imb-header-actions">
+        <button id="imb-reset" class="imb-button imb-button-quiet" type="button"></button>
+      </div>
     </header>
+
+    <section class="imb-command-bar" aria-label="Map filters">
+      <div class="imb-search-shell">
+        <span class="imb-search-icon" aria-hidden="true">⌕</span>
+        <label id="imb-search-label" class="imb-visually-hidden" for="imb-search"></label>
+        <input id="imb-search" class="imb-search-input" type="search" autocomplete="off">
+        <kbd class="imb-search-hint">/</kbd>
+      </div>
+      <div id="imb-filters" class="imb-filter-bar"></div>
+      <div class="imb-sort-shell">
+        <label id="imb-sort-label" class="imb-visually-hidden" for="imb-sort"></label>
+        <select id="imb-sort" class="imb-compact-select"></select>
+        <button id="imb-sort-direction" class="imb-icon-button" type="button"></button>
+      </div>
+    </section>
+
     <div class="imb-workspace">
       <aside id="imb-sidebar" class="imb-sidebar" aria-label="Feature browser">
-        <div class="imb-toolbar">
-          <div class="imb-field">
-            <label id="imb-search-label" for="imb-search"></label>
-            <input id="imb-search" class="imb-input" type="search" autocomplete="off">
+        <div class="imb-panel-heading">
+          <div>
+            <span id="imb-result-count" class="imb-panel-title"></span>
+            <span id="imb-render-count" class="imb-panel-caption"></span>
           </div>
-          <div id="imb-filters" class="imb-filter-grid"></div>
-          <div class="imb-inline-fields">
-            <div class="imb-field">
-              <label id="imb-sort-label" for="imb-sort"></label>
-              <select id="imb-sort" class="imb-select"></select>
-            </div>
-            <button id="imb-sort-direction" class="imb-button" type="button"></button>
-          </div>
+          <span id="imb-active-filter-count" class="imb-filter-count" hidden></span>
         </div>
         <section id="imb-linked-view" class="imb-linked-view" hidden>
           <h2 id="imb-linked-view-title" class="imb-linked-view-title"></h2>
           <svg id="imb-linked-chart" class="imb-linked-chart" viewBox="0 0 320 180" role="img"></svg>
         </section>
-        <div class="imb-status" aria-live="polite">
-          <span id="imb-result-count"></span>
-          <span id="imb-render-count"></span>
-        </div>
         <div id="imb-list" class="imb-list" role="listbox" aria-label="Map features"></div>
         <button id="imb-load-more" class="imb-button imb-load-more" type="button"></button>
       </aside>
+
       <section class="imb-map-wrap" aria-label="Interactive map">
         <div id="imb-map" class="imb-map"></div>
-        <section id="imb-legend" class="imb-control-card imb-legend" aria-label="Legend">
-          <h2 id="imb-legend-title" class="imb-control-title"></h2>
-          <div id="imb-legend-items"></div>
+        <section id="imb-legend" class="imb-atlas-legend" aria-label="Legend">
+          <button id="imb-legend-toggle" class="imb-legend-toggle" type="button" aria-expanded="true">
+            <span id="imb-legend-title"></span>
+            <span aria-hidden="true">⌃</span>
+          </button>
+          <div id="imb-legend-items" class="imb-legend-items"></div>
         </section>
         <div id="imb-map-message" class="imb-map-message" role="alert"></div>
         <div id="imb-map-attribution" class="imb-map-attribution"></div>
       </section>
+
+      <aside id="imb-detail" class="imb-detail-panel" aria-label="Selected feature details" hidden>
+        <div class="imb-detail-header">
+          <div>
+            <div id="imb-detail-kicker" class="imb-detail-kicker"></div>
+            <h2 id="imb-detail-title" class="imb-detail-title"></h2>
+          </div>
+          <button id="imb-detail-close" class="imb-icon-button" type="button" aria-label="Close">×</button>
+        </div>
+        <div id="imb-detail-body" class="imb-detail-body"></div>
+      </aside>
     </div>
   </main>
+
   <script id="imb-data" type="application/json">{{ payload_json | safe }}</script>
   <script>{{ leaflet_js | safe }}</script>
   <script>{{ shared_js | safe }}</script>
@@ -69,11 +98,71 @@
       var spec = payload.spec || {};
       var layers = Array.isArray(payload.layers) ? payload.layers : [];
       if (!layers.length) {
-        throw new Error("The map-list template requires one prepared layer.");
+        throw new Error("The map-list template requires at least one prepared layer.");
       }
 
-      function label(_key, fallback) {
-        return fallback;
+      var locale = IMB.text(spec.locale || document.documentElement.lang || "zh-CN");
+      var language = locale.toLocaleLowerCase().indexOf("zh") === 0 ? "zh" : "en";
+      var strings = {
+        zh: {
+          eyebrow: "ATLAS 数据浏览器",
+          collapse: "收起清单",
+          expand: "展开清单",
+          search: "搜索",
+          searchPlaceholder: "搜索名称、地址或属性…",
+          sort: "排序",
+          ascending: "升序",
+          descending: "降序",
+          loadMore: "加载更多",
+          results: "个结果",
+          shown: "已显示",
+          empty: "没有符合条件的记录",
+          reset: "重置",
+          legend: "图例",
+          details: "对象详情",
+          all: "全部",
+          filters: "项筛选",
+          from: "最小",
+          to: "最大",
+          missing: "未提供",
+          close: "关闭详情",
+          features: "对象数",
+          basemap: "底图",
+          fullscreen: "全屏地图",
+          filterBar: "地图筛选",
+          featureBrowser: "地图对象"
+        },
+        en: {
+          eyebrow: "ATLAS DATA EXPLORER",
+          collapse: "Collapse list",
+          expand: "Expand list",
+          search: "Search",
+          searchPlaceholder: "Search names, addresses, or attributes…",
+          sort: "Sort",
+          ascending: "Ascending",
+          descending: "Descending",
+          loadMore: "Load more",
+          results: "results",
+          shown: "Shown",
+          empty: "No records match the current filters",
+          reset: "Reset",
+          legend: "Legend",
+          details: "Feature details",
+          all: "All",
+          filters: "active filters",
+          from: "Min",
+          to: "Max",
+          missing: "Not provided",
+          close: "Close details",
+          features: "Features",
+          basemap: "Basemap",
+          fullscreen: "Fullscreen map",
+          filterBar: "Map filters",
+          featureBrowser: "Map features"
+        }
+      };
+      function t(key) {
+        return strings[language][key] || strings.en[key] || key;
       }
 
       var requestedPrimary = IMB.text(spec.primary_layer);
@@ -89,26 +178,57 @@
       });
       var primarySpec = IMB.layerSpec(primary);
       var records = IMB.normalizedRecords(primary);
+      var recordById = new Map(records.map(function (record) { return [record.id, record]; }));
       var featureCollection = primary.feature_collection || { type: "FeatureCollection", features: [] };
       var listConfig = spec.list && typeof spec.list === "object" ? spec.list : {};
-      var batchSize = Math.max(20, Number(IMB.firstDefined(
-        listConfig.batch_size,
-        200
-      )));
+      var mapConfig = spec.map && typeof spec.map === "object" ? spec.map : {};
+      var searchBehavior = IMB.text(mapConfig.search_behavior || "filter").toLocaleLowerCase();
+      var batchSize = Math.max(20, Number(IMB.firstDefined(listConfig.batch_size, 200)));
+
       var title = IMB.text(IMB.firstDefined(spec.title, IMB.layerTitle(primary, 0)));
       var subtitle = IMB.text(IMB.firstDefined(spec.subtitle, ""));
       document.title = title || "Interactive map";
       document.getElementById("imb-title").textContent = title;
       document.getElementById("imb-subtitle").textContent = subtitle;
-      document.getElementById("imb-legend-title").textContent = label("legend", "图例");
-      var legendItems = document.getElementById("imb-legend-items");
+      document.getElementById("imb-eyebrow").textContent = t("eyebrow");
+      document.getElementById("imb-search-label").textContent = t("search");
+      document.getElementById("imb-sort-label").textContent = t("sort");
+      document.getElementById("imb-reset").textContent = t("reset");
+      document.getElementById("imb-load-more").textContent = t("loadMore");
+      document.getElementById("imb-legend-title").textContent = t("legend");
+      document.getElementById("imb-detail-kicker").textContent = t("details");
+      document.getElementById("imb-detail-close").setAttribute("aria-label", t("close"));
+      document.querySelector(".imb-command-bar").setAttribute("aria-label", t("filterBar"));
+      document.getElementById("imb-sidebar").setAttribute("aria-label", t("featureBrowser"));
+
+      var app = document.getElementById("imb-app");
+      var collapse = document.getElementById("imb-collapse");
+      var collapseLabel = document.getElementById("imb-collapse-label");
+      collapseLabel.textContent = t("collapse");
+      collapse.hidden = listConfig.collapsible === false;
+      var search = document.getElementById("imb-search");
+      search.placeholder = t("searchPlaceholder");
+      var sortDirection = document.getElementById("imb-sort-direction");
+      var loadMore = document.getElementById("imb-load-more");
+      var listNode = document.getElementById("imb-list");
+      var resultCount = document.getElementById("imb-result-count");
+      var renderCount = document.getElementById("imb-render-count");
+      var summary = document.getElementById("imb-summary");
+      var filtersContainer = document.getElementById("imb-filters");
+      var activeFilterCount = document.getElementById("imb-active-filter-count");
+      var detail = document.getElementById("imb-detail");
+      var detailTitle = document.getElementById("imb-detail-title");
+      var detailBody = document.getElementById("imb-detail-body");
+
       var legendEntries = IMB.categoryEntries(primarySpec);
       if (!legendEntries.length) {
         legendEntries = [{
+          value: IMB.layerId(primary, primaryIndex),
           label: IMB.layerTitle(primary, primaryIndex),
           color: IMB.colorFor(primarySpec, {})
         }];
       }
+      var legendItems = document.getElementById("imb-legend-items");
       legendEntries.forEach(function (entry) {
         var row = IMB.element("div", undefined, "imb-legend-item");
         var swatch = IMB.element("span", undefined, "imb-swatch");
@@ -117,36 +237,33 @@
         row.appendChild(IMB.element("span", entry.label));
         legendItems.appendChild(row);
       });
+      document.getElementById("imb-legend-toggle").addEventListener("click", function () {
+        var legend = document.getElementById("imb-legend");
+        var collapsed = legend.classList.toggle("is-collapsed");
+        this.setAttribute("aria-expanded", collapsed ? "false" : "true");
+      });
 
-      var collapse = document.getElementById("imb-collapse");
-      collapse.textContent = label("collapse", "收起清单");
-      collapse.hidden = listConfig.collapsible === false;
-      var search = document.getElementById("imb-search");
-      document.getElementById("imb-search-label").textContent = label("search", "搜索");
-      search.placeholder = label("search_placeholder", "输入名称或属性");
-      document.getElementById("imb-sort-label").textContent = label("sort", "排序");
-      var sortDirection = document.getElementById("imb-sort-direction");
-      var loadMore = document.getElementById("imb-load-more");
-      loadMore.textContent = label("load_more", "加载更多");
-
-      var app = document.getElementById("imb-app");
       var map = IMB.setupMap();
       IMB.addBasemap(map, spec);
-
+      var basemapSelect = document.querySelector(".imb-map-tool-select");
+      if (basemapSelect) {
+        basemapSelect.setAttribute("aria-label", t("basemap"));
+      }
+      var fullscreenButton = document.querySelector(".imb-map-tool-button");
+      if (fullscreenButton) {
+        fullscreenButton.title = t("fullscreen");
+        fullscreenButton.setAttribute("aria-label", t("fullscreen"));
+      }
       var allMapGroups = [];
       layers.forEach(function (candidate, candidateIndex) {
         if (candidate === primary) {
           return;
         }
         var candidateSpec = IMB.layerSpec(candidate);
-        var candidateCollection = candidate.feature_collection || {
-          type: "FeatureCollection",
-          features: []
-        };
-        var contextGroup = L.geoJSON(candidateCollection, {
-          style: function (feature) {
-            return IMB.geometryStyle(candidateSpec, feature);
-          },
+        var contextGroup = L.geoJSON(candidate.feature_collection || {
+          type: "FeatureCollection", features: []
+        }, {
+          style: function (feature) { return IMB.geometryStyle(candidateSpec, feature); },
           pointToLayer: function (feature, latlng) {
             return L.circleMarker(latlng, IMB.geometryStyle(candidateSpec, feature));
           },
@@ -154,21 +271,16 @@
             IMB.attachFeatureContent(leafletLayer, feature, candidateSpec);
           }
         });
-        var visible = IMB.firstDefined(
-          candidateSpec.visible,
-          true
-        ) !== false;
-        if (visible) {
+        if (candidateSpec.visible !== false) {
           contextGroup.addTo(map);
           allMapGroups.push(contextGroup);
         }
       });
 
       var featureRegistry = new Map();
+      var matchedIds = new Set(records.map(function (record) { return record.id; }));
       var featureGroup = L.geoJSON(featureCollection, {
-        style: function (feature) {
-          return IMB.geometryStyle(primarySpec, feature);
-        },
+        style: function (feature) { return IMB.geometryStyle(primarySpec, feature); },
         pointToLayer: function (feature, latlng) {
           return L.circleMarker(latlng, IMB.geometryStyle(primarySpec, feature));
         },
@@ -180,7 +292,13 @@
             featureRegistry.set(identifier, []);
           }
           featureRegistry.get(identifier).push(entry);
-          IMB.attachFeatureContent(leafletLayer, feature, primarySpec);
+          var tooltipFields = IMB.contentFields(primarySpec, "tooltip");
+          if (tooltipFields.length && leafletLayer.bindTooltip) {
+            leafletLayer.bindTooltip(
+              IMB.buildDetailsNode(feature.properties || {}, tooltipFields, "imb-tooltip"),
+              { sticky: true, direction: "top" }
+            );
+          }
           leafletLayer.on("mouseover", function () {
             IMB.link_by_id.emit("highlight", identifier, { source: "map" });
           });
@@ -205,22 +323,42 @@
         [],
         primarySpec
       );
-      var category = IMB.categoryField(primarySpec);
+      var detailFields = IMB.fieldDefinitions(
+        IMB.firstDefined(listConfig.detail_fields, primarySpec.popup_fields),
+        cardFields.map(function (definition) { return definition.field; }),
+        primarySpec
+      );
+      var categoryField = IMB.text(IMB.firstDefined(
+        listConfig.category_field,
+        IMB.categoryField(primarySpec),
+        ""
+      ));
+      var configuredNumericFilters = Array.isArray(listConfig.numeric_filters)
+        ? listConfig.numeric_filters.filter(function (item) {
+          return item && typeof item === "object" && item.field;
+        })
+        : [];
+      var configuredFilterFields = Array.from(new Set(
+        (primarySpec.filter_fields || [])
+          .concat(categoryField ? [categoryField] : [])
+          .concat(configuredNumericFilters.map(function (item) { return IMB.text(item.field); }))
+      ));
       var filterFields = IMB.fieldDefinitions(
-        primarySpec.filter_fields,
-        category ? [category] : [],
+        configuredFilterFields,
+        categoryField ? [categoryField] : [],
         primarySpec
       );
       var sortFields = IMB.fieldDefinitions(
         primarySpec.sort_fields,
-        [IMB.labelField(primarySpec)].concat(category ? [category] : []),
+        [IMB.labelField(primarySpec)].concat(categoryField ? [categoryField] : []),
         primarySpec
       );
+
       var sortSelect = document.getElementById("imb-sort");
       sortFields.forEach(function (definition) {
         var option = document.createElement("option");
         option.value = definition.field;
-        option.textContent = definition.label || IMB.fieldLabel(primarySpec, definition.field);
+        option.textContent = definition.label;
         sortSelect.appendChild(option);
       });
       if (listConfig.default_sort && Array.prototype.some.call(sortSelect.options, function (option) {
@@ -229,24 +367,75 @@
         sortSelect.value = listConfig.default_sort;
       }
 
-      var filterState = {};
-      var filtersContainer = document.getElementById("imb-filters");
-      filterFields.forEach(function (definition) {
-        var wrapper = IMB.element("div", undefined, "imb-field");
-        var identifier = "imb-filter-" + definition.field.replace(/[^A-Za-z0-9_-]/g, "-");
-        var fieldLabel = IMB.element("label", definition.label || IMB.fieldLabel(primarySpec, definition.field));
-        fieldLabel.setAttribute("for", identifier);
-        var select = IMB.element("select", undefined, "imb-select");
-        select.id = identifier;
+      function numericProfile(field) {
+        var raw = records.map(function (record) { return record.properties[field]; }).filter(function (value) {
+          return value !== null && value !== undefined && IMB.text(value).trim();
+        });
+        var numeric = raw.map(Number).filter(Number.isFinite);
+        var unique = Array.from(new Set(numeric));
+        var categoryThreshold = Math.min(8, Math.max(3, Math.floor(records.length * 0.1)));
+        if (!raw.length || numeric.length / raw.length < 0.9 || unique.length <= categoryThreshold) {
+          return null;
+        }
+        return {
+          min: Math.min.apply(null, numeric),
+          max: Math.max.apply(null, numeric),
+          step: unique.every(Number.isInteger) ? 1 : 0.1
+        };
+      }
+
+      var filterModels = [];
+      function addChipFilter(definition, values) {
+        var model = {
+          field: definition.field,
+          label: definition.label,
+          type: "chips",
+          values: values,
+          selected: new Set(values),
+          active: false
+        };
+        var group = IMB.element("div", undefined, "imb-chip-group");
+        group.setAttribute("aria-label", definition.label);
+        values.forEach(function (value) {
+          var button = IMB.element("button", undefined, "imb-chip is-active");
+          button.type = "button";
+          button.dataset.value = value;
+          button.setAttribute("aria-pressed", "true");
+          var entry = legendEntries.find(function (candidate) { return candidate.value === value; });
+          if (entry && entry.color) {
+            var dot = IMB.element("span", undefined, "imb-chip-dot");
+            dot.style.backgroundColor = entry.color;
+            button.appendChild(dot);
+          }
+          button.appendChild(IMB.element("span", entry ? entry.label : value));
+          button.addEventListener("click", function () {
+            if (model.selected.has(value)) {
+              model.selected.delete(value);
+              button.classList.remove("is-active");
+              button.setAttribute("aria-pressed", "false");
+            } else {
+              model.selected.add(value);
+              button.classList.add("is-active");
+              button.setAttribute("aria-pressed", "true");
+            }
+            model.active = model.selected.size !== model.values.length;
+            applyFilters();
+          });
+          group.appendChild(button);
+        });
+        model.node = group;
+        filtersContainer.appendChild(group);
+        filterModels.push(model);
+      }
+
+      function addSelectFilter(definition, values) {
+        var model = { field: definition.field, label: definition.label, type: "select", value: "", active: false };
+        var select = IMB.element("select", undefined, "imb-compact-select imb-filter-select");
+        select.setAttribute("aria-label", definition.label);
         var allOption = document.createElement("option");
         allOption.value = "";
-        allOption.textContent = label("all", "全部");
+        allOption.textContent = definition.label + ": " + t("all");
         select.appendChild(allOption);
-        var values = Array.from(new Set(records.map(function (record) {
-          return IMB.text(record.properties[definition.field]);
-        }).filter(Boolean))).sort(function (left, right) {
-          return left.localeCompare(right, undefined, { numeric: true });
-        });
         values.forEach(function (value) {
           var option = document.createElement("option");
           option.value = value;
@@ -254,12 +443,108 @@
           select.appendChild(option);
         });
         select.addEventListener("change", function () {
-          filterState[definition.field] = select.value;
+          model.value = select.value;
+          model.active = Boolean(model.value);
           applyFilters();
         });
-        wrapper.appendChild(fieldLabel);
-        wrapper.appendChild(select);
-        filtersContainer.appendChild(wrapper);
+        model.node = select;
+        filtersContainer.appendChild(select);
+        filterModels.push(model);
+      }
+
+      function addRangeFilter(definition, profile) {
+        var model = {
+          field: definition.field,
+          label: definition.label,
+          type: "range",
+          minimum: profile.min,
+          maximum: profile.max,
+          low: profile.min,
+          high: profile.max,
+          active: false
+        };
+        var details = document.createElement("details");
+        details.className = "imb-range-filter";
+        var summaryNode = document.createElement("summary");
+        summaryNode.textContent = definition.label;
+        details.appendChild(summaryNode);
+        var inputs = IMB.element("div", undefined, "imb-range-inputs");
+        var low = document.createElement("input");
+        var high = document.createElement("input");
+        [low, high].forEach(function (input) {
+          input.type = "number";
+          input.className = "imb-range-number";
+          input.min = String(profile.min);
+          input.max = String(profile.max);
+          input.step = String(profile.step);
+        });
+        low.value = String(profile.min);
+        high.value = String(profile.max);
+        low.setAttribute("aria-label", definition.label + " " + t("from"));
+        high.setAttribute("aria-label", definition.label + " " + t("to"));
+        function update() {
+          var nextLow = Number(low.value);
+          var nextHigh = Number(high.value);
+          model.low = Number.isFinite(nextLow) ? nextLow : model.minimum;
+          model.high = Number.isFinite(nextHigh) ? nextHigh : model.maximum;
+          if (model.low > model.high) {
+            var swap = model.low;
+            model.low = model.high;
+            model.high = swap;
+          }
+          model.active = model.low > model.minimum || model.high < model.maximum;
+          summaryNode.textContent = model.active
+            ? definition.label + " · " + model.low + "–" + model.high
+            : definition.label;
+          applyFilters();
+        }
+        low.addEventListener("change", update);
+        high.addEventListener("change", update);
+        inputs.appendChild(low);
+        inputs.appendChild(IMB.element("span", "–", "imb-range-separator"));
+        inputs.appendChild(high);
+        details.appendChild(inputs);
+        model.lowNode = low;
+        model.highNode = high;
+        model.summaryNode = summaryNode;
+        filtersContainer.appendChild(details);
+        filterModels.push(model);
+      }
+
+      filterFields.forEach(function (definition) {
+        var values = Array.from(new Set(records.map(function (record) {
+          return IMB.text(record.properties[definition.field]).trim();
+        }).filter(Boolean))).sort(function (left, right) {
+          return left.localeCompare(right, undefined, { numeric: true });
+        });
+        var configured = configuredNumericFilters.find(function (item) {
+          return IMB.text(item.field) === definition.field;
+        });
+        var inferredProfile = numericProfile(definition.field);
+        var profile = configured ? {
+          min: Number.isFinite(Number(configured.min))
+            ? Number(configured.min)
+            : (inferredProfile ? inferredProfile.min : null),
+          max: Number.isFinite(Number(configured.max))
+            ? Number(configured.max)
+            : (inferredProfile ? inferredProfile.max : null),
+          step: Number.isFinite(Number(configured.step)) && Number(configured.step) > 0
+            ? Number(configured.step)
+            : (inferredProfile ? inferredProfile.step : 1)
+        } : inferredProfile;
+        if (profile && (!Number.isFinite(profile.min) || !Number.isFinite(profile.max))) {
+          profile = null;
+        }
+        if (profile) {
+          addRangeFilter({
+            field: definition.field,
+            label: IMB.text(configured && configured.label || definition.label)
+          }, profile);
+        } else if (values.length > 0 && values.length <= 8) {
+          addChipFilter(definition, values);
+        } else if (values.length) {
+          addSelectFilter(definition, values);
+        }
       });
 
       var state = {
@@ -269,109 +554,9 @@
         hoveredId: "",
         selectedId: ""
       };
-      var listNode = document.getElementById("imb-list");
-      var resultCount = document.getElementById("imb-result-count");
-      var renderCount = document.getElementById("imb-render-count");
-      var summary = document.getElementById("imb-summary");
       var summaryMetrics = Array.isArray(listConfig.summary_metrics)
         ? listConfig.summary_metrics
-        : [{ type: "count", label: label("features", "对象数") }];
-
-      function renderLinkedView() {
-        var linked = spec.linked_view;
-        if (!linked || typeof linked !== "object") {
-          return;
-        }
-        if (IMB.text(linked.layer) !== IMB.layerId(primary, primaryIndex)) {
-          return;
-        }
-        var xField = IMB.text(linked.x_field);
-        var yField = IMB.text(linked.y_field);
-        var points = records.map(function (record) {
-          return {
-            record: record,
-            x: Number(record.properties[xField]),
-            y: Number(record.properties[yField])
-          };
-        }).filter(function (point) {
-          return Number.isFinite(point.x) && Number.isFinite(point.y);
-        });
-        if (!points.length) {
-          return;
-        }
-        var panel = document.getElementById("imb-linked-view");
-        var svg = document.getElementById("imb-linked-chart");
-        var svgNamespace = "http://www.w3.org/2000/svg";
-        var titleNode = document.getElementById("imb-linked-view-title");
-        titleNode.textContent = IMB.text(IMB.firstDefined(linked.title, xField + " × " + yField));
-        svg.setAttribute("aria-label", titleNode.textContent);
-        var xValues = points.map(function (point) { return point.x; });
-        var yValues = points.map(function (point) { return point.y; });
-        var minX = Math.min.apply(null, xValues);
-        var maxX = Math.max.apply(null, xValues);
-        var minY = Math.min.apply(null, yValues);
-        var maxY = Math.max.apply(null, yValues);
-        if (minX === maxX) {
-          minX -= 0.5;
-          maxX += 0.5;
-        }
-        if (minY === maxY) {
-          minY -= 0.5;
-          maxY += 0.5;
-        }
-        var left = 30;
-        var right = 306;
-        var top = 12;
-        var bottom = 151;
-        function svgNode(name, attributes, className) {
-          var node = document.createElementNS(svgNamespace, name);
-          Object.keys(attributes || {}).forEach(function (key) {
-            node.setAttribute(key, IMB.text(attributes[key]));
-          });
-          if (className) {
-            node.setAttribute("class", className);
-          }
-          return node;
-        }
-        svg.appendChild(svgNode("line", {
-          x1: left, y1: bottom, x2: right, y2: bottom
-        }, "imb-linked-axis"));
-        svg.appendChild(svgNode("line", {
-          x1: left, y1: top, x2: left, y2: bottom
-        }, "imb-linked-axis"));
-        var xLabel = svgNode("text", {
-          x: right, y: 171, "text-anchor": "end"
-        }, "imb-linked-axis-label");
-        xLabel.textContent = xField;
-        svg.appendChild(xLabel);
-        var yLabel = svgNode("text", {
-          x: 5, y: top + 2
-        }, "imb-linked-axis-label");
-        yLabel.textContent = yField;
-        svg.appendChild(yLabel);
-        points.forEach(function (point) {
-          var cx = left + ((point.x - minX) / (maxX - minX)) * (right - left);
-          var cy = bottom - ((point.y - minY) / (maxY - minY)) * (bottom - top);
-          var circle = svgNode("circle", {
-            cx: cx,
-            cy: cy,
-            r: 5,
-            fill: IMB.colorFor(primarySpec, point.record.properties),
-            tabindex: 0,
-            role: "button"
-          }, "imb-linked-point");
-          circle.dataset.featureId = point.record.id;
-          var pointTitle = svgNode("title");
-          pointTitle.textContent = IMB.text(IMB.firstDefined(
-            point.record.properties.__label,
-            point.record.id
-          )) + " — " + xField + ": " + point.x + ", " + yField + ": " + point.y;
-          circle.appendChild(pointTitle);
-          svg.appendChild(circle);
-        });
-        panel.hidden = false;
-        IMB.bindLinkedElements(svg);
-      }
+        : [{ type: "count", label: t("features") }];
 
       function searchableText(record) {
         return searchFields.map(function (definition) {
@@ -393,27 +578,84 @@
         } else if (Number.isFinite(leftNumber) && Number.isFinite(rightNumber)) {
           result = leftNumber - rightNumber;
         } else {
-          result = IMB.text(leftValue).localeCompare(IMB.text(rightValue), undefined, {
-            numeric: true,
-            sensitivity: "base"
+          result = IMB.text(leftValue).localeCompare(IMB.text(rightValue), locale, {
+            numeric: true, sensitivity: "base"
           });
         }
         return state.ascending ? result : -result;
       }
 
-      function setFeatureVisibility(visibleIds) {
+      function passesFilters(record) {
+        return filterModels.every(function (model) {
+          if (!model.active) {
+            return true;
+          }
+          var raw = record.properties[model.field];
+          if (model.type === "chips") {
+            return model.selected.has(IMB.text(raw));
+          }
+          if (model.type === "select") {
+            return IMB.text(raw) === model.value;
+          }
+          var numeric = Number(raw);
+          return Number.isFinite(numeric) && numeric >= model.low && numeric <= model.high;
+        });
+      }
+
+      function restoreVisual(identifier) {
+        var entries = featureRegistry.get(identifier) || [];
+        var matched = matchedIds.has(identifier);
+        entries.forEach(function (entry) {
+          if (!entry.leaflet || !entry.leaflet.setStyle) {
+            return;
+          }
+          if (searchBehavior === "highlight" && !matched) {
+            entry.leaflet.setStyle(Object.assign({}, entry.baseStyle, {
+              opacity: 0.22,
+              fillOpacity: Math.min(0.1, Number(entry.baseStyle.fillOpacity || 0.1))
+            }));
+          } else {
+            entry.leaflet.setStyle(entry.baseStyle);
+          }
+        });
+      }
+
+      function applyMapFilter() {
         featureRegistry.forEach(function (entries, identifier) {
-          var shouldShow = visibleIds.has(identifier);
+          var matched = matchedIds.has(identifier);
           entries.forEach(function (entry) {
-            if (shouldShow && !entry.visible) {
-              featureGroup.addLayer(entry.leaflet);
-              entry.visible = true;
-            } else if (!shouldShow && entry.visible) {
-              featureGroup.removeLayer(entry.leaflet);
-              entry.visible = false;
+            if (searchBehavior === "filter") {
+              if (matched && !entry.visible) {
+                featureGroup.addLayer(entry.leaflet);
+                entry.visible = true;
+              } else if (!matched && entry.visible) {
+                featureGroup.removeLayer(entry.leaflet);
+                entry.visible = false;
+              }
+            } else {
+              if (!entry.visible) {
+                featureGroup.addLayer(entry.leaflet);
+                entry.visible = true;
+              }
+              restoreVisual(identifier);
             }
           });
         });
+        IMB.qa.mapFeatureCount = featureGroup.getLayers().length;
+      }
+
+      function categoryBadge(record) {
+        if (!categoryField) {
+          return null;
+        }
+        var value = IMB.text(record.properties[categoryField]);
+        var entry = legendEntries.find(function (candidate) { return candidate.value === value; });
+        var badge = IMB.element("span", undefined, "imb-card-badge");
+        var dot = IMB.element("span", undefined, "imb-card-badge-dot");
+        dot.style.backgroundColor = entry && entry.color ? entry.color : IMB.colorFor(primarySpec, record.properties);
+        badge.appendChild(dot);
+        badge.appendChild(IMB.element("span", entry ? entry.label : IMB.displayValue(value)));
+        return badge;
       }
 
       function createCard(record) {
@@ -422,17 +664,30 @@
         card.setAttribute("role", "option");
         card.setAttribute("aria-selected", record.id === state.selectedId ? "true" : "false");
         card.dataset.featureId = record.id;
-        var cardTitle = IMB.text(IMB.firstDefined(
-          record.properties.__label,
-          record.id
+        var top = IMB.element("span", undefined, "imb-card-topline");
+        var badge = categoryBadge(record);
+        if (badge) {
+          top.appendChild(badge);
+        }
+        top.appendChild(IMB.element("span", record.id, "imb-card-id"));
+        card.appendChild(top);
+        card.appendChild(IMB.element(
+          "span",
+          IMB.text(IMB.firstDefined(record.properties.__label, record.id)),
+          "imb-card-title"
         ));
-        card.appendChild(IMB.element("span", cardTitle, "imb-card-title"));
         if (cardFields.length) {
           var meta = IMB.element("span", undefined, "imb-card-meta");
-          cardFields.forEach(function (definition) {
+          cardFields.filter(function (definition) {
+            return definition.field !== categoryField;
+          }).slice(0, 4).forEach(function (definition) {
             var item = IMB.element("span", undefined, "imb-card-meta-item");
-            item.textContent = (definition.label || IMB.fieldLabel(primarySpec, definition.field)) +
-              ": " + IMB.displayValue(record.properties[definition.field]);
+            item.appendChild(IMB.element("span", definition.label, "imb-card-meta-key"));
+            item.appendChild(IMB.element(
+              "span",
+              IMB.displayValue(record.properties[definition.field]),
+              "imb-card-meta-value"
+            ));
             meta.appendChild(item);
           });
           card.appendChild(meta);
@@ -440,12 +695,44 @@
         return card;
       }
 
+      function openDetail(record) {
+        detailTitle.textContent = IMB.text(IMB.firstDefined(record.properties.__label, record.id));
+        detailBody.replaceChildren();
+        var badge = categoryBadge(record);
+        if (badge) {
+          detailBody.appendChild(badge);
+        }
+        var grid = IMB.element("dl", undefined, "imb-detail-grid");
+        detailFields.forEach(function (definition) {
+          var term = IMB.element("dt", definition.label);
+          var value = IMB.element("dd", IMB.displayValue(record.properties[definition.field]));
+          grid.appendChild(term);
+          grid.appendChild(value);
+        });
+        detailBody.appendChild(grid);
+        detail.hidden = false;
+        app.classList.add("is-detail-open");
+        IMB.qa.detailOpen = true;
+      }
+
+      function closeDetail() {
+        detail.hidden = true;
+        app.classList.remove("is-detail-open");
+        IMB.qa.detailOpen = false;
+        window.setTimeout(function () { map.invalidateSize(); }, 180);
+      }
+
       function updateCounts() {
-        resultCount.textContent = label("results", "结果") + ": " + state.filtered.length;
-        renderCount.textContent = label("rendered", "已显示") + ": " + state.rendered;
+        resultCount.textContent = new Intl.NumberFormat(locale).format(state.filtered.length) + " " + t("results");
+        renderCount.textContent = t("shown") + " " + new Intl.NumberFormat(locale).format(state.rendered);
         loadMore.hidden = state.rendered >= state.filtered.length;
+        var count = filterModels.filter(function (model) { return model.active; }).length +
+          (search.value.trim() ? 1 : 0);
+        activeFilterCount.hidden = count === 0;
+        activeFilterCount.textContent = count + " " + t("filters");
         IMB.qa.visibleRecordCount = state.filtered.length;
         IMB.qa.renderedListCount = state.rendered;
+        IMB.qa.activeFilterCount = count;
       }
 
       function metricValue(metric, sourceRecords) {
@@ -478,9 +765,7 @@
         }
         if (type === "median") {
           var midpoint = Math.floor(values.length / 2);
-          return values.length % 2
-            ? values[midpoint]
-            : (values[midpoint - 1] + values[midpoint]) / 2;
+          return values.length % 2 ? values[midpoint] : (values[midpoint - 1] + values[midpoint]) / 2;
         }
         return null;
       }
@@ -489,37 +774,34 @@
         if (value === null) {
           return "—";
         }
+        var decimals = Number.isInteger(metric.decimals)
+          ? metric.decimals
+          : (Number.isInteger(value) ? 0 : 1);
+        var options = { maximumFractionDigits: decimals };
         if (metric.format === "percent") {
-          return new Intl.NumberFormat(undefined, {
-            style: "percent",
-            maximumFractionDigits: 1
-          }).format(value);
+          options = { style: "percent", maximumFractionDigits: decimals };
+        } else if (metric.format === "compact" || Math.abs(value) >= 1000000) {
+          options.notation = "compact";
+          options.maximumFractionDigits = decimals;
         }
-        return new Intl.NumberFormat(undefined, {
-          maximumFractionDigits: Number.isInteger(value) ? 0 : 2
-        }).format(value);
+        return new Intl.NumberFormat(locale, options).format(value)
+          + (metric.unit ? " " + metric.unit : "");
       }
 
       function updateSummary() {
-        var sourceRecords = listConfig.summary_update_with_filter === false
-          ? records
-          : state.filtered;
+        var sourceRecords = listConfig.summary_update_with_filter === false ? records : state.filtered;
         summary.replaceChildren();
-        summaryMetrics.forEach(function (metric) {
+        summaryMetrics.slice(0, 4).forEach(function (metric) {
           if (!metric || typeof metric !== "object") {
             return;
           }
-          var value = metricValue(metric, sourceRecords);
-          var labelText = IMB.text(IMB.firstDefined(
-            metric.label,
-            metric.field,
-            metric.type,
-            "Metric"
-          ));
-          summary.appendChild(IMB.element(
+          var card = IMB.element("div", undefined, "imb-kpi");
+          card.appendChild(IMB.element("strong", formatMetric(metricValue(metric, sourceRecords), metric)));
+          card.appendChild(IMB.element(
             "span",
-            labelText + ": " + formatMetric(value, metric)
+            IMB.text(IMB.firstDefined(metric.label, metric.field, metric.type, "Metric"))
           ));
+          summary.appendChild(card);
         });
       }
 
@@ -533,7 +815,7 @@
         state.rendered = end;
         IMB.bindLinkedElements(listNode);
         if (!state.filtered.length && !listNode.firstChild) {
-          listNode.appendChild(IMB.element("p", label("empty", "没有符合条件的记录"), "imb-empty"));
+          listNode.appendChild(IMB.element("p", t("empty"), "imb-empty"));
         }
         updateCounts();
       }
@@ -544,21 +826,22 @@
           if (query && searchableText(record).indexOf(query) === -1) {
             return false;
           }
-          return Object.keys(filterState).every(function (field) {
-            return !filterState[field] || IMB.text(record.properties[field]) === filterState[field];
-          });
+          return passesFilters(record);
         }).sort(compareRecords);
+        matchedIds = new Set(state.filtered.map(function (record) { return record.id; }));
         state.rendered = 0;
         listNode.replaceChildren();
         renderNextBatch();
-        setFeatureVisibility(new Set(state.filtered.map(function (record) { return record.id; })));
+        applyMapFilter();
         updateSummary();
+        if (state.selectedId && !matchedIds.has(state.selectedId)) {
+          state.selectedId = "";
+          closeDetail();
+        }
       }
 
       function ensureRendered(identifier) {
-        var targetIndex = state.filtered.findIndex(function (record) {
-          return record.id === identifier;
-        });
+        var targetIndex = state.filtered.findIndex(function (record) { return record.id === identifier; });
         while (targetIndex >= state.rendered && state.rendered < state.filtered.length) {
           renderNextBatch();
         }
@@ -569,16 +852,21 @@
 
       function selectFeature(identifier, source) {
         if (state.selectedId && state.selectedId !== identifier) {
-          IMB.markFeature(featureRegistry, state.selectedId, false);
+          restoreVisual(state.selectedId);
           IMB.applyLinkedDomState(state.selectedId, false, false);
           Array.prototype.forEach.call(listNode.querySelectorAll("[aria-selected='true']"), function (node) {
             node.setAttribute("aria-selected", "false");
           });
         }
+        var record = recordById.get(identifier);
+        if (!record) {
+          return false;
+        }
         state.selectedId = identifier;
         IMB.qa.selectedId = identifier;
         IMB.markFeature(featureRegistry, identifier, true);
         IMB.applyLinkedDomState(identifier, true, true);
+        openDetail(record);
         var card = ensureRendered(identifier);
         if (card) {
           card.setAttribute("aria-selected", "true");
@@ -590,19 +878,93 @@
         if (mapEntries.length && source !== "map") {
           var leafletLayer = mapEntries[0].leaflet;
           if (leafletLayer.getBounds && leafletLayer.getBounds().isValid()) {
-            map.fitBounds(leafletLayer.getBounds(), { padding: [40, 40], maxZoom: 16 });
+            map.fitBounds(leafletLayer.getBounds(), { padding: [70, 70], maxZoom: 17 });
           } else if (leafletLayer.getLatLng) {
             map.panTo(leafletLayer.getLatLng());
           }
-          if (leafletLayer.openPopup) {
-            leafletLayer.openPopup();
-          }
         }
+        window.setTimeout(function () { map.invalidateSize(); }, 180);
+        return true;
+      }
+
+      function resetFilters() {
+        search.value = "";
+        filterModels.forEach(function (model) {
+          model.active = false;
+          if (model.type === "chips") {
+            model.selected = new Set(model.values);
+            if (model.node) {
+              Array.prototype.forEach.call(model.node.querySelectorAll(".imb-chip"), function (button) {
+                button.classList.add("is-active");
+                button.setAttribute("aria-pressed", "true");
+              });
+            }
+          } else if (model.type === "select") {
+            model.value = "";
+            model.node.value = "";
+          } else {
+            model.low = model.minimum;
+            model.high = model.maximum;
+            model.lowNode.value = String(model.minimum);
+            model.highNode.value = String(model.maximum);
+            model.summaryNode.textContent = model.label;
+          }
+        });
+        applyFilters();
+      }
+
+      function renderLinkedView() {
+        var linked = spec.linked_view;
+        if (!linked || typeof linked !== "object" || IMB.text(linked.layer) !== IMB.layerId(primary, primaryIndex)) {
+          return;
+        }
+        var xField = IMB.text(linked.x_field);
+        var yField = IMB.text(linked.y_field);
+        var points = records.map(function (record) {
+          return { record: record, x: Number(record.properties[xField]), y: Number(record.properties[yField]) };
+        }).filter(function (point) { return Number.isFinite(point.x) && Number.isFinite(point.y); });
+        if (!points.length) {
+          return;
+        }
+        var panel = document.getElementById("imb-linked-view");
+        var svg = document.getElementById("imb-linked-chart");
+        var namespace = "http://www.w3.org/2000/svg";
+        var titleNode = document.getElementById("imb-linked-view-title");
+        titleNode.textContent = IMB.text(IMB.firstDefined(linked.title, xField + " × " + yField));
+        var xValues = points.map(function (point) { return point.x; });
+        var yValues = points.map(function (point) { return point.y; });
+        var minX = Math.min.apply(null, xValues), maxX = Math.max.apply(null, xValues);
+        var minY = Math.min.apply(null, yValues), maxY = Math.max.apply(null, yValues);
+        if (minX === maxX) { minX -= 0.5; maxX += 0.5; }
+        if (minY === maxY) { minY -= 0.5; maxY += 0.5; }
+        function node(name, attributes, className) {
+          var item = document.createElementNS(namespace, name);
+          Object.keys(attributes || {}).forEach(function (key) { item.setAttribute(key, attributes[key]); });
+          if (className) { item.setAttribute("class", className); }
+          return item;
+        }
+        var left = 30, right = 306, top = 12, bottom = 151;
+        svg.appendChild(node("line", { x1: left, y1: bottom, x2: right, y2: bottom }, "imb-linked-axis"));
+        svg.appendChild(node("line", { x1: left, y1: top, x2: left, y2: bottom }, "imb-linked-axis"));
+        points.forEach(function (point) {
+          var circle = node("circle", {
+            cx: left + ((point.x - minX) / (maxX - minX)) * (right - left),
+            cy: bottom - ((point.y - minY) / (maxY - minY)) * (bottom - top),
+            r: 5,
+            fill: IMB.colorFor(primarySpec, point.record.properties),
+            tabindex: 0,
+            role: "button"
+          }, "imb-linked-point");
+          circle.dataset.featureId = point.record.id;
+          svg.appendChild(circle);
+        });
+        panel.hidden = false;
+        IMB.bindLinkedElements(svg);
       }
 
       IMB.link_by_id.on("highlight", function (event) {
         if (state.hoveredId && state.hoveredId !== state.selectedId && state.hoveredId !== event.id) {
-          IMB.markFeature(featureRegistry, state.hoveredId, false);
+          restoreVisual(state.hoveredId);
           IMB.applyLinkedDomState(state.hoveredId, false, false);
         }
         state.hoveredId = event.id;
@@ -611,52 +973,93 @@
       });
       IMB.link_by_id.on("clear", function (event) {
         if (event.id !== state.selectedId) {
-          IMB.markFeature(featureRegistry, event.id, false);
+          restoreVisual(event.id);
           IMB.applyLinkedDomState(event.id, false, false);
         }
         if (state.hoveredId === event.id) {
           state.hoveredId = "";
         }
       });
-      IMB.link_by_id.on("select", function (event) {
-        selectFeature(event.id, event.source);
-      });
+      IMB.link_by_id.on("select", function (event) { selectFeature(event.id, event.source); });
 
       search.addEventListener("input", applyFilters);
+      document.addEventListener("keydown", function (event) {
+        if (event.key === "/" && document.activeElement !== search) {
+          event.preventDefault();
+          search.focus();
+        }
+        if (event.key === "Escape" && !detail.hidden) {
+          closeDetail();
+        }
+      });
       sortSelect.addEventListener("change", applyFilters);
       sortDirection.addEventListener("click", function () {
         state.ascending = !state.ascending;
-        sortDirection.textContent = state.ascending
-          ? label("ascending", "升序")
-          : label("descending", "降序");
+        sortDirection.textContent = state.ascending ? "↑" : "↓";
+        sortDirection.setAttribute("aria-label", state.ascending ? t("ascending") : t("descending"));
         applyFilters();
       });
-      sortDirection.textContent = label("ascending", "升序");
+      sortDirection.textContent = "↑";
+      sortDirection.setAttribute("aria-label", t("ascending"));
       loadMore.addEventListener("click", renderNextBatch);
+      document.getElementById("imb-reset").addEventListener("click", resetFilters);
+      document.getElementById("imb-detail-close").addEventListener("click", closeDetail);
       collapse.addEventListener("click", function () {
         var collapsed = app.classList.toggle("is-sidebar-collapsed");
         collapse.setAttribute("aria-expanded", collapsed ? "false" : "true");
-        collapse.textContent = collapsed ? label("expand", "展开清单") : label("collapse", "收起清单");
+        collapseLabel.textContent = collapsed ? t("expand") : t("collapse");
         window.setTimeout(function () { map.invalidateSize(); }, 220);
       });
 
+      search.value = IMB.text(listConfig.initial_search || "");
       renderLinkedView();
       applyFilters();
       IMB.qa.actions.setSearch = function (value) {
         search.value = IMB.text(value);
         applyFilters();
       };
-      IMB.qa.actions.toggleSidebar = function () {
-        collapse.click();
+      IMB.qa.actions.toggleSidebar = function () { collapse.click(); };
+      IMB.qa.actions.selectFeature = function (identifier) {
+        return selectFeature(IMB.text(identifier), "qa");
+      };
+      IMB.qa.actions.resetFilters = resetFilters;
+      IMB.qa.actions.closeDetail = closeDetail;
+      IMB.qa.actions.setRange = function (field, low, high) {
+        var model = filterModels.find(function (candidate) {
+          return candidate.field === IMB.text(field) && candidate.type === "range";
+        });
+        if (!model) { return false; }
+        model.lowNode.value = String(low);
+        model.highNode.value = String(high);
+        model.low = Number(low);
+        model.high = Number(high);
+        model.active = true;
+        model.summaryNode.textContent = model.label + " · " + model.low + "–" + model.high;
+        applyFilters();
+        return true;
+      };
+      IMB.qa.actions.toggleCategory = function (field, value) {
+        var model = filterModels.find(function (candidate) {
+          return candidate.field === IMB.text(field) && candidate.type === "chips";
+        });
+        if (!model || model.values.indexOf(IMB.text(value)) < 0) { return false; }
+        var button = model.node && Array.prototype.find.call(model.node.querySelectorAll(".imb-chip"), function (candidate) {
+          return candidate.dataset.value === IMB.text(value);
+        });
+        if (button) { button.click(); return true; }
+        return false;
       };
       IMB.finish("map-list", {
         recordCount: records.length,
         visibleRecordCount: state.filtered.length,
         renderedListCount: state.rendered,
+        mapFeatureCount: featureGroup.getLayers().length,
+        detailOpen: false,
+        activeFilterCount: 0,
+        rangeFilterCount: filterModels.filter(function (model) { return model.type === "range"; }).length,
         layerCounts: layers.reduce(function (counts, layer, index) {
           var featureCount = layer.feature_collection && Array.isArray(layer.feature_collection.features)
-            ? layer.feature_collection.features.length
-            : 0;
+            ? layer.feature_collection.features.length : 0;
           counts[IMB.layerId(layer, index)] = Number(layer.count || featureCount);
           return counts;
         }, {})

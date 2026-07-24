@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PAGES_URL = "https://xlbaoxl.github.io/interactive-map-builder"
 
 
-def test_demo_site_builds_without_changing_source_specs(tmp_path: Path) -> None:
+def test_demo_site_builds_atlas_landing_without_changing_source_specs(tmp_path: Path) -> None:
     spec_paths = [
         ROOT / "assets" / "examples" / demo / "map_spec.json"
         for demo in ("map-list", "multilayer")
@@ -29,11 +29,18 @@ def test_demo_site_builds_without_changing_source_specs(tmp_path: Path) -> None:
         assert "dataset.imbReady" in html
         if demo == "map-list":
             assert "1 BROADWAY" in html
+            assert '"template":"map-list"' in html
             assert '"search_behavior":"highlight"' in html
+            assert "imb-detail-panel" in html
+            assert "rangeFilterCount" in html
 
     assert (site / ".nojekyll").is_file()
     root_html = (site / "index.html").read_text(encoding="utf-8")
-    assert "./map-list/" in root_html
+    assert "http-equiv=\"refresh\"" not in root_html
+    assert "Spatial data in." in root_html
+    assert "Map product out." in root_html
+    assert 'src="./map-list/"' in root_html
+    assert 'src="./multilayer/"' in root_html
     assert original_specs == {path: path.read_bytes() for path in spec_paths}
 
 

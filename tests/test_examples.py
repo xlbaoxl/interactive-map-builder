@@ -85,9 +85,11 @@ def test_linked_by_id_example_is_generic_and_ids_align() -> None:
 def test_searchable_land_use_example_has_expected_fixed_snapshot() -> None:
     example = EXAMPLES / "map-list"
     spec = json.loads((example / "map_spec.json").read_text(encoding="utf-8"))
-    assert spec["template"] == "multilayer"
+    assert spec["template"] == "map-list"
+    assert spec["primary_layer"] == "parcels"
+    assert spec["layers"][0]["source"]["path"] == "mixed-commercial.geojson"
     assert spec["map"]["search_behavior"] == "highlight"
-    assert spec["map"]["controls"]["legend"] is False
+    assert spec["map"]["controls"]["legend"] is True
 
     expected_counts = {
         "residential.geojson": 242,

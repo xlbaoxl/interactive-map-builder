@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import base64
 import json
-import shutil
 from pathlib import Path
 
 import geopandas as gpd
 import pytest
 from shapely.geometry import Point
 
+from demo_projects import prepare_demo_project
 from map_builder import build_map
 
 
@@ -34,9 +34,11 @@ def _wait_ready(page) -> dict:
 
 
 def _copy_example(name: str, destination: Path) -> Path:
-    source = ROOT / "assets" / "examples" / name
-    shutil.copytree(source, destination)
-    spec_path = destination / "map_spec.json"
+    spec_path = prepare_demo_project(
+        name,
+        examples_root=ROOT / "assets" / "examples",
+        destination=destination,
+    )
     spec = json.loads(spec_path.read_text(encoding="utf-8"))
     spec["static"] = {"enabled": False}
     spec["basemaps"] = []
@@ -57,21 +59,20 @@ def test_searchable_land_use_browser_smoke(tmp_path: Path) -> None:
         initial = _wait_ready(page)
         assert initial["recordCount"] == 1699
         assert initial["mapFeatureCount"] == 1699
+        assert initial["rangeFilterCount"] >= 3
 
         page.evaluate("window.__interactiveMapBuilderQA.actions.setSearch('BROADWAY')")
         assert page.evaluate("window.__interactiveMapBuilderQA.visibleRecordCount") == 184
         assert page.evaluate("window.__interactiveMapBuilderQA.mapFeatureCount") == 1699
 
         assert page.evaluate(
-            "window.__interactiveMapBuilderQA.actions.toggleLayer('residential', false)"
+            "window.__interactiveMapBuilderQA.actions.toggleCategory('category', '居住用地')"
         )
-        assert not page.locator(
-            "input[data-layer-id='residential']"
-        ).is_checked()
-        assert page.evaluate(
-            "window.__interactiveMapBuilderQA.actions.toggleLayer('residential', true)"
-        )
+        assert page.evaluate("window.__interactiveMapBuilderQA.activeFilterCount") == 2
+        page.evaluate("window.__interactiveMapBuilderQA.actions.resetFilters()")
+        assert page.evaluate("window.__interactiveMapBuilderQA.activeFilterCount") == 0
 
+        page.evaluate("window.__interactiveMapBuilderQA.actions.setSearch('BROADWAY')")
         page.locator("#imb-collapse").click()
         assert page.locator("#imb-app").evaluate(
             "node => node.classList.contains('is-sidebar-collapsed')"
@@ -79,9 +80,10 @@ def test_searchable_land_use_browser_smoke(tmp_path: Path) -> None:
 
         page.locator("#imb-collapse").click()
         page.get_by_text("1 BROADWAY", exact=True).click()
-        assert page.evaluate("Boolean(window.__interactiveMapBuilderQA.selectedLinkId)")
+        assert page.evaluate("Boolean(window.__interactiveMapBuilderQA.selectedId)")
+        assert page.evaluate("window.__interactiveMapBuilderQA.detailOpen") is True
         assert page.locator("#imb-list [aria-selected='true']").count() == 1
-        assert page.locator(".leaflet-popup").is_visible()
+        assert page.locator("#imb-detail").is_visible()
 
         page.set_viewport_size({"width": 390, "height": 844})
         assert page.locator("#imb-app").evaluate(
@@ -121,6 +123,7 @@ def _write_multilayer_project(project: Path, *, linked: bool) -> Path:
         "schema_version": "1.0",
         "template": "multilayer",
         "title": "Duplicate ID test",
+        "locale": "en-US",
         "layers": layers,
         "basemaps": [
             {
@@ -166,6 +169,10 @@ def test_multilayer_browser_smoke_and_link_isolation(tmp_path: Path) -> None:
         page.goto((plain_dist / "map.html").resolve().as_uri())
         plain = _wait_ready(page)
         assert plain["linkGroupSizes"] == {"a::1": 1, "b::1": 1}
+        assert page.locator("#imb-search-label").inner_text() == "Search across layers"
+        assert page.locator("#imb-layer-title").inner_text() == "Layers"
+        assert page.locator(".imb-map-tool-select").get_attribute("aria-label") == "Basemap"
+        assert page.locator(".imb-map-tool-button").get_attribute("title") == "Fullscreen map"
 
         assert page.evaluate(
             "window.__interactiveMapBuilderQA.actions.toggleLayer('a', false)"

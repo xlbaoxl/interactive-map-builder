@@ -293,6 +293,12 @@
         return candidate && text(candidate.url);
       })
       : [];
+    var locale = text(
+      spec && spec.locale ? spec.locale : document.documentElement.lang || "zh-CN"
+    );
+    var isChinese = locale.toLocaleLowerCase().indexOf("zh") === 0;
+    var basemapLabel = isChinese ? "底图" : "Basemap";
+    var fullscreenLabel = isChinese ? "全屏地图" : "Fullscreen map";
     var activeLayer = null;
     var activeIndex = -1;
     var attribution = document.getElementById("imb-map-attribution");
@@ -351,7 +357,7 @@
         var container = element("div", undefined, "imb-leaflet-tool");
         var select = document.createElement("select");
         select.className = "imb-map-tool-select";
-        select.setAttribute("aria-label", "底图");
+        select.setAttribute("aria-label", basemapLabel);
         basemaps.forEach(function (candidate, index) {
           var option = document.createElement("option");
           option.value = String(index);
@@ -383,7 +389,7 @@
         var button = element("button", "⛶", "imb-map-tool-button");
         fullscreenButtonNode = button;
         button.type = "button";
-        button.title = "全屏地图";
+        button.title = fullscreenLabel;
         button.setAttribute("aria-label", button.title);
         function toggleFallback(target) {
           var active = target.classList.toggle("is-imb-fullscreen");

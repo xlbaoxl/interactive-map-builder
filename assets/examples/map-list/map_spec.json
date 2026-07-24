@@ -1,66 +1,14 @@
 {
   "schema_version": "1.0",
-  "template": "multilayer",
-  "title": "下曼哈顿地块与用地",
-  "subtitle": "金融区—市政中心 · 1,699 个真实税务地块 · NYC Open Data",
+  "template": "map-list",
+  "title": "下曼哈顿商业与混合用地",
+  "subtitle": "金融区—市政中心 · 1,233 个真实税务地块 · NYC Open Data",
   "locale": "zh-CN",
+  "primary_layer": "parcels",
   "layers": [
     {
-      "id": "residential",
-      "name": "居住用地",
-      "source": {
-        "path": "residential.geojson"
-      },
-      "required": true,
-      "visible": true,
-      "id_field": "id",
-      "label_field": "name",
-      "search_fields": [
-        "name",
-        "address",
-        "zoning",
-        "bbl"
-      ],
-      "tooltip_fields": [
-        "name"
-      ],
-      "popup_fields": [
-        "address",
-        "category",
-        "land_use",
-        "zoning",
-        "lot_area_sqft",
-        "building_area_sqft",
-        "built_far",
-        "floors",
-        "year_built",
-        "bbl"
-      ],
-      "field_labels": {
-        "name": "地块地址",
-        "address": "地址",
-        "category": "用地大类",
-        "land_use": "详细用途",
-        "zoning": "主要分区",
-        "lot_area_sqft": "地块面积（平方英尺）",
-        "building_area_sqft": "建筑面积（平方英尺）",
-        "built_far": "已建容积率",
-        "floors": "楼层数",
-        "year_built": "建成年份",
-        "bbl": "地块编号 BBL"
-      },
-      "source_note": "NYC Open Data TAX_LOT_POLYGON (i38t-6if2) joined to PLUTO (64uk-42ks), retrieved 2026-07-24",
-      "style": {
-        "color": "#3a86a8",
-        "fill_color": "#3a86a8",
-        "weight": 0.8,
-        "opacity": 0.9,
-        "fill_opacity": 0.72
-      }
-    },
-    {
-      "id": "mixed_commercial",
-      "name": "混合与商业用地",
+      "id": "parcels",
+      "name": "商业与混合用地地块",
       "source": {
         "path": "mixed-commercial.geojson"
       },
@@ -75,64 +23,12 @@
         "bbl"
       ],
       "tooltip_fields": [
-        "name"
-      ],
-      "popup_fields": [
-        "address",
-        "category",
-        "land_use",
-        "zoning",
-        "lot_area_sqft",
-        "building_area_sqft",
-        "built_far",
-        "floors",
-        "year_built",
-        "bbl"
-      ],
-      "field_labels": {
-        "name": "地块地址",
-        "address": "地址",
-        "category": "用地大类",
-        "land_use": "详细用途",
-        "zoning": "主要分区",
-        "lot_area_sqft": "地块面积（平方英尺）",
-        "building_area_sqft": "建筑面积（平方英尺）",
-        "built_far": "已建容积率",
-        "floors": "楼层数",
-        "year_built": "建成年份",
-        "bbl": "地块编号 BBL"
-      },
-      "source_note": "NYC Open Data TAX_LOT_POLYGON (i38t-6if2) joined to PLUTO (64uk-42ks), retrieved 2026-07-24",
-      "style": {
-        "color": "#ef9f32",
-        "fill_color": "#ef9f32",
-        "weight": 0.8,
-        "opacity": 0.9,
-        "fill_opacity": 0.72
-      }
-    },
-    {
-      "id": "civic_other",
-      "name": "公共与其他用地",
-      "source": {
-        "path": "civic-other.geojson"
-      },
-      "required": true,
-      "visible": true,
-      "id_field": "id",
-      "label_field": "name",
-      "search_fields": [
         "name",
-        "address",
-        "zoning",
-        "bbl"
-      ],
-      "tooltip_fields": [
-        "name"
+        "land_use",
+        "zoning"
       ],
       "popup_fields": [
         "address",
-        "category",
         "land_use",
         "zoning",
         "lot_area_sqft",
@@ -142,11 +38,29 @@
         "year_built",
         "bbl"
       ],
+      "filter_fields": [
+        "land_use",
+        "year_built",
+        "floors",
+        "built_far"
+      ],
+      "card_fields": [
+        "land_use",
+        "zoning",
+        "floors",
+        "year_built"
+      ],
+      "sort_fields": [
+        "name",
+        "year_built",
+        "floors",
+        "built_far",
+        "building_area_sqft"
+      ],
       "field_labels": {
         "name": "地块地址",
         "address": "地址",
-        "category": "用地大类",
-        "land_use": "详细用途",
+        "land_use": "用地类型",
         "zoning": "主要分区",
         "lot_area_sqft": "地块面积（平方英尺）",
         "building_area_sqft": "建筑面积（平方英尺）",
@@ -155,13 +69,23 @@
         "year_built": "建成年份",
         "bbl": "地块编号 BBL"
       },
-      "source_note": "NYC Open Data TAX_LOT_POLYGON (i38t-6if2) joined to PLUTO (64uk-42ks), retrieved 2026-07-24",
+      "source_note": "NYC Open Data TAX_LOT_POLYGON (i38t-6if2) joined to PLUTO (64uk-42ks), snapshot 2026-07-24",
       "style": {
-        "color": "#8a5ca8",
-        "fill_color": "#8a5ca8",
-        "weight": 0.8,
-        "opacity": 0.9,
-        "fill_opacity": 0.72
+        "mode": "categorical",
+        "color_field": "land_use",
+        "weight": 0.75,
+        "opacity": 0.92,
+        "fill_opacity": 0.7,
+        "categories": {
+          "商业与办公": {
+            "label": "商业与办公",
+            "color": "#d99037"
+          },
+          "住宅与商业混合": {
+            "label": "住宅与商业混合",
+            "color": "#39758a"
+          }
+        }
       }
     }
   ],
@@ -185,9 +109,36 @@
       "fullscreen": true,
       "scale": true,
       "basemap_switcher": true,
-      "layer_control": true,
-      "legend": false
+      "layer_control": false,
+      "legend": true
     }
+  },
+  "list": {
+    "batch_size": 120,
+    "default_sort": "name",
+    "collapsible": true,
+    "summary_update_with_filter": true,
+    "summary_metrics": [
+      {
+        "type": "count",
+        "label": "当前地块"
+      },
+      {
+        "type": "sum",
+        "field": "building_area_sqft",
+        "label": "总建筑面积"
+      },
+      {
+        "type": "median",
+        "field": "year_built",
+        "label": "中位建年"
+      },
+      {
+        "type": "mean",
+        "field": "built_far",
+        "label": "平均容积率"
+      }
+    ]
   },
   "static": {
     "enabled": true,
@@ -195,6 +146,6 @@
       "slide-16x9",
       "paper"
     ],
-    "source_note": "NYC Open Data: TAX_LOT_POLYGON (i38t-6if2) joined to PLUTO (64uk-42ks), retrieved 2026-07-24"
+    "source_note": "NYC Open Data: TAX_LOT_POLYGON (i38t-6if2) joined to PLUTO (64uk-42ks), snapshot 2026-07-24"
   }
 }

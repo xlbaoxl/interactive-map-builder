@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Regenerate deterministic README screenshots with Playwright Chromium."""
+"""Regenerate deterministic Atlas README screenshots with Chromium."""
 
 from __future__ import annotations
 
@@ -9,62 +9,87 @@ import shutil
 import tempfile
 from pathlib import Path
 
+from demo_projects import prepare_demo_project
 from map_builder import build_map
 
-
 ROOT = Path(__file__).resolve().parents[1]
-MAX_SCREENSHOT_BYTES = 1_500_000
-MIN_LOADED_TILES = 4
+EXAMPLES = ROOT / "assets" / "examples"
+MAX_SCREENSHOT_BYTES = 1_700_000
+MIN_LOADED_TILES = 8
 
 
-def _capture(page, example_name: str, output: Path, work_root: Path) -> None:
-    source = ROOT / "assets" / "examples" / example_name
-    project = work_root / example_name
-    shutil.copytree(source, project)
-    spec_path = project / "map_spec.json"
-    spec = json.loads(spec_path.read_text(encoding="utf-8"))
-    spec["static"] = {"enabled": False}
-    spec_path.write_text(json.dumps(spec, ensure_ascii=False, indent=2), encoding="utf-8")
-    dist = work_root / f"{example_name}-dist"
-    build_map(spec_path, dist)
-    page.goto((dist / "map.html").resolve().as_uri())
+def _wait_for_map(page) -> None:
     page.wait_for_function(
         "document.documentElement.dataset.imbReady === 'true'",
-        timeout=15_000,
+        timeout=20_000,
     )
     page.wait_for_function(
-        """minimum => Array.from(document.querySelectorAll("img.leaflet-tile"))
-          .filter(tile => tile.complete && tile.naturalWidth > 0).length >= minimum""",
+        """minimum => {
+          const tiles = Array.from(document.querySelectorAll('img.leaflet-tile'));
+          return tiles.length >= minimum
+            && tiles.every(tile => tile.complete && tile.naturalWidth > 0);
+        }""",
         arg=MIN_LOADED_TILES,
         timeout=30_000,
     )
 
+
+def _capture(page, example_name: str, output: Path, work_root: Path) -> None:
+    project = work_root / example_name
+    spec_path = prepare_demo_project(
+        example_name,
+        examples_root=EXAMPLES,
+        destination=project,
+    )
+    spec = json.loads(spec_path.read_text(encoding="utf-8"))
+    spec["static"] = {"enabled": False}
+    spec_path.write_text(
+        json.dumps(spec, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+
+    dist = work_root / f"{example_name}-dist"
+    build_map(spec_path, dist)
+    page.goto((dist / "map.html").resolve().as_uri())
+    _wait_for_map(page)
+
     if example_name == "map-list":
+        page.evaluate("window.__interactiveMapBuilderQA.actions.setSearch('BROADWAY')")
         page.evaluate(
-            "window.__interactiveMapBuilderQA.actions.setSearch('BROADWAY')"
+            "window.__interactiveMapBuilderQA.actions.setRange('year_built', 1880, 2005)"
         )
         result = page.get_by_text("1 BROADWAY", exact=True)
         if result.count() != 1:
-            raise RuntimeError(
-                f"Expected one 1 BROADWAY result, found {result.count()}."
-            )
+            raise RuntimeError(f"Expected one 1 BROADWAY result, found {result.count()}.")
         result.click()
-        page.locator(".leaflet-popup").wait_for(state="visible", timeout=10_000)
+        page.locator("#imb-detail:not([hidden])").wait_for(state="visible", timeout=10_000)
     elif example_name == "multilayer":
-        page.get_by_text("Fulton St (A-C) MTA Restroom", exact=True).first.click()
+        facility = page.get_by_text(
+            "Grand Central (Metro North) LIRR Restroom", exact=True
+        ).first
+        facility.click()
+        page.locator(".leaflet-popup").wait_for(state="visible", timeout=10_000)
+        for _ in range(3):
+            page.locator(".leaflet-control-zoom-in").click()
+            page.wait_for_timeout(600)
+        facility.click()
         page.locator(".leaflet-popup").wait_for(state="visible", timeout=10_000)
     else:
         raise ValueError(f"Unsupported README screenshot example: {example_name}")
 
     page.wait_for_function(
-        """minimum => !document.querySelector(".leaflet-zoom-anim")
-          && Array.from(document.querySelectorAll("img.leaflet-tile"))
-            .filter(tile => tile.complete && tile.naturalWidth > 0).length >= minimum""",
+        """minimum => {
+          const tiles = Array.from(document.querySelectorAll('img.leaflet-tile'));
+          return !document.querySelector('.leaflet-zoom-anim')
+            && tiles.length >= minimum
+            && tiles.every(tile => tile.complete && tile.naturalWidth > 0);
+        }""",
         arg=MIN_LOADED_TILES,
         timeout=30_000,
     )
-    page.wait_for_timeout(1_500)
-    page.screenshot(path=str(output))
+    page.wait_for_timeout(3_000)
+    page.screenshot(path=str(output), full_page=False)
+
     try:
         from PIL import Image
     except ImportError as exc:
@@ -97,7 +122,7 @@ def main() -> int:
             "Install development dependencies and Chromium before capturing screenshots."
         ) from exc
 
-    with tempfile.TemporaryDirectory(prefix="imb-screenshots-") as temporary:
+    with tempfile.TemporaryDirectory(prefix="imb-atlas-screenshots-") as temporary:
         work_root = Path(temporary)
         with sync_playwright() as playwright:
             browser = playwright.chromium.launch()
