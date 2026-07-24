@@ -496,6 +496,7 @@
           return;
         }
         model.detailsNode.open = false;
+        model.summaryNode.setAttribute("aria-expanded", "false");
         model.panelNode.hidden = true;
         if (openRangeFilter === model) {
           openRangeFilter = null;
@@ -503,6 +504,24 @@
         if (restoreFocus) {
           model.summaryNode.focus();
         }
+      }
+
+      function openRangeFilterPanel(model) {
+        if (!model) {
+          return;
+        }
+        if (openRangeFilter && openRangeFilter !== model) {
+          closeRangeFilter(openRangeFilter, false);
+        }
+        openRangeFilter = model;
+        model.detailsNode.open = true;
+        model.summaryNode.setAttribute("aria-expanded", "true");
+        model.panelNode.hidden = false;
+        positionRangePanel(model);
+        window.requestAnimationFrame(function () {
+          positionRangePanel(model);
+          model.lowNode.focus();
+        });
       }
 
       function addRangeFilter(definition, profile) {
@@ -523,6 +542,7 @@
         var controlId = "imb-range-" + String(filterModels.length);
         summaryNode.id = controlId + "-summary";
         summaryNode.setAttribute("aria-controls", controlId + "-panel");
+        summaryNode.setAttribute("aria-expanded", "false");
         details.appendChild(summaryNode);
         var inputs = IMB.element("div", undefined, "imb-range-inputs");
         inputs.id = controlId + "-panel";
@@ -575,23 +595,13 @@
         model.summaryNode = summaryNode;
         model.detailsNode = details;
         model.panelNode = inputs;
-        details.addEventListener("toggle", function () {
-          if (!details.open) {
-            inputs.hidden = true;
-            if (openRangeFilter === model) {
-              openRangeFilter = null;
-            }
-            return;
+        summaryNode.addEventListener("click", function (event) {
+          event.preventDefault();
+          if (openRangeFilter === model) {
+            closeRangeFilter(model, false);
+          } else {
+            openRangeFilterPanel(model);
           }
-          if (openRangeFilter && openRangeFilter !== model) {
-            closeRangeFilter(openRangeFilter, false);
-          }
-          openRangeFilter = model;
-          inputs.hidden = false;
-          window.requestAnimationFrame(function () {
-            positionRangePanel(model);
-            low.focus();
-          });
         });
         filtersContainer.appendChild(details);
         document.body.appendChild(inputs);

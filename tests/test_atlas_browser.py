@@ -177,9 +177,11 @@ def test_atlas_filters_kpis_detail_drawer_and_english_ui(tmp_path: Path) -> None
         ).get_by_text("5000", exact=True).is_visible()
 
         year_filter = page.locator(".imb-range-filter").filter(has_text="Year")
+        assert year_filter.locator("summary").get_attribute("aria-expanded") == "false"
         year_filter.locator("summary").click()
         year_panel = page.locator(".imb-range-inputs").filter(has_text="Year")
         assert year_panel.is_visible()
+        assert year_filter.locator("summary").get_attribute("aria-expanded") == "true"
         panel_box = year_panel.bounding_box()
         assert panel_box is not None
         assert panel_box["x"] >= 0
@@ -195,8 +197,11 @@ def test_atlas_filters_kpis_detail_drawer_and_english_ui(tmp_path: Path) -> None
         floors_panel = page.locator(".imb-range-inputs").filter(has_text="Floors")
         assert floors_panel.is_visible()
         assert not year_panel.is_visible()
+        assert year_filter.locator("summary").get_attribute("aria-expanded") == "false"
+        assert floors_filter.locator("summary").get_attribute("aria-expanded") == "true"
         page.keyboard.press("Escape")
         assert not floors_panel.is_visible()
+        assert floors_filter.locator("summary").get_attribute("aria-expanded") == "false"
         assert floors_filter.locator("summary").evaluate(
             "node => node === document.activeElement"
         )
