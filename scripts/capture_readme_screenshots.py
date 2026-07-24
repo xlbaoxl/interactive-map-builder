@@ -64,7 +64,7 @@ def _capture(page, example_name: str, output: Path, work_root: Path) -> None:
         result.click()
         page.locator("#imb-detail:not([hidden])").wait_for(state="visible", timeout=10_000)
     elif example_name == "multilayer":
-        page.get_by_text("Fulton St (A-C) MTA Restroom", exact=True).first.click()
+        page.get_by_text("Jay St-MetroTech", exact=True).first.click()
         page.locator(".leaflet-popup").wait_for(state="visible", timeout=10_000)
     else:
         raise ValueError(f"Unsupported README screenshot example: {example_name}")

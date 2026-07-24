@@ -58,6 +58,8 @@ def test_merge_land_use_snapshots_and_generate_true_map_list(tmp_path: Path) -> 
 
     spec = atlas_map_list_spec(3)
     assert spec["template"] == "map-list"
+    assert spec["title"] == "Lower Manhattan 地块与用地"
+    assert spec["subtitle"].startswith("Financial District—Civic Center")
     assert spec["primary_layer"] == "parcels"
     assert spec["layers"][0]["source"]["path"] == "parcels.geojson"
     assert spec["layers"][0]["filter_fields"] == [

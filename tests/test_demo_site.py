@@ -33,6 +33,12 @@ def test_demo_site_builds_atlas_landing_without_changing_source_specs(tmp_path: 
             assert '"search_behavior":"highlight"' in html
             assert "imb-detail-panel" in html
             assert "rangeFilterCount" in html
+            assert "Lower Manhattan 地块与用地" in html
+        else:
+            assert "Jay St-MetroTech" in html
+            assert "Downtown Brooklyn 骑行与公共交通" in html
+            assert "imb-feature-types" in html
+            assert "setFeatureType" in html
 
     assert (site / ".nojekyll").is_file()
     root_html = (site / "index.html").read_text(encoding="utf-8")
@@ -41,6 +47,7 @@ def test_demo_site_builds_atlas_landing_without_changing_source_specs(tmp_path: 
     assert "Map product out." in root_html
     assert 'src="./map-list/"' in root_html
     assert 'src="./multilayer/"' in root_html
+    assert "Downtown Brooklyn mobility context" in root_html
     assert original_specs == {path: path.read_bytes() for path in spec_paths}
 
 

@@ -27,7 +27,7 @@ LAND_USE_COLORS: Mapping[str, str] = {
 }
 
 FIELD_LABELS: Mapping[str, str] = {
-    "name": "地块地址",
+    "name": "地址",
     "address": "地址",
     "category": "用地大类",
     "land_use": "详细用途",
@@ -100,8 +100,11 @@ def atlas_map_list_spec(feature_count: int) -> Dict[str, Any]:
     return {
         "schema_version": "1.0",
         "template": "map-list",
-        "title": "下曼哈顿地块与用地",
-        "subtitle": f"金融区—市政中心 · {feature_count:,} 个真实税务地块 · NYC Open Data",
+        "title": "Lower Manhattan 地块与用地",
+        "subtitle": (
+            f"Financial District—Civic Center · "
+            f"{feature_count:,} 个真实税务地块 · NYC Open Data"
+        ),
         "locale": "zh-CN",
         "primary_layer": "parcels",
         "layers": [
@@ -128,7 +131,14 @@ def atlas_map_list_spec(feature_count: int) -> Dict[str, Any]:
                     "bbl",
                 ],
                 "filter_fields": ["category", "year_built", "floors", "built_far"],
-                "card_fields": ["category", "zoning", "floors", "year_built"],
+                "card_fields": [
+                    "zoning",
+                    "floors",
+                    "year_built",
+                    "built_far",
+                    "lot_area_sqft",
+                    "building_area_sqft",
+                ],
                 "sort_fields": [
                     "name",
                     "year_built",

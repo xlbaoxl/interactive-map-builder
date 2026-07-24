@@ -1,8 +1,8 @@
 {
   "schema_version": "1.0",
   "template": "map-list",
-  "title": "下曼哈顿商业与混合用地",
-  "subtitle": "金融区—市政中心 · 1,233 个真实税务地块 · NYC Open Data",
+  "title": "Lower Manhattan 商业与混合用地",
+  "subtitle": "Financial District—Civic Center · 1,233 个真实税务地块 · NYC Open Data",
   "locale": "zh-CN",
   "primary_layer": "parcels",
   "layers": [
@@ -45,10 +45,12 @@
         "built_far"
       ],
       "card_fields": [
-        "land_use",
         "zoning",
         "floors",
-        "year_built"
+        "year_built",
+        "built_far",
+        "lot_area_sqft",
+        "building_area_sqft"
       ],
       "sort_fields": [
         "name",
@@ -58,7 +60,7 @@
         "building_area_sqft"
       ],
       "field_labels": {
-        "name": "地块地址",
+        "name": "地址",
         "address": "地址",
         "land_use": "用地类型",
         "zoning": "主要分区",

@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
@@ -13,31 +12,27 @@ import geopandas as gpd
 import pandas as pd
 import requests
 from shapely import make_valid, set_precision
-from shapely.geometry import mapping
+from shapely.geometry import Point, mapping
 from shapely.ops import unary_union
 
 
 ROOT = Path(__file__).resolve().parents[1]
 EXAMPLES = ROOT / "assets" / "examples"
-SOCRATA_ROOT = "https://data.cityofnewyork.us/resource"
+NYC_SOCRATA_ROOT = "https://data.cityofnewyork.us/resource"
+NY_SOCRATA_ROOT = "https://data.ny.gov/resource"
 LOCAL_CRS = "EPSG:2263"
 OUTPUT_CRS = "EPSG:4326"
 RETRIEVED = "2026-07-24"
 LAND_USE_BBOX = (-74.0150, 40.7040, -73.9950, 40.7215)
+MULTILAYER_NTA_IDS = ("BK0201", "BK0202", "BK0203", "BK0204")
+MULTILAYER_BUFFER_FEET = 450
 
 DATASETS = {
     "tax_lots": "i38t-6if2",
     "pluto": "64uk-42ks",
-    "boroughs": "gthc-hcne",
+    "neighborhoods": "9nt8-h7nd",
     "bike_routes": "mzxg-pwib",
-    "restrooms": "i7jb-7jku",
-}
-
-BIKE_CLASS_NAMES = {
-    "I": "Class I bike routes",
-    "II": "Class II bike routes",
-    "III": "Class III bike routes",
-    "L": "Bike links",
+    "subway_entrances": "i9wp-a4ja",
 }
 
 LAND_USE_LABELS = {
@@ -65,7 +60,7 @@ def _bbox_where(
 
 def _fetch(dataset_id: str, where: str) -> gpd.GeoDataFrame:
     response = requests.get(
-        f"{SOCRATA_ROOT}/{dataset_id}.geojson",
+        f"{NYC_SOCRATA_ROOT}/{dataset_id}.geojson",
         params={"$where": where, "$limit": 50_000},
         timeout=120,
     )
@@ -77,6 +72,19 @@ def _fetch(dataset_id: str, where: str) -> gpd.GeoDataFrame:
     frame.geometry = frame.geometry.map(make_valid)
     frame = frame[frame.geometry.notna() & ~frame.geometry.is_empty].copy()
     return frame
+
+
+def _fetch_rows(root: str, dataset_id: str, where: str) -> Sequence[Mapping[str, Any]]:
+    response = requests.get(
+        f"{root}/{dataset_id}.json",
+        params={"$where": where, "$limit": 50_000},
+        timeout=120,
+    )
+    response.raise_for_status()
+    rows = response.json()
+    if not rows:
+        raise RuntimeError(f"Open Data dataset {dataset_id} returned no records.")
+    return rows
 
 
 def _fetch_pluto(
@@ -92,7 +100,7 @@ def _fetch_pluto(
         "numfloors,yearbuilt,builtfar,latitude,longitude"
     )
     response = requests.get(
-        f"{SOCRATA_ROOT}/{DATASETS['pluto']}.json",
+        f"{NYC_SOCRATA_ROOT}/{DATASETS['pluto']}.json",
         params={"$where": where, "$select": fields, "$limit": 50_000},
         timeout=120,
     )
@@ -128,14 +136,6 @@ def _year(value: Any) -> Any:
     except (TypeError, ValueError):
         return None
     return numeric if 1600 <= numeric <= 2026 else None
-
-
-def _simplify(frame: gpd.GeoDataFrame, tolerance_feet: float) -> gpd.GeoDataFrame:
-    local = frame.to_crs(LOCAL_CRS)
-    local.geometry = local.geometry.simplify(tolerance_feet, preserve_topology=True)
-    local.geometry = local.geometry.map(make_valid)
-    local = local[local.geometry.notna() & ~local.geometry.is_empty].copy()
-    return local.to_crs(OUTPUT_CRS)
 
 
 def _round_coordinates(value: Any, digits: int = 7) -> Any:
@@ -276,94 +276,166 @@ def _prepare_land_use() -> dict[str, int]:
 
 
 def _prepare_multilayer() -> None:
-    borough = _fetch(DATASETS["boroughs"], "boroname='Manhattan'")
-    if len(borough) != 1:
-        raise RuntimeError(f"Expected one Manhattan boundary, received {len(borough)}.")
-    borough = borough.rename(columns={"borocode": "borough_code", "boroname": "name"})
-    borough["id"] = "manhattan"
-    borough["borough_code"] = borough["borough_code"].astype(str)
-    borough_local = borough.to_crs(LOCAL_CRS)
-    boundary = borough_local.geometry.iloc[0]
-    borough_output = _simplify(borough, 15)
+    identifiers = ", ".join(f"'{value}'" for value in MULTILAYER_NTA_IDS)
+    neighborhoods = _fetch(
+        DATASETS["neighborhoods"],
+        f"nta2020 in ({identifiers})",
+    )
+    neighborhoods = neighborhoods[
+        neighborhoods["nta2020"].isin(MULTILAYER_NTA_IDS)
+    ].copy()
+    if len(neighborhoods) != len(MULTILAYER_NTA_IDS):
+        raise RuntimeError(
+            "Expected four Downtown Brooklyn neighborhood areas, "
+            f"received {len(neighborhoods)}."
+        )
+    neighborhoods["id"] = neighborhoods["nta2020"]
+    neighborhoods["name"] = neighborhoods["ntaname"]
+    neighborhoods["borough"] = neighborhoods["boroname"]
+    neighborhoods_local = neighborhoods.to_crs(LOCAL_CRS)
+    neighborhoods["area_sqmi"] = (
+        neighborhoods_local.geometry.area / 27_878_400
+    ).round(2)
+    neighborhoods = neighborhoods[
+        ["id", "name", "borough", "area_sqmi", "geometry"]
+    ].sort_values("id")
+    study_area = unary_union(
+        list(neighborhoods_local.geometry)
+    ).buffer(MULTILAYER_BUFFER_FEET)
     _write_geojson(
-        borough_output,
-        EXAMPLES / "multilayer" / "boundary.geojson",
-        fields=("id", "name", "borough_code"),
+        neighborhoods,
+        EXAMPLES / "multilayer" / "neighborhoods.geojson",
+        fields=("id", "name", "borough", "area_sqmi"),
     )
 
     bike_routes = _fetch(
         DATASETS["bike_routes"],
-        "boro=1 AND status='Current'",
-    ).to_crs(LOCAL_CRS)
-    bike_routes.geometry = bike_routes.geometry.intersection(boundary)
+        "boro='3' AND status='Current'",
+    )
     bike_routes = bike_routes[
-        bike_routes.geometry.map(
-            lambda geometry: geometry is not None and not geometry.is_empty
-        )
-        & bike_routes["facilitycl"].isin(BIKE_CLASS_NAMES)
+        bike_routes.geometry.notna() & ~bike_routes.geometry.is_empty
     ].copy()
-    bike_features = []
-    for bike_class in BIKE_CLASS_NAMES:
-        group = bike_routes[bike_routes["facilitycl"] == bike_class]
-        geometry = unary_union(list(group.geometry)).simplify(
-            15,
-            preserve_topology=True,
+    bike_routes["street"] = (
+        bike_routes["street"].fillna("UNNAMED ROUTE").astype(str)
+    )
+    bike_routes["facility_class"] = (
+        bike_routes["facilitycl"].fillna("OTHER").astype(str)
+    )
+    bike_routes = bike_routes[
+        bike_routes["facility_class"].isin({"I", "II", "III"})
+    ].copy()
+    bike_routes["segment_count"] = 1
+    bike_routes = gpd.clip(bike_routes.to_crs(LOCAL_CRS), study_area)
+    bike_routes = bike_routes[
+        bike_routes.geometry.notna()
+        & ~bike_routes.geometry.is_empty
+        & bike_routes.geometry.geom_type.isin(["LineString", "MultiLineString"])
+        & (bike_routes.geometry.length >= 100)
+    ].copy()
+    bike_routes = bike_routes.dissolve(
+        by=["street", "facility_class"],
+        aggfunc={"segment_count": "sum"},
+        as_index=False,
+    )
+    bike_routes["length_mi"] = (bike_routes.geometry.length / 5_280).round(2)
+    bike_routes = bike_routes.sort_values(
+        ["length_mi", "street"],
+        ascending=[False, True],
+    ).head(36)
+    if len(bike_routes) != 36:
+        raise RuntimeError(
+            f"Expected 36 Downtown Brooklyn bike routes, received {len(bike_routes)}."
         )
-        bike_features.append(
-            {
-                "id": f"bike-class-{bike_class.lower()}",
-                "name": BIKE_CLASS_NAMES[bike_class],
-                "facility_class": bike_class,
-                "segment_count": int(len(group)),
-                "geometry": geometry,
-            }
-        )
-    bike_output = gpd.GeoDataFrame(bike_features, crs=LOCAL_CRS).to_crs(OUTPUT_CRS)
+    bike_routes["id"] = [
+        f"bike-{index + 1}" for index in range(len(bike_routes))
+    ]
+    bike_routes["name"] = bike_routes["street"]
+    bike_routes = bike_routes.to_crs(OUTPUT_CRS)
     _write_geojson(
-        bike_output,
+        bike_routes,
         EXAMPLES / "multilayer" / "bike_routes.geojson",
-        fields=("id", "name", "facility_class", "segment_count"),
+        fields=(
+            "id",
+            "name",
+            "facility_class",
+            "length_mi",
+            "segment_count",
+        ),
     )
 
-    restrooms = _fetch(
-        DATASETS["restrooms"],
-        "status='Operational'",
+    subway_rows = _fetch_rows(
+        NY_SOCRATA_ROOT,
+        DATASETS["subway_entrances"],
+        "borough='B'",
+    )
+    subway_table = pd.DataFrame(subway_rows)
+    subway_table["latitude"] = pd.to_numeric(
+        subway_table["entrance_latitude"],
+        errors="coerce",
+    )
+    subway_table["longitude"] = pd.to_numeric(
+        subway_table["entrance_longitude"],
+        errors="coerce",
+    )
+    subway_table = subway_table.dropna(
+        subset=["latitude", "longitude", "stop_name", "complex_id"]
+    )
+    subway_points = gpd.GeoDataFrame(
+        subway_table,
+        geometry=[
+            Point(longitude, latitude)
+            for longitude, latitude in zip(
+                subway_table["longitude"],
+                subway_table["latitude"],
+            )
+        ],
+        crs=OUTPUT_CRS,
     ).to_crs(LOCAL_CRS)
-    restrooms = restrooms[
-        restrooms.geometry.within(boundary)
-        & restrooms["facility_name"].notna()
-        & restrooms["location_type"].notna()
-        & (restrooms["location_type"].str.casefold() != "park")
-    ].copy()
-    if len(restrooms) != 56:
-        raise RuntimeError(
-            f"Expected 56 operational non-park Manhattan restrooms, received {len(restrooms)}."
+    subway_points = gpd.clip(subway_points, study_area)
+    station_records = []
+    for (complex_id, stop_name), group in subway_points.groupby(
+        ["complex_id", "stop_name"]
+    ):
+        station_records.append(
+            {
+                "id": f"station-{complex_id}",
+                "name": stop_name,
+                "routes": " ".join(
+                    sorted(
+                        {
+                            route
+                            for value in group["daytime_routes"].dropna().astype(str)
+                            for route in value.split()
+                        }
+                    )
+                ),
+                "entrance_count": int(len(group)),
+                "entrance_types": ", ".join(
+                    sorted(set(group["entrance_type"].dropna().astype(str)))
+                ),
+                "geometry": Point(
+                    group.geometry.x.mean(),
+                    group.geometry.y.mean(),
+                ),
+            }
         )
-    restrooms = restrooms.rename(
-        columns={
-            "facility_name": "name",
-            "location_type": "facility_type",
-        }
-    )
-    restrooms = restrooms.to_crs(OUTPUT_CRS)
-    restrooms["id"] = restrooms.apply(
-        lambda row: "facility-"
-        + hashlib.sha1(
-            (
-                f"{row['name']}|{row.geometry.x:.7f}|{row.geometry.y:.7f}|"
-                f"{row['facility_type']}"
-            ).encode("utf-8")
-        ).hexdigest()[:12],
-        axis=1,
-    )
-    if not restrooms["id"].is_unique:
-        raise RuntimeError("Generated restroom IDs are not unique.")
-    restrooms = restrooms.sort_values(["facility_type", "name", "id"])
+    stations = gpd.GeoDataFrame(station_records, crs=LOCAL_CRS)
+    stations = stations.sort_values(["name", "id"]).to_crs(OUTPUT_CRS)
+    if len(stations) != 16 or not stations["id"].is_unique:
+        raise RuntimeError(
+            "Expected 16 unique Downtown Brooklyn subway stations, "
+            f"received {len(stations)}."
+        )
     _write_geojson(
-        restrooms,
-        EXAMPLES / "multilayer" / "facilities.geojson",
-        fields=("id", "name", "facility_type", "operator", "open", "accessibility"),
+        stations,
+        EXAMPLES / "multilayer" / "subway_stations.geojson",
+        fields=("id", "name", "routes", "entrance_count", "entrance_types"),
     )
+
+    for retired_name in ("boundary.geojson", "facilities.geojson"):
+        retired_path = EXAMPLES / "multilayer" / retired_name
+        if retired_path.exists():
+            retired_path.unlink()
 
 
 def main() -> int:

@@ -1,0 +1,23 @@
+{
+"type": "FeatureCollection",
+"name": "subway_stations",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+"features": [
+{ "type": "Feature", "properties": { "id": "station-617", "name": "Atlantic Av-Barclays Ctr", "routes": "2 3 4 5 B D N Q R", "entrance_count": 9, "entrance_types": "Easement - Passage, Easement - Street, Elevator, Stair" }, "geometry": { "type": "Point", "coordinates": [ -73.977769301290621, 40.684440724239408 ] } },
+{ "type": "Feature", "properties": { "id": "station-236", "name": "Bergen St", "routes": "F G", "entrance_count": 6, "entrance_types": "Stair" }, "geometry": { "type": "Point", "coordinates": [ -73.990748369925882, 40.686332167446352 ] } },
+{ "type": "Feature", "properties": { "id": "station-620", "name": "Borough Hall/Court St", "routes": "2 3 4 5 R", "entrance_count": 12, "entrance_types": "Easement - Street, Elevator, Stair" }, "geometry": { "type": "Point", "coordinates": [ -73.991038800313405, 40.693349946016951 ] } },
+{ "type": "Feature", "properties": { "id": "station-334", "name": "Clark St", "routes": "2 3", "entrance_count": 2, "entrance_types": "Easement - Street" }, "geometry": { "type": "Point", "coordinates": [ -73.993213650106625, 40.69765380013262 ] } },
+{ "type": "Feature", "properties": { "id": "station-290", "name": "Classon Av", "routes": "G", "entrance_count": 3, "entrance_types": "Stair" }, "geometry": { "type": "Point", "coordinates": [ -73.960095933222689, 40.688839100110911 ] } },
+{ "type": "Feature", "properties": { "id": "station-177", "name": "Clinton-Washington Avs", "routes": "C", "entrance_count": 6, "entrance_types": "Stair" }, "geometry": { "type": "Point", "coordinates": [ -73.966148329718493, 40.683334888251665 ] } },
+{ "type": "Feature", "properties": { "id": "station-291", "name": "Clinton-Washington Avs", "routes": "G", "entrance_count": 4, "entrance_types": "Stair" }, "geometry": { "type": "Point", "coordinates": [ -73.966694427495497, 40.688153029724063 ] } },
+{ "type": "Feature", "properties": { "id": "station-26", "name": "DeKalb Av", "routes": "B Q R", "entrance_count": 6, "entrance_types": "Easement - Street, Stair" }, "geometry": { "type": "Point", "coordinates": [ -73.981580228296039, 40.690334284431898 ] } },
+{ "type": "Feature", "properties": { "id": "station-292", "name": "Fulton St", "routes": "G", "entrance_count": 4, "entrance_types": "Stair" }, "geometry": { "type": "Point", "coordinates": [ -73.975654525239804, 40.68719542884655 ] } },
+{ "type": "Feature", "properties": { "id": "station-173", "name": "High St", "routes": "A C", "entrance_count": 3, "entrance_types": "Stair" }, "geometry": { "type": "Point", "coordinates": [ -73.989530531458996, 40.699261174654232 ] } },
+{ "type": "Feature", "properties": { "id": "station-336", "name": "Hoyt St", "routes": "2 3", "entrance_count": 6, "entrance_types": "Easement - Street, Stair" }, "geometry": { "type": "Point", "coordinates": [ -73.985038314787687, 40.69055346789586 ] } },
+{ "type": "Feature", "properties": { "id": "station-175", "name": "Hoyt-Schermerhorn Sts", "routes": "A C G", "entrance_count": 2, "entrance_types": "Easement - Street" }, "geometry": { "type": "Point", "coordinates": [ -73.985080146508267, 40.6887323526392 ] } },
+{ "type": "Feature", "properties": { "id": "station-636", "name": "Jay St-MetroTech", "routes": "A C F R", "entrance_count": 17, "entrance_types": "Easement - Street, Stair" }, "geometry": { "type": "Point", "coordinates": [ -73.98668812733618, 40.692390285491484 ] } },
+{ "type": "Feature", "properties": { "id": "station-176", "name": "Lafayette Av", "routes": "C", "entrance_count": 9, "entrance_types": "Stair" }, "geometry": { "type": "Point", "coordinates": [ -73.973644474898805, 40.686010324528077 ] } },
+{ "type": "Feature", "properties": { "id": "station-337", "name": "Nevins St", "routes": "2 3 4 5", "entrance_count": 4, "entrance_types": "Stair" }, "geometry": { "type": "Point", "coordinates": [ -73.980436824932113, 40.688161375097692 ] } },
+{ "type": "Feature", "properties": { "id": "station-235", "name": "York St", "routes": "F", "entrance_count": 1, "entrance_types": "Stair" }, "geometry": { "type": "Point", "coordinates": [ -73.986655, 40.70138 ] } }
+]
+}

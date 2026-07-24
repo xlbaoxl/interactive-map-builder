@@ -219,10 +219,12 @@ def test_multilayer_contains_safe_point_line_polygon_controls(tmp_path):
     assert result["layer_counts"] == {"places": 1, "routes": 1, "districts": 1}
     assert "imb-layer-control" in html
     assert "imb-legend-groups" in html
+    assert "imb-feature-types" in html
     assert "pointToLayer" in html
     assert "bindTooltip" in html
     assert "bindPopup" in html
     assert "toggleLayer" in html
+    assert "setFeatureType" in html
     assert "link_by_id" in html
     assert ".innerHTML" not in html
 

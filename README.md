@@ -24,15 +24,16 @@ Interactive Map Builder 是一个给 Codex 和其他 AI 助手使用的地图 Sk
 搜索道路名称后，左侧会立即列出匹配地块；也可以分别开关居住、商业和公共用地，
 点击任意地块查看用途、分区、面积、容积率、楼层和建成年份。
 
-[![正在搜索 Broadway、带分类开关和地块详情的下曼哈顿用地地图](assets/screenshots/map-list.png)](https://xlbaoxl.github.io/interactive-map-builder/map-list/)
+[![正在搜索 Broadway、带分类开关和地块详情的 Lower Manhattan 用地地图](assets/screenshots/map-list.png)](https://xlbaoxl.github.io/interactive-map-builder/map-list/)
 
 [打开并操作这张地图](https://xlbaoxl.github.io/interactive-map-builder/map-list/)
 
 #### 可以开关的多图层地图
 
-可以同时查看行政边界、自行车道和公共设施，并随时开关图层或切换底图。
+可以同时查看 Downtown Brooklyn 的地铁站、自行车线路和邻里分区，按业务图层
+分别搜索，并随时开关图层或切换底图。
 
-[![带真实街道底图、图层开关和图例的曼哈顿多图层地图](assets/screenshots/multilayer.png)](https://xlbaoxl.github.io/interactive-map-builder/multilayer/)
+[![带业务图层搜索、图层开关和分类图例的 Downtown Brooklyn 多图层地图](assets/screenshots/multilayer.png)](https://xlbaoxl.github.io/interactive-map-builder/multilayer/)
 
 [打开并操作这张地图](https://xlbaoxl.github.io/interactive-map-builder/multilayer/)
 
@@ -159,7 +160,7 @@ interactive-map-builder build --spec map_spec.json --out dist --bundle-sources
 interactive-map-builder verify --dist dist
 ```
 
-### 完整示例二：点线面多图层
+### 完整示例二：多业务图层
 
 ```powershell
 interactive-map-builder inspect districts.geojson routes.geojson places.geojson `
@@ -216,10 +217,10 @@ public land-use classes, then select any parcel to inspect zoning, area, FAR, fl
 
 #### Toggleable multilayer map
 
-View the borough boundary, bike routes, and public facilities together, then toggle layers or
-switch basemaps.
+View Downtown Brooklyn subway stations, bicycle routes, and neighborhoods together, search
+within one business layer at a time, then toggle layers or switch basemaps.
 
-[![Manhattan multilayer map with a street basemap, layer controls, and a legend](assets/screenshots/multilayer.png)](https://xlbaoxl.github.io/interactive-map-builder/multilayer/)
+[![Downtown Brooklyn multilayer map with business-layer search, layer controls, and a categorical legend](assets/screenshots/multilayer.png)](https://xlbaoxl.github.io/interactive-map-builder/multilayer/)
 
 [Open the interactive map](https://xlbaoxl.github.io/interactive-map-builder/multilayer/)
 

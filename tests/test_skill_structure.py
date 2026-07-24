@@ -49,9 +49,9 @@ def test_readme_example_provenance_is_documented():
     for dataset_id in (
         "i38t-6if2",
         "64uk-42ks",
-        "gthc-hcne",
+        "9nt8-h7nd",
         "mzxg-pwib",
-        "i7jb-7jku",
+        "i9wp-a4ja",
     ):
         assert dataset_id in sources
     assert "2026-07-24" in sources

@@ -73,6 +73,9 @@ specification file; output names are fixed by the builder.
 ## Rules
 
 - Use unique ASCII `layers[].id` values.
+- Set `id_field` to a stable, non-empty, unique identifier used for runtime identity and
+  linkage. Set `label_field` to the human-readable title shown in cards, tooltips, and results;
+  do not substitute a technical ID when a meaningful address or name exists.
 - Require `primary_layer` for `map-list`; with multiple layers, pass it explicitly to
   `init-spec` or `run`.
 - Define every observed non-null category. Null categories use
@@ -80,6 +83,8 @@ specification file; output names are fixed by the builder.
 - Use `source.crs` for tabular or CRS-less spatial inputs; never infer CRS from values.
 - Omit `source.encoding` to let Shapefile `.cpg`/GDAL decide and to use UTF-8 for CSV.
 - Keep tooltip, popup, search, filter, card, and sort fields explicit.
+- Put the useful attributes users need for comparison in `card_fields`. A sort field may also
+  appear there and should be highlighted in place; it does not require a separate display row.
 - Use `layers[].link_key` only for an intentional cross-layer relationship.
 - Use `layers[].simplify` with `none`, `light`, or `medium`; static figures retain
   unsimplified normalized geometry.

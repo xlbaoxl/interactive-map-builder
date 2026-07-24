@@ -22,6 +22,15 @@
       <aside id="imb-sidebar" class="imb-sidebar" aria-label="Search map layers">
         <div class="imb-toolbar">
           <div class="imb-field">
+            <span id="imb-feature-type-label" class="imb-field-label"></span>
+            <div
+              id="imb-feature-types"
+              class="imb-type-switcher"
+              role="group"
+              aria-labelledby="imb-feature-type-label"
+            ></div>
+          </div>
+          <div class="imb-field">
             <label id="imb-search-label" for="imb-search"></label>
             <input id="imb-search" class="imb-input" type="search" autocomplete="off">
           </div>
@@ -71,10 +80,10 @@
           legend: "图例",
           collapse: "收起搜索",
           expand: "展开搜索",
-          search: "跨图层搜索",
-          search_placeholder: "输入名称或属性",
+          search_layer: "按业务图层搜索",
+          search: "搜索字段",
+          search_placeholder: "输入关键词",
           empty: "没有符合条件的要素",
-          results: "匹配",
           limited: "仅显示前",
           visible_layers: "可见图层",
           features: "要素"
@@ -84,10 +93,10 @@
           legend: "Legend",
           collapse: "Collapse search",
           expand: "Expand search",
-          search: "Search across layers",
-          search_placeholder: "Search names or attributes",
+          search_layer: "Search by layer",
+          search: "Search field",
+          search_placeholder: "Enter a keyword",
           empty: "No features match the current search",
-          results: "Matches",
           limited: "Showing first",
           visible_layers: "Visible layers",
           features: "Features"
@@ -107,8 +116,8 @@
       var collapse = document.getElementById("imb-collapse");
       collapse.textContent = label("collapse", "收起搜索");
       var search = document.getElementById("imb-search");
-      document.getElementById("imb-search-label").textContent = label("search", "跨图层搜索");
-      search.placeholder = label("search_placeholder", "输入名称或属性");
+      document.getElementById("imb-feature-type-label").textContent =
+        label("search_layer", "按业务图层搜索");
 
       var map = IMB.setupMap();
       IMB.addBasemap(map, spec);
@@ -131,6 +140,28 @@
       var runtimeLayers = [];
       var totalFeatures = 0;
 
+      function geometryRank(featureCollection) {
+        var features = featureCollection && Array.isArray(featureCollection.features)
+          ? featureCollection.features
+          : [];
+        var feature = features.find(function (candidate) {
+          return candidate && candidate.geometry && candidate.geometry.type;
+        });
+        var geometryType = feature && feature.geometry
+          ? IMB.text(feature.geometry.type).toLocaleLowerCase()
+          : "";
+        if (geometryType.indexOf("point") !== -1) {
+          return 0;
+        }
+        if (geometryType.indexOf("line") !== -1) {
+          return 1;
+        }
+        if (geometryType.indexOf("polygon") !== -1) {
+          return 2;
+        }
+        return 3;
+      }
+
       layers.forEach(function (layer, layerIndex) {
         var layerSpec = IMB.layerSpec(layer);
         var layerIdentifier = IMB.layerId(layer, layerIndex);
@@ -146,6 +177,8 @@
           spec: layerSpec,
           source: layer,
           enabled: enabled,
+          order: layerIndex,
+          geometryRank: geometryRank(featureCollection),
           group: null,
           entries: [],
           searchFields: IMB.fieldDefinitions(
@@ -278,13 +311,66 @@
       var resultCount = document.getElementById("imb-result-count");
       var resultLimit = document.getElementById("imb-result-limit");
       var summary = document.getElementById("imb-summary");
+      var typeSwitcher = document.getElementById("imb-feature-types");
+      var searchableLayers = runtimeLayers.slice().sort(function (left, right) {
+        return left.geometryRank - right.geometryRank || left.order - right.order;
+      });
       var resultLimitValue = 200;
       var state = {
         query: "",
         matches: [],
         selectedId: "",
-        hoveredId: ""
+        hoveredId: "",
+        activeLayerId: searchableLayers[0].id
       };
+
+      searchableLayers.forEach(function (runtime) {
+        var button = IMB.element("button", undefined, "imb-type-button");
+        button.type = "button";
+        button.dataset.layerId = runtime.id;
+        button.setAttribute("aria-controls", "imb-list");
+        button.appendChild(document.createTextNode(runtime.title + " "));
+        button.appendChild(IMB.element(
+          "span",
+          String(runtime.entries.length),
+          "imb-type-button-count"
+        ));
+        typeSwitcher.appendChild(button);
+      });
+
+      function activeRuntime() {
+        return searchableLayers.find(function (runtime) {
+          return runtime.id === state.activeLayerId;
+        }) || searchableLayers[0];
+      }
+
+      function updateTypeControls() {
+        var runtime = activeRuntime();
+        IMB.qa.activeLayerId = runtime.id;
+        Array.prototype.forEach.call(
+          typeSwitcher.querySelectorAll(".imb-type-button[data-layer-id]"),
+          function (button) {
+            button.setAttribute(
+              "aria-pressed",
+              button.dataset.layerId === runtime.id ? "true" : "false"
+            );
+          }
+        );
+        var fieldLabels = runtime.searchFields.map(function (definition) {
+          return definition.label;
+        });
+        document.getElementById("imb-search-label").textContent =
+          fieldLabels.join("、") || label("search", "搜索字段");
+        search.placeholder = language === "zh"
+          ? "搜索" + (fieldLabels.join("、") || runtime.title)
+          : "Search " + (fieldLabels.join(", ") || runtime.title);
+        listNode.setAttribute(
+          "aria-label",
+          language === "zh"
+            ? runtime.title + "搜索结果"
+            : runtime.title + " search results"
+        );
+      }
 
       function entryText(entry) {
         var props = entry.feature && entry.feature.properties ? entry.feature.properties : {};
@@ -317,9 +403,13 @@
         listNode.appendChild(fragment);
         IMB.bindLinkedElements(listNode);
         if (!state.matches.length) {
-          listNode.appendChild(IMB.element("p", label("empty", "没有符合条件的要素"), "imb-empty"));
+          listNode.appendChild(IMB.element(
+            "p",
+            label("empty", "没有符合条件的要素") + " · " + activeRuntime().title,
+            "imb-empty"
+          ));
         }
-        resultCount.textContent = label("results", "匹配") + ": " + state.matches.length;
+        resultCount.textContent = activeRuntime().title + ": " + state.matches.length;
         resultLimit.textContent = state.matches.length > resultLimitValue
           ? label("limited", "仅显示前") + " " + resultLimitValue
           : "";
@@ -331,11 +421,15 @@
         state.query = search.value.trim().toLocaleLowerCase();
         state.matches = [];
         runtimeLayers.forEach(function (runtime) {
+          var isActiveLayer = runtime.id === state.activeLayerId;
           if (searchBehavior === "filter") {
             runtime.group.clearLayers();
           }
           runtime.entries.forEach(function (entry) {
-            entry.matches = !state.query || entryText(entry).indexOf(state.query) !== -1;
+            entry.matches =
+              !isActiveLayer ||
+              !state.query ||
+              entryText(entry).indexOf(state.query) !== -1;
             if (searchBehavior === "highlight") {
               if (!runtime.group.hasLayer(entry.leaflet)) {
                 runtime.group.addLayer(entry.leaflet);
@@ -350,10 +444,10 @@
                       })
                 );
               }
-            } else if (entry.matches) {
+            } else if (!isActiveLayer || entry.matches) {
               runtime.group.addLayer(entry.leaflet);
             }
-            if (entry.matches) {
+            if (isActiveLayer && entry.matches) {
               state.matches.push(entry);
             }
           });
@@ -457,6 +551,20 @@
       });
 
       search.addEventListener("input", applySearch);
+      Array.prototype.forEach.call(
+        typeSwitcher.querySelectorAll(".imb-type-button[data-layer-id]"),
+        function (button) {
+          button.addEventListener("click", function () {
+            if (state.activeLayerId === button.dataset.layerId) {
+              return;
+            }
+            state.activeLayerId = button.dataset.layerId;
+            search.value = "";
+            updateTypeControls();
+            applySearch();
+          });
+        }
+      );
       collapse.addEventListener("click", function () {
         var app = document.getElementById("imb-app");
         var collapsed = app.classList.toggle("is-sidebar-collapsed");
@@ -466,7 +574,21 @@
       });
 
       updateSummary();
+      updateTypeControls();
       applySearch();
+      IMB.qa.actions.setFeatureType = function (layerIdentifier) {
+        var requested = IMB.text(layerIdentifier);
+        if (!searchableLayers.some(function (runtime) {
+          return runtime.id === requested;
+        })) {
+          return false;
+        }
+        state.activeLayerId = requested;
+        search.value = "";
+        updateTypeControls();
+        applySearch();
+        return true;
+      };
       IMB.qa.actions.setSearch = function (value) {
         search.value = IMB.text(value);
         applySearch();
@@ -502,6 +624,12 @@
         layerCounts: runtimeLayers.reduce(function (counts, runtime) {
           counts[runtime.id] = Number(runtime.source.count || runtime.entries.length);
           return counts;
+        }, {}),
+        layerStyleColors: runtimeLayers.reduce(function (colors, runtime) {
+          colors[runtime.id] = Array.from(new Set(runtime.entries.map(function (entry) {
+            return entry.baseStyle.color;
+          })));
+          return colors;
         }, {}),
         linkGroupSizes: Array.from(globalRegistry.entries()).reduce(function (sizes, pair) {
           sizes[pair[0]] = pair[1].length;

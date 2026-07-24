@@ -35,21 +35,28 @@
         <kbd class="imb-search-hint">/</kbd>
       </div>
       <div id="imb-filters" class="imb-filter-bar"></div>
-      <div class="imb-sort-shell">
-        <label id="imb-sort-label" class="imb-visually-hidden" for="imb-sort"></label>
-        <select id="imb-sort" class="imb-compact-select"></select>
-        <button id="imb-sort-direction" class="imb-icon-button" type="button"></button>
-      </div>
     </section>
 
     <div class="imb-workspace">
       <aside id="imb-sidebar" class="imb-sidebar" aria-label="Feature browser">
         <div class="imb-panel-heading">
-          <div>
-            <span id="imb-result-count" class="imb-panel-title"></span>
-            <span id="imb-render-count" class="imb-panel-caption"></span>
+          <div class="imb-panel-heading-row">
+            <div class="imb-panel-heading-copy">
+              <span id="imb-result-count" class="imb-panel-title"></span>
+              <span id="imb-render-count" class="imb-panel-caption"></span>
+            </div>
+            <span id="imb-active-filter-count" class="imb-filter-count" hidden></span>
           </div>
-          <span id="imb-active-filter-count" class="imb-filter-count" hidden></span>
+          <div class="imb-sort-shell">
+            <div class="imb-sort-heading">
+              <label id="imb-sort-label" class="imb-sort-label" for="imb-sort"></label>
+              <span id="imb-sort-status" class="imb-sort-status" aria-live="polite"></span>
+            </div>
+            <div class="imb-sort-controls">
+              <select id="imb-sort" class="imb-compact-select"></select>
+              <button id="imb-sort-direction" class="imb-icon-button" type="button"></button>
+            </div>
+          </div>
         </div>
         <section id="imb-linked-view" class="imb-linked-view" hidden>
           <h2 id="imb-linked-view-title" class="imb-linked-view-title"></h2>
@@ -110,7 +117,8 @@
           expand: "展开清单",
           search: "搜索",
           searchPlaceholder: "搜索名称、地址或属性…",
-          sort: "排序",
+          sort: "列表排序",
+          sortedBy: "当前：",
           ascending: "升序",
           descending: "降序",
           loadMore: "加载更多",
@@ -138,7 +146,8 @@
           expand: "Expand list",
           search: "Search",
           searchPlaceholder: "Search names, addresses, or attributes…",
-          sort: "Sort",
+          sort: "List order",
+          sortedBy: "Current: ",
           ascending: "Ascending",
           descending: "Descending",
           loadMore: "Load more",
@@ -209,6 +218,7 @@
       var search = document.getElementById("imb-search");
       search.placeholder = t("searchPlaceholder");
       var sortDirection = document.getElementById("imb-sort-direction");
+      var sortStatus = document.getElementById("imb-sort-status");
       var loadMore = document.getElementById("imb-load-more");
       var listNode = document.getElementById("imb-list");
       var resultCount = document.getElementById("imb-result-count");
@@ -452,6 +462,49 @@
         filterModels.push(model);
       }
 
+      var openRangeFilter = null;
+
+      function positionRangePanel(model) {
+        if (!model || model.panelNode.hidden) {
+          return;
+        }
+        var margin = 8;
+        var gap = 7;
+        var triggerRect = model.summaryNode.getBoundingClientRect();
+        var panelRect = model.panelNode.getBoundingClientRect();
+        var left = Math.max(
+          margin,
+          Math.min(triggerRect.left, window.innerWidth - panelRect.width - margin)
+        );
+        var top = triggerRect.bottom + gap;
+        if (
+          top + panelRect.height > window.innerHeight - margin &&
+          triggerRect.top - panelRect.height - gap >= margin
+        ) {
+          top = triggerRect.top - panelRect.height - gap;
+        }
+        top = Math.max(
+          margin,
+          Math.min(top, window.innerHeight - panelRect.height - margin)
+        );
+        model.panelNode.style.left = Math.round(left) + "px";
+        model.panelNode.style.top = Math.round(top) + "px";
+      }
+
+      function closeRangeFilter(model, restoreFocus) {
+        if (!model) {
+          return;
+        }
+        model.detailsNode.open = false;
+        model.panelNode.hidden = true;
+        if (openRangeFilter === model) {
+          openRangeFilter = null;
+        }
+        if (restoreFocus) {
+          model.summaryNode.focus();
+        }
+      }
+
       function addRangeFilter(definition, profile) {
         var model = {
           field: definition.field,
@@ -467,21 +520,36 @@
         details.className = "imb-range-filter";
         var summaryNode = document.createElement("summary");
         summaryNode.textContent = definition.label;
+        var controlId = "imb-range-" + String(filterModels.length);
+        summaryNode.id = controlId + "-summary";
+        summaryNode.setAttribute("aria-controls", controlId + "-panel");
         details.appendChild(summaryNode);
         var inputs = IMB.element("div", undefined, "imb-range-inputs");
+        inputs.id = controlId + "-panel";
+        inputs.hidden = true;
+        inputs.setAttribute("role", "group");
+        inputs.setAttribute("aria-labelledby", summaryNode.id);
+        inputs.appendChild(IMB.element("div", definition.label, "imb-range-panel-title"));
         var low = document.createElement("input");
         var high = document.createElement("input");
-        [low, high].forEach(function (input) {
+        var lowField = IMB.element("label", undefined, "imb-range-field");
+        var highField = IMB.element("label", undefined, "imb-range-field");
+        [low, high].forEach(function (input, index) {
           input.type = "number";
           input.className = "imb-range-number";
           input.min = String(profile.min);
           input.max = String(profile.max);
           input.step = String(profile.step);
+          input.id = controlId + (index === 0 ? "-low" : "-high");
         });
         low.value = String(profile.min);
         high.value = String(profile.max);
         low.setAttribute("aria-label", definition.label + " " + t("from"));
         high.setAttribute("aria-label", definition.label + " " + t("to"));
+        lowField.appendChild(IMB.element("span", t("from")));
+        lowField.appendChild(low);
+        highField.appendChild(IMB.element("span", t("to")));
+        highField.appendChild(high);
         function update() {
           var nextLow = Number(low.value);
           var nextHigh = Number(high.value);
@@ -500,14 +568,33 @@
         }
         low.addEventListener("change", update);
         high.addEventListener("change", update);
-        inputs.appendChild(low);
-        inputs.appendChild(IMB.element("span", "–", "imb-range-separator"));
-        inputs.appendChild(high);
-        details.appendChild(inputs);
+        inputs.appendChild(lowField);
+        inputs.appendChild(highField);
         model.lowNode = low;
         model.highNode = high;
         model.summaryNode = summaryNode;
+        model.detailsNode = details;
+        model.panelNode = inputs;
+        details.addEventListener("toggle", function () {
+          if (!details.open) {
+            inputs.hidden = true;
+            if (openRangeFilter === model) {
+              openRangeFilter = null;
+            }
+            return;
+          }
+          if (openRangeFilter && openRangeFilter !== model) {
+            closeRangeFilter(openRangeFilter, false);
+          }
+          openRangeFilter = model;
+          inputs.hidden = false;
+          window.requestAnimationFrame(function () {
+            positionRangePanel(model);
+            low.focus();
+          });
+        });
         filtersContainer.appendChild(details);
+        document.body.appendChild(inputs);
         filterModels.push(model);
       }
 
@@ -644,18 +731,39 @@
         IMB.qa.mapFeatureCount = featureGroup.getLayers().length;
       }
 
-      function categoryBadge(record) {
+      function categoryAppearance(record) {
         if (!categoryField) {
           return null;
         }
         var value = IMB.text(record.properties[categoryField]);
         var entry = legendEntries.find(function (candidate) { return candidate.value === value; });
+        return {
+          color: entry && entry.color ? entry.color : IMB.colorFor(primarySpec, record.properties),
+          label: entry ? entry.label : IMB.displayValue(value)
+        };
+      }
+
+      function categoryBadge(record, activeSortField) {
+        var appearance = categoryAppearance(record);
+        if (!appearance) {
+          return null;
+        }
         var badge = IMB.element("span", undefined, "imb-card-badge");
         var dot = IMB.element("span", undefined, "imb-card-badge-dot");
-        dot.style.backgroundColor = entry && entry.color ? entry.color : IMB.colorFor(primarySpec, record.properties);
+        dot.style.backgroundColor = appearance.color;
         badge.appendChild(dot);
-        badge.appendChild(IMB.element("span", entry ? entry.label : IMB.displayValue(value)));
+        badge.appendChild(IMB.element("span", appearance.label));
+        if (activeSortField === categoryField) {
+          badge.classList.add("is-sort-active");
+        }
         return badge;
+      }
+
+      function currentSortDefinition() {
+        var field = sortSelect.value || IMB.labelField(primarySpec);
+        return sortFields.find(function (definition) {
+          return definition.field === field;
+        }) || null;
       }
 
       function createCard(record) {
@@ -664,30 +772,55 @@
         card.setAttribute("role", "option");
         card.setAttribute("aria-selected", record.id === state.selectedId ? "true" : "false");
         card.dataset.featureId = record.id;
-        var top = IMB.element("span", undefined, "imb-card-topline");
-        var badge = categoryBadge(record);
-        if (badge) {
-          top.appendChild(badge);
+        var sortDefinition = currentSortDefinition();
+        var sortField = sortDefinition ? sortDefinition.field : "";
+        var labelField = IMB.labelField(primarySpec);
+        var titleText = IMB.text(IMB.firstDefined(record.properties.__label, record.id));
+        var appearance = categoryAppearance(record);
+        if (appearance && appearance.color) {
+          card.classList.add("has-category-color");
+          card.style.setProperty("--imb-card-category-color", appearance.color);
+          card.setAttribute("aria-label", titleText + " · " + appearance.label);
+        } else {
+          card.setAttribute("aria-label", titleText);
         }
-        top.appendChild(IMB.element("span", record.id, "imb-card-id"));
-        card.appendChild(top);
-        card.appendChild(IMB.element(
+        var titleNode = IMB.element(
           "span",
-          IMB.text(IMB.firstDefined(record.properties.__label, record.id)),
+          titleText,
           "imb-card-title"
-        ));
-        if (cardFields.length) {
+        );
+        if (sortField === labelField) {
+          titleNode.classList.add("is-sort-active");
+        }
+        card.appendChild(titleNode);
+
+        var visibleCardFields = cardFields.filter(function (definition) {
+          return definition.field !== categoryField && definition.field !== labelField;
+        });
+        if (
+          sortDefinition &&
+          sortField !== categoryField &&
+          sortField !== labelField &&
+          !visibleCardFields.some(function (definition) {
+            return definition.field === sortField;
+          })
+        ) {
+          visibleCardFields.push(sortDefinition);
+        }
+        if (visibleCardFields.length) {
           var meta = IMB.element("span", undefined, "imb-card-meta");
-          cardFields.filter(function (definition) {
-            return definition.field !== categoryField;
-          }).slice(0, 4).forEach(function (definition) {
+          visibleCardFields.forEach(function (definition) {
             var item = IMB.element("span", undefined, "imb-card-meta-item");
             item.appendChild(IMB.element("span", definition.label, "imb-card-meta-key"));
-            item.appendChild(IMB.element(
+            var valueNode = IMB.element(
               "span",
               IMB.displayValue(record.properties[definition.field]),
               "imb-card-meta-value"
-            ));
+            );
+            if (definition.field === sortField) {
+              valueNode.classList.add("is-sort-active");
+            }
+            item.appendChild(valueNode);
             meta.appendChild(item);
           });
           card.appendChild(meta);
@@ -983,24 +1116,56 @@
       IMB.link_by_id.on("select", function (event) { selectFeature(event.id, event.source); });
 
       search.addEventListener("input", applyFilters);
+      document.addEventListener("click", function (event) {
+        if (
+          openRangeFilter &&
+          !openRangeFilter.detailsNode.contains(event.target) &&
+          !openRangeFilter.panelNode.contains(event.target)
+        ) {
+          closeRangeFilter(openRangeFilter, false);
+        }
+      });
+      window.addEventListener("resize", function () {
+        positionRangePanel(openRangeFilter);
+      });
+      window.addEventListener("scroll", function () {
+        positionRangePanel(openRangeFilter);
+      }, true);
       document.addEventListener("keydown", function (event) {
         if (event.key === "/" && document.activeElement !== search) {
           event.preventDefault();
           search.focus();
         }
-        if (event.key === "Escape" && !detail.hidden) {
-          closeDetail();
+        if (event.key === "Escape") {
+          if (openRangeFilter) {
+            event.preventDefault();
+            closeRangeFilter(openRangeFilter, true);
+          } else if (!detail.hidden) {
+            closeDetail();
+          }
         }
       });
-      sortSelect.addEventListener("change", applyFilters);
-      sortDirection.addEventListener("click", function () {
-        state.ascending = !state.ascending;
+      function updateSortUi() {
+        var definition = currentSortDefinition();
+        var direction = state.ascending ? t("ascending") : t("descending");
+        sortStatus.textContent = definition
+          ? t("sortedBy") + definition.label + " · " + direction
+          : direction;
         sortDirection.textContent = state.ascending ? "↑" : "↓";
-        sortDirection.setAttribute("aria-label", state.ascending ? t("ascending") : t("descending"));
+        sortDirection.setAttribute("aria-label", direction);
+        sortDirection.title = direction;
+      }
+
+      sortSelect.addEventListener("change", function () {
+        updateSortUi();
         applyFilters();
       });
-      sortDirection.textContent = "↑";
-      sortDirection.setAttribute("aria-label", t("ascending"));
+      sortDirection.addEventListener("click", function () {
+        state.ascending = !state.ascending;
+        updateSortUi();
+        applyFilters();
+      });
+      updateSortUi();
       loadMore.addEventListener("click", renderNextBatch);
       document.getElementById("imb-reset").addEventListener("click", resetFilters);
       document.getElementById("imb-detail-close").addEventListener("click", closeDetail);
@@ -1021,6 +1186,32 @@
       IMB.qa.actions.toggleSidebar = function () { collapse.click(); };
       IMB.qa.actions.selectFeature = function (identifier) {
         return selectFeature(IMB.text(identifier), "qa");
+      };
+      IMB.qa.actions.hoverFeature = function (identifier) {
+        var entries = featureRegistry.get(IMB.text(identifier)) || [];
+        if (!entries.length) {
+          return false;
+        }
+        var leafletLayer = entries[0].leaflet;
+        var tooltipAnchor = leafletLayer.getCenter
+          ? leafletLayer.getCenter()
+          : leafletLayer.getBounds && leafletLayer.getBounds().isValid()
+            ? leafletLayer.getBounds().getCenter()
+            : leafletLayer.getLatLng
+              ? leafletLayer.getLatLng()
+              : undefined;
+        leafletLayer.openTooltip(tooltipAnchor);
+        IMB.link_by_id.emit("highlight", IMB.text(identifier), { source: "qa" });
+        return true;
+      };
+      IMB.qa.actions.clearHover = function (identifier) {
+        var entries = featureRegistry.get(IMB.text(identifier)) || [];
+        if (!entries.length) {
+          return false;
+        }
+        entries[0].leaflet.closeTooltip();
+        IMB.link_by_id.clear(IMB.text(identifier), { source: "qa" });
+        return true;
       };
       IMB.qa.actions.resetFilters = resetFilters;
       IMB.qa.actions.closeDetail = closeDetail;

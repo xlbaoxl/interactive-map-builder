@@ -55,7 +55,8 @@ separate from rendering, preserve provenance, and expose every cleanup in the bu
    ```
 
 8. Exercise search, filters, sorting, layer visibility, hover/click linkage, keyboard
-   selection, panel collapse, and narrow-screen layout. Read
+   selection, panel collapse, and narrow-screen layout. Confirm that every visible control
+   produces an observable result. Read
    [design-guidelines.md](references/design-guidelines.md).
 
 9. Deliver the whole `dist` directory. Summarize repairs, generated IDs, null display
@@ -94,6 +95,10 @@ interactive-map-builder --help
   fonts, online basemaps, simplification, and large outputs as warnings.
 - Use `<layer_id>::<feature_id>` for multilayer runtime identity. Allow cross-layer linkage only
   through an explicit `link_key`.
+- Preserve official geographic names and spellings from the source. Localize generic interface
+  text, not place names.
+- Preserve user geometry. Repair invalid geometry or simplify for an explicit performance need,
+  report the operation, and never reshape or discard features merely to improve appearance.
 - Escape all user-provided text before embedding it in HTML.
 
 ## Output contract

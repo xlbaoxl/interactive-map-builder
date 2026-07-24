@@ -259,8 +259,9 @@
     var properties = feature && feature.properties ? feature.properties : {};
     var style = spec.style && typeof spec.style === "object" ? spec.style : {};
     var color = colorFor(spec, properties);
+    var categoryColor = categoryField(spec) ? color : undefined;
     return {
-      color: text(firstDefined(style.color, color)),
+      color: text(firstDefined(categoryColor, style.color, color)),
       weight: Number(firstDefined(style.weight, 2)),
       opacity: Number(firstDefined(style.opacity, 0.9)),
       fillColor: text(firstDefined(style.fill_color, color)),

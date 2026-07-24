@@ -1,42 +1,52 @@
 {
   "schema_version": "1.0",
   "template": "multilayer",
-  "title": "曼哈顿骑行与公共设施",
-  "subtitle": "行政边界、自行车道与公共卫生间 · NYC Open Data",
+  "title": "Downtown Brooklyn 骑行与公共交通",
+  "subtitle": "4 个邻里分区 · 36 条自行车线路 · 16 个地铁站",
   "locale": "zh-CN",
   "layers": [
     {
-      "id": "boundary",
-      "name": "曼哈顿边界",
+      "id": "neighborhoods",
+      "name": "邻里分区",
       "source": {
-        "path": "boundary.geojson"
+        "path": "neighborhoods.geojson"
       },
       "required": true,
       "id_field": "id",
       "label_field": "name",
       "field_labels": {
-        "name": "行政区",
-        "borough_code": "行政区代码"
+        "name": "邻里名称",
+        "borough": "行政区",
+        "area_sqmi": "面积（平方英里）"
       },
-      "source_note": "NYC Borough Boundaries (gthc-hcne), retrieved 2026-07-23",
+      "source_note": "NYC Open Data: 2020 Neighborhood Tabulation Areas (9nt8-h7nd), retrieved 2026-07-24",
+      "search_fields": [
+        "name"
+      ],
       "tooltip_fields": [
         "name"
       ],
       "popup_fields": [
         "name",
-        "borough_code"
+        "borough",
+        "area_sqmi"
       ],
       "style": {
-        "color": "#486581",
-        "fill_color": "#b8cbe0",
+        "color_field": "name",
         "weight": 1.3,
-        "opacity": 0.85,
-        "fill_opacity": 0.18
+        "opacity": 0.76,
+        "fill_opacity": 0.16,
+        "categories": {
+          "Brooklyn Heights": "#8bb8c7",
+          "Downtown Brooklyn-DUMBO-Boerum Hill": "#76a89d",
+          "Fort Greene": "#b3a4cf",
+          "Clinton Hill": "#d2ad7d"
+        }
       }
     },
     {
       "id": "bike_routes",
-      "name": "自行车道",
+      "name": "自行车线路",
       "source": {
         "path": "bike_routes.geojson"
       },
@@ -44,78 +54,72 @@
       "id_field": "id",
       "label_field": "name",
       "field_labels": {
-        "name": "线路类型",
+        "name": "线路街道",
         "facility_class": "设施等级",
+        "length_mi": "长度（英里）",
         "segment_count": "原始线段数"
       },
-      "source_note": "NYC Bike Routes (mzxg-pwib), retrieved 2026-07-23",
+      "source_note": "NYC Open Data: New York City Bike Routes (mzxg-pwib), retrieved 2026-07-24",
       "search_fields": [
-        "name",
-        "facility_class"
+        "name"
       ],
       "tooltip_fields": [
-        "name"
+        "name",
+        "facility_class"
       ],
       "popup_fields": [
         "name",
         "facility_class",
+        "length_mi",
         "segment_count"
       ],
       "style": {
         "color_field": "facility_class",
-        "weight": 2.3,
-        "opacity": 0.88,
+        "weight": 3.2,
+        "opacity": 0.94,
         "categories": {
-          "I": "#168aad",
-          "II": "#52b788",
-          "III": "#f4a261",
-          "L": "#9b5de5"
+          "I": "#087f8c",
+          "II": "#3a8d5d",
+          "III": "#c47a2c"
         }
       }
     },
     {
-      "id": "facilities",
-      "name": "公共卫生间",
+      "id": "subway_stations",
+      "name": "地铁站",
       "source": {
-        "path": "facilities.geojson"
+        "path": "subway_stations.geojson"
       },
       "required": true,
       "id_field": "id",
       "label_field": "name",
       "field_labels": {
-        "name": "设施名称",
-        "facility_type": "所在场所",
-        "operator": "运营方",
-        "open": "开放时间",
-        "accessibility": "无障碍情况"
+        "name": "车站名称",
+        "routes": "日间线路",
+        "entrance_count": "出入口数量",
+        "entrance_types": "出入口类型"
       },
-      "source_note": "NYC Public Restrooms (i7jb-7jku), retrieved 2026-07-23",
+      "source_note": "MTA Open Data: Subway Entrances and Exits: 2024 (i9wp-a4ja), retrieved 2026-07-24",
       "search_fields": [
-        "name",
-        "facility_type",
-        "operator"
+        "name"
       ],
       "tooltip_fields": [
-        "name"
+        "name",
+        "routes"
       ],
       "popup_fields": [
         "name",
-        "facility_type",
-        "operator",
-        "open",
-        "accessibility"
+        "routes",
+        "entrance_count",
+        "entrance_types"
       ],
       "style": {
-        "color_field": "facility_type",
-        "radius": 5.5,
-        "weight": 1.2,
-        "fill_opacity": 0.86,
-        "categories": {
-          "Library": "#d1495b",
-          "Privately Owned Public Space": "#edae49",
-          "Transit": "#6a4c93",
-          "Public Plaza": "#00798c"
-        }
+        "color": "#7e294f",
+        "fill_color": "#d1496f",
+        "radius": 6.5,
+        "weight": 1.5,
+        "opacity": 0.96,
+        "fill_opacity": 0.9
       }
     }
   ],
@@ -134,11 +138,13 @@
     }
   ],
   "map": {
+    "search_behavior": "filter",
     "controls": {
       "fullscreen": true,
       "scale": true,
       "basemap_switcher": true,
-      "layer_control": true
+      "layer_control": true,
+      "legend": true
     }
   },
   "static": {
@@ -147,6 +153,6 @@
       "slide-16x9",
       "paper"
     ],
-    "source_note": "NYC Open Data: Borough Boundaries, Bike Routes, and Public Restrooms; retrieved 2026-07-23"
+    "source_note": "NYC Open Data: Neighborhood Tabulation Areas, Bike Routes, and MTA Subway Entrances; retrieved 2026-07-24"
   }
 }

@@ -92,6 +92,57 @@ def test_searchable_land_use_browser_smoke(tmp_path: Path) -> None:
         browser.close()
 
 
+def test_multilayer_business_search_and_line_colors(tmp_path: Path) -> None:
+    project = tmp_path / "project"
+    spec_path = _copy_example("multilayer", project)
+    dist = tmp_path / "dist"
+    build_map(spec_path, dist)
+
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch()
+        page = browser.new_page(viewport={"width": 1280, "height": 800})
+        page.goto((dist / "map.html").resolve().as_uri())
+        initial = _wait_ready(page)
+
+        assert initial["recordCount"] == 56
+        assert page.locator(".imb-type-button").all_inner_texts() == [
+            "地铁站 16",
+            "自行车线路 36",
+            "邻里分区 4",
+        ]
+        assert page.evaluate("window.__interactiveMapBuilderQA.activeLayerId") == (
+            "subway_stations"
+        )
+        page.evaluate("window.__interactiveMapBuilderQA.actions.setSearch('Jay')")
+        assert page.evaluate("window.__interactiveMapBuilderQA.visibleRecordCount") == 1
+        assert page.evaluate("window.__interactiveMapBuilderQA.mapFeatureCount") == 41
+
+        assert page.evaluate(
+            "window.__interactiveMapBuilderQA.actions.setFeatureType('bike_routes')"
+        )
+        page.evaluate("window.__interactiveMapBuilderQA.actions.setSearch('VANDERBILT')")
+        assert page.evaluate("window.__interactiveMapBuilderQA.visibleRecordCount") == 1
+        line_colors = page.evaluate(
+            "window.__interactiveMapBuilderQA.layerStyleColors.bike_routes"
+        )
+        for expected in ("#087f8c", "#3a8d5d", "#c47a2c"):
+            assert expected in line_colors
+
+        assert page.evaluate(
+            "window.__interactiveMapBuilderQA.actions.setFeatureType('neighborhoods')"
+        )
+        page.evaluate(
+            "window.__interactiveMapBuilderQA.actions.setSearch('Brooklyn Heights')"
+        )
+        assert page.evaluate("window.__interactiveMapBuilderQA.visibleRecordCount") == 1
+
+        page.set_viewport_size({"width": 390, "height": 844})
+        assert page.locator("#imb-app").evaluate(
+            "node => node.scrollWidth <= node.clientWidth"
+        )
+        browser.close()
+
+
 def _write_multilayer_project(project: Path, *, linked: bool) -> Path:
     project.mkdir(parents=True)
     for layer_id, name, longitude in (
@@ -113,6 +164,7 @@ def _write_multilayer_project(project: Path, *, linked: bool) -> Path:
             "id_field": "id",
             "label_field": "name",
             "search_fields": ["name"],
+            "field_labels": {"name": "Name"},
             "source_note": "Synthetic browser test",
             "style": {"color": "#2563eb"},
         }
@@ -169,17 +221,30 @@ def test_multilayer_browser_smoke_and_link_isolation(tmp_path: Path) -> None:
         page.goto((plain_dist / "map.html").resolve().as_uri())
         plain = _wait_ready(page)
         assert plain["linkGroupSizes"] == {"a::1": 1, "b::1": 1}
-        assert page.locator("#imb-search-label").inner_text() == "Search across layers"
+        assert page.locator("#imb-feature-type-label").inner_text() == "Search by layer"
+        assert page.locator("#imb-search-label").inner_text() == "Name"
+        assert page.locator(".imb-type-button").count() == 2
+        assert page.locator(".imb-type-button[data-layer-id='a']").get_attribute(
+            "aria-pressed"
+        ) == "true"
         assert page.locator("#imb-layer-title").inner_text() == "Layers"
         assert page.locator(".imb-map-tool-select").get_attribute("aria-label") == "Basemap"
         assert page.locator(".imb-map-tool-button").get_attribute("title") == "Fullscreen map"
+
+        page.evaluate("window.__interactiveMapBuilderQA.actions.setSearch('Alpha')")
+        assert page.evaluate("window.__interactiveMapBuilderQA.visibleRecordCount") == 1
+        assert page.evaluate(
+            "window.__interactiveMapBuilderQA.actions.setFeatureType('b')"
+        )
+        page.evaluate("window.__interactiveMapBuilderQA.actions.setSearch('Alpha')")
+        assert page.evaluate("window.__interactiveMapBuilderQA.visibleRecordCount") == 0
+        page.evaluate("window.__interactiveMapBuilderQA.actions.setSearch('Beta')")
+        assert page.evaluate("window.__interactiveMapBuilderQA.visibleRecordCount") == 1
 
         assert page.evaluate(
             "window.__interactiveMapBuilderQA.actions.toggleLayer('a', false)"
         )
         assert not page.locator("input[data-layer-id='a']").is_checked()
-        page.evaluate("window.__interactiveMapBuilderQA.actions.setSearch('Alpha')")
-        assert page.evaluate("window.__interactiveMapBuilderQA.visibleRecordCount") == 1
         assert page.evaluate("window.__interactiveMapBuilderQA.actions.setBasemap('Two')")
         assert page.evaluate(
             "window.__interactiveMapBuilderQA.actions.selectFeature('a::1')"

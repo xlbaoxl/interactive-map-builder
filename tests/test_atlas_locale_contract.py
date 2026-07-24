@@ -17,7 +17,7 @@ def test_shared_map_controls_follow_document_locale() -> None:
 
 def test_multilayer_has_chinese_and_english_ui_dictionary() -> None:
     text = (TEMPLATES / "multilayer.html.j2").read_text(encoding="utf-8")
-    assert 'search: "跨图层搜索"' in text
-    assert 'search: "Search across layers"' in text
+    assert 'search_layer: "按业务图层搜索"' in text
+    assert 'search_layer: "Search by layer"' in text
     assert 'visible_layers: "Visible layers"' in text
     assert 'function label(key, fallback)' in text
