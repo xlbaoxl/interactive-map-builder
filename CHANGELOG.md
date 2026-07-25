@@ -26,6 +26,23 @@ do not yet have Git tags or GitHub Releases.
 
 ## [Unreleased] / 未发布
 
+### Changed / 变更
+
+- 向导改用跨 Agent 的统一需求清单，不再依赖特定客户端的 Plan mode、快捷键或界面状态。
+  Replaced client-specific planning controls with one cross-agent requirements checklist.
+- MapSpec 当前版本由打包的 JSON Schema 单点定义，示例、初始化器和 HTML 载荷不再分别硬编码版本号。
+  Made the packaged JSON Schema the single source of truth for the current MapSpec version.
+- 公共 `map-list` 演示仅保留固定数据快照，展示配置统一由演示构建器生成。
+  Made the demo builder the sole source of truth for the public `map-list` configuration.
+
+### Fixed / 修复
+
+- GitHub Pages 在演示项目逻辑变化时会重新构建；wheel 隔离测试改用独立、可直接构建的 CSV 示例。
+  Rebuilds GitHub Pages when demo-project logic changes and keeps wheel validation independent
+  from generated demo configurations.
+- 默认初始化不再写入与受众语言无关的英文占位副标题。
+  Removed the English placeholder subtitle from newly initialized maps.
+
 ## [0.3.0] - 2026-07-25
 
 ### Added / 新增
@@ -37,11 +54,10 @@ do not yet have Git tags or GitHub Releases.
 - 新增中英文 GitHub Pages 首页及四个本地化地图页面，并提供四张 1600×900 对应截图。
   Added English and Chinese GitHub Pages landing pages, four localized map pages, and four
   matching 1600×900 screenshots.
-- 对复杂或含糊的任务在首轮非阻塞建议 Plan mode；用户不切换时，持续使用
-  `[x] Confirmed`、`[~] Inferred` 与 `[ ] Needs confirmation` 需求清单补齐信息差。
-  Added a non-blocking first-round Plan mode recommendation for complex or ambiguous tasks,
-  with a persistent Confirmed/Inferred/Needs confirmation checklist when users stay in the
-  default mode.
+- 对复杂或含糊的任务持续使用 `[x] Confirmed`、`[~] Inferred` 与
+  `[ ] Needs confirmation` 需求清单补齐信息差。
+  Added a persistent Confirmed/Inferred/Needs confirmation checklist for complex or ambiguous
+  requests.
 
 ### Changed / 变更
 
@@ -63,9 +79,9 @@ do not yet have Git tags or GitHub Releases.
 
 ### Removed / 移除
 
-- 移除 MapSpec 1.0 支持与兼容代码；旧配置会提示重新运行 `inspect` 与 `init-spec`。
-  Removed MapSpec 1.0 support and compatibility code; old configurations now direct users to
-  rerun `inspect` and `init-spec`.
+- 移除 MapSpec 1.0 支持；旧版本配置由当前 Schema 直接拒绝，不保留迁移或兼容分支。
+  Removed MapSpec 1.0 support; the current Schema rejects old specifications without migration
+  or compatibility branches.
 - 删除已完成蒸馏的中文实施记录和冗余产品调研文件，保留规则已并入英文技术指南。
   Removed the distilled Chinese implementation note and redundant product-research file after
   preserving durable rules in the English technical guidance.
