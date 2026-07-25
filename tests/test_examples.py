@@ -25,7 +25,7 @@ def test_all_example_specs_validate_and_sources_exist() -> None:
 
     for path in specs:
         spec, base_dir = load_spec(path)
-        assert spec["schema_version"] == "1.0"
+        assert spec["schema_version"] == "1.1"
         for layer in spec["layers"]:
             source = base_dir / layer["source"]["path"]
             assert source.is_file(), source
@@ -102,3 +102,16 @@ def test_searchable_land_use_example_has_expected_fixed_snapshot() -> None:
     }
     assert actual_counts == expected_counts
     assert sum(actual_counts.values()) == 1699
+    for name in expected_counts:
+        frame = gpd.read_file(example / name)
+        for field in (
+            "category_code",
+            "category_en",
+            "category_zh",
+            "land_use_code",
+            "land_use_en",
+            "land_use_zh",
+        ):
+            assert field in frame.columns
+        assert "category" not in frame.columns
+        assert "land_use" not in frame.columns

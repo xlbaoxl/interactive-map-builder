@@ -10,6 +10,8 @@ from importlib import metadata
 from pathlib import Path
 from typing import Any, Dict, Iterable, Mapping, Sequence
 
+from .locales import catalog_value, load_catalog
+
 
 def sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
@@ -62,51 +64,49 @@ def write_usage_guide(
     figure_names: Sequence[str],
     basemaps: Sequence[Mapping[str, Any]],
     portable_bundle: bool,
+    locale: str,
 ) -> None:
-    """Write a portable Chinese usage note without local absolute paths."""
+    """Write a localized portable usage guide without local absolute paths."""
 
+    messages = catalog_value(load_catalog(locale), "usage_guide")
     online = [str(item.get("name") or item.get("url")) for item in basemaps if item.get("url")]
     lines = [
-        "# {}：使用说明".format(title),
+        "# " + str(messages["title"]).format(title=title),
         "",
-        "## 打开交互地图",
+        "## " + str(messages["open_heading"]),
         "",
-        "- 双击 `{}`，使用现代浏览器打开。".format(html_name),
-        "- 页面逻辑、Leaflet、样式和业务几何均已内嵌在单个 HTML 中。",
+        "- " + str(messages["open_html"]).format(html_name=html_name),
+        "- " + str(messages["embedded"]),
     ]
     if online:
         lines.append(
-            "- 联网时可加载在线底图（{}）；断网时业务几何、搜索、筛选和图层控件仍可使用。"
-            .format("、".join(online))
+            "- "
+            + str(messages["online_basemap"]).format(
+                basemaps=str(messages["basemap_separator"]).join(online)
+            )
         )
     else:
-        lines.append("- 当前配置不依赖在线底图，可直接查看业务几何和控件。")
+        lines.append("- " + str(messages["offline"]))
     if figure_names:
-        lines.extend(["", "## 静态图", ""])
-        descriptions = {
-            "map_slide_16x9.png": "1920×1080 汇报图",
-            "map_paper.png": "论文高分辨率 PNG",
-            "map_paper.svg": "论文矢量 SVG",
-            "map_paper.pdf": "论文矢量 PDF",
-        }
+        lines.extend(["", "## " + str(messages["figures_heading"]), ""])
+        descriptions = messages["figure_descriptions"]
         lines.extend(
-            "- `{}`：{}。".format(name, descriptions.get(name, "静态地图"))
+            "- "
+            + str(messages["figure_item"]).format(
+                name=name,
+                description=descriptions.get(name, messages["figure_default"]),
+            )
             for name in figure_names
         )
     lines.extend(
         [
             "",
-            "## 复现与核验",
+            "## " + str(messages["verification_heading"]),
             "",
-            (
-                "- `map_spec.json` 与 `data/` 组成可移植重建包。"
-                if portable_bundle
-                else "- `map_spec.json` 是构建记录；源路径仍以原配置目录为基准，"
-                "不承诺脱离原始数据独立重建。"
-            ),
-            "- `inspection.json` 记录输入图层、字段候选、CRS 和模板推荐。",
-            "- `build_report.json` 记录要素数量、几何修复、生成 ID、警告及输出哈希。",
-            "- 运行 `interactive-map-builder verify --dist <本目录>` 可复核成果。",
+            "- " + str(messages["portable" if portable_bundle else "record_only"]),
+            "- " + str(messages["inspection"]),
+            "- " + str(messages["report"]),
+            "- " + str(messages["verify"]),
             "",
         ]
     )

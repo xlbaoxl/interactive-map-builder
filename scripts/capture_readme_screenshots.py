@@ -34,12 +34,19 @@ def _wait_for_map(page) -> None:
     )
 
 
-def _capture(page, example_name: str, output: Path, work_root: Path) -> None:
-    project = work_root / example_name
+def _capture(
+    page,
+    example_name: str,
+    locale: str,
+    output: Path,
+    work_root: Path,
+) -> None:
+    project = work_root / locale / example_name
     spec_path = prepare_demo_project(
         example_name,
         examples_root=EXAMPLES,
         destination=project,
+        locale=locale,
     )
     spec = json.loads(spec_path.read_text(encoding="utf-8"))
     spec["static"] = {"enabled": False}
@@ -48,10 +55,15 @@ def _capture(page, example_name: str, output: Path, work_root: Path) -> None:
         encoding="utf-8",
     )
 
-    dist = work_root / f"{example_name}-dist"
+    dist = work_root / locale / f"{example_name}-dist"
     build_map(spec_path, dist)
     page.goto((dist / "map.html").resolve().as_uri())
     _wait_for_map(page)
+    rendered_locale = page.locator("html").get_attribute("lang")
+    if rendered_locale != locale:
+        raise RuntimeError(
+            f"Expected {locale} map before capture, received {rendered_locale!r}."
+        )
 
     if example_name == "map-list":
         page.evaluate("window.__interactiveMapBuilderQA.actions.setSearch('BROADWAY')")
@@ -105,7 +117,8 @@ def main() -> int:
     parser.add_argument("--height", type=int, default=900)
     args = parser.parse_args()
     output_dir = Path(args.output_dir).resolve()
-    output_dir.mkdir(parents=True, exist_ok=True)
+    for locale in ("en-US", "zh-CN"):
+        (output_dir / locale).mkdir(parents=True, exist_ok=True)
 
     try:
         from playwright.sync_api import sync_playwright
@@ -122,8 +135,15 @@ def main() -> int:
                 viewport={"width": args.width, "height": args.height},
                 device_scale_factor=1,
             )
-            _capture(page, "map-list", output_dir / "map-list.png", work_root)
-            _capture(page, "multilayer", output_dir / "multilayer.png", work_root)
+            for locale in ("en-US", "zh-CN"):
+                for example_name in ("map-list", "multilayer"):
+                    _capture(
+                        page,
+                        example_name,
+                        locale,
+                        output_dir / locale / f"{example_name}.png",
+                        work_root,
+                    )
             browser.close()
     return 0
 

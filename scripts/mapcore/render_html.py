@@ -13,6 +13,7 @@ from typing import Any, Dict, Iterable, List, Union
 
 from jinja2 import DictLoader, Environment, StrictUndefined, select_autoescape
 
+from .locales import DEFAULT_LOCALE, load_catalog, require_locale
 from .resource_files import read_resource_text
 
 
@@ -203,10 +204,7 @@ def _safe_style_source(source: str) -> str:
 
 
 def _language(spec: Mapping[str, Any]) -> str:
-    configured = str(spec.get("locale") or "zh-CN")
-    if re.fullmatch(r"[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*", configured):
-        return configured
-    return "zh-CN"
+    return require_locale(spec.get("locale", DEFAULT_LOCALE))
 
 
 def render_html(
@@ -226,6 +224,8 @@ def render_html(
     if not isinstance(spec, Mapping):
         raise TypeError("spec must be a mapping")
     selected_template = _template_name(spec)
+    locale = _language(spec)
+    catalog = load_catalog(locale)
     layers = _coerce_layers(prepared_layers)
     _validate_required_layers(selected_template, spec, layers)
 
@@ -241,13 +241,15 @@ def render_html(
     )
     template = environment.get_template(_TEMPLATE_FILES[selected_template])
     payload = {
-        "version": "1.0",
+        "version": "1.1",
         "template": selected_template,
         "spec": _jsonable(spec),
         "layers": layers,
+        "catalog": catalog,
     }
     rendered = template.render(
-        language=_language(spec),
+        language=locale,
+        catalog=catalog,
         page_title=str(spec.get("title") or "Interactive map"),
         payload_json=_safe_json_script(payload),
         leaflet_js=_safe_script_source(_read_inline_asset(leaflet_js, "Leaflet JavaScript")),

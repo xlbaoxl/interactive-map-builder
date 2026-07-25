@@ -291,7 +291,7 @@ def _prepare_layer(
                 layer_spec["id"],
                 style_report["missing_count"],
                 "y" if style_report["missing_count"] == 1 else "ies",
-                layer_spec.get("style", {}).get("missing_label", "未分类 / Missing"),
+                layer_spec.get("style", {}).get("missing_label", "Missing"),
             )
         )
     if not layer_spec.get("source_note"):
@@ -497,7 +497,7 @@ def build_map(
     write_json(build_inspection, inspection_path)
     generated_paths.append(inspection_path)
 
-    usage_path = destination / "README_使用说明.md"
+    usage_path = destination / "README_USAGE.md"
     write_usage_guide(
         usage_path,
         title=str(spec["title"]),
@@ -505,6 +505,7 @@ def build_map(
         figure_names=[path.name for path in static_result.values()],
         basemaps=spec.get("basemaps", []),
         portable_bundle=portable_bundle,
+        locale=str(spec["locale"]),
     )
     generated_paths.append(usage_path)
 
@@ -529,7 +530,7 @@ def build_map(
     report: Dict[str, Any] = {
         "schema_version": "1.0",
         "built_at": datetime.now(timezone.utc).isoformat(),
-        "engine_version": "0.2.0",
+        "engine_version": "0.3.0",
         "status": "pass",
         "template": spec["template"],
         "title": spec["title"],
@@ -645,6 +646,7 @@ def _parser() -> argparse.ArgumentParser:
     )
     init_parser.add_argument("--title")
     init_parser.add_argument("--primary-layer")
+    init_parser.add_argument("--locale", choices=("en-US", "zh-CN"), default="en-US")
     init_parser.add_argument("--output", "--out", dest="output", default="map_spec.json")
 
     fetch_parser = subparsers.add_parser(
@@ -679,6 +681,7 @@ def _parser() -> argparse.ArgumentParser:
     )
     run_parser.add_argument("--title")
     run_parser.add_argument("--primary-layer")
+    run_parser.add_argument("--locale", choices=("en-US", "zh-CN"), default="en-US")
     run_parser.add_argument("--layer")
     run_parser.add_argument("--sheet")
     run_parser.add_argument("--crs")
@@ -752,6 +755,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 template=args.template,
                 title=args.title,
                 primary_layer=args.primary_layer,
+                locale=args.locale,
             )
             write_json(spec, output_path)
             print(
@@ -823,6 +827,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 template=args.template,
                 title=args.title,
                 primary_layer=args.primary_layer,
+                locale=args.locale,
             )
             write_json(spec, spec_path)
             result = build_map(spec_path, destination)

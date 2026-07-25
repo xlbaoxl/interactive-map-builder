@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "template": "map-list",
   "title": "Generic linked-by-id example",
   "primary_layer": "features",

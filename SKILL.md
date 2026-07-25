@@ -19,47 +19,65 @@ separate from rendering, preserve provenance, and expose every cleanup in the bu
    Read [supported-inputs.md](references/supported-inputs.md) for GeoPackage, Shapefile ZIP,
    CSV, Excel, encoding, and field-mapping rules.
 
-2. Present one compact summary per layer: feature count, geometry type, CRS, likely
+2. Decide whether planning support is useful before the first requirements round.
+
+   - For multiple layers, an undecided template, unclear CRS or field semantics, or several
+     design trade-offs, non-blockingly suggest Plan mode with `/plan` or `Shift+Tab`.
+   - Do not repeat the suggestion when already in Plan mode.
+   - Proceed directly for a clear, single-layer request.
+
+3. Present one compact summary per layer: feature count, geometry type, CRS, likely
    ID/label/category fields, template candidates, and whether confirmation is required.
 
-3. Ask one consolidated round only for unresolved intent: template, primary layer, label,
-   category meaning, filters, cards, title, and outputs. Never guess a missing CRS. Always
-   confirm the template when inspection finds multiple layers.
+4. When the user does not enter Plan mode, maintain this Markdown requirements checklist in
+   each requirements update:
 
-4. Initialize `map_spec.json`, then apply confirmed choices. Read
+   ```markdown
+   - [x] Confirmed: ...
+   - [~] Inferred: ...
+   - [ ] Needs confirmation: ...
+   ```
+
+   Derive it from the request and inspected data. Keep inferred decisions visible and easy to
+   correct. Ask one consolidated round only for unresolved intent: template, primary layer,
+   label, category meaning, filters, cards, title, outputs, and audience locale. Never guess a
+   missing CRS. Always confirm the template when inspection finds multiple layers.
+   Build only after no blocking `[ ]` item remains.
+
+5. Initialize `map_spec.json`, then apply confirmed choices. Read
    [map-spec.md](references/map-spec.md); the canonical Schema is
    `scripts/mapcore/resources/map-spec.schema.json`.
 
    ```powershell
-   python scripts/map_builder.py init-spec inspection.json --template map-list --primary-layer <id> --output map_spec.json
+   python scripts/map_builder.py init-spec inspection.json --template map-list --primary-layer <id> --locale en-US --output map_spec.json
    ```
 
-5. Download ArcGIS FeatureServer data before building. Read
+6. Download ArcGIS FeatureServer data before building. Read
    [arcgis.md](references/arcgis.md).
 
    ```powershell
    python scripts/map_builder.py fetch-arcgis --url <layer-url> --out data/source.geojson
    ```
 
-6. Build once from the resolved specification. Add `--bundle-sources` only when the user
+7. Build once from the resolved specification. Add `--bundle-sources` only when the user
    wants a portable rebuild bundle and accepts copying source data.
 
    ```powershell
    python scripts/map_builder.py build --spec map_spec.json --out dist
    ```
 
-7. Verify, inspect `build_report.json`, and open `map.html`.
+8. Verify, inspect `build_report.json`, and open `map.html`.
 
    ```powershell
    python scripts/map_builder.py verify --dist dist
    ```
 
-8. Exercise search, filters, sorting, layer visibility, hover/click linkage, keyboard
+9. Exercise search, filters, sorting, layer visibility, hover/click linkage, keyboard
    selection, panel collapse, and narrow-screen layout. Confirm that every visible control
    produces an observable result. Read
    [design-guidelines.md](references/design-guidelines.md).
 
-9. Deliver the whole `dist` directory. Summarize repairs, generated IDs, null display
+10. Deliver the whole `dist` directory. Summarize repairs, generated IDs, null display
    values, simplification, performance warnings, online basemaps, font fallback, portability,
    and source attribution.
 
@@ -69,6 +87,9 @@ and primary layer:
 ```powershell
 python scripts/map_builder.py run <input> --output dist
 ```
+
+Follow the user's conversation language independently of the map audience. Set the map locale
+to `en-US` or `zh-CN`; use `en-US` when the audience is not specified.
 
 Install the deterministic engine once to use it from any directory:
 
@@ -104,7 +125,7 @@ interactive-map-builder --help
 ## Output contract
 
 Always return `map.html`, resolved `map_spec.json`, `inspection.json`, `build_report.json`, and
-`README_使用说明.md`. Generate `map_slide_16x9.png` for the slide preset and paper PNG/SVG/PDF
+`README_USAGE.md` in the selected locale. Generate `map_slide_16x9.png` for the slide preset and paper PNG/SVG/PDF
 files for the paper preset. Treat an unbundled `map_spec.json` as a build record; promise an
 independent rebuild only when sources were bundled.
 
@@ -112,5 +133,7 @@ independent rebuild only when sources were bundled.
 
 - Read [wizard-flow.md](references/wizard-flow.md) for non-expert setup.
 - Read [data-provenance.md](references/data-provenance.md) for remote or redistributable data.
-- Reuse the synthetic examples under `assets/examples/` for smoke tests only.
+- Use the fixed NYC Open Data snapshots in `assets/examples/map-list` and
+  `assets/examples/multilayer` for realistic demos. Use the smaller synthetic examples for
+  smoke and contract tests only.
 - Run the Python script from the Skill root before installation; use the installed CLI afterward.

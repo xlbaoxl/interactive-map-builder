@@ -1,13 +1,13 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "template": "multilayer",
-  "title": "Downtown Brooklyn 骑行与公共交通",
-  "subtitle": "4 个邻里分区 · 36 条自行车线路 · 16 个地铁站",
-  "locale": "zh-CN",
+  "title": "Downtown Brooklyn Cycling and Transit",
+  "subtitle": "4 neighborhood areas · 36 bicycle routes · 16 subway stations",
+  "locale": "en-US",
   "layers": [
     {
       "id": "neighborhoods",
-      "name": "邻里分区",
+      "name": "Neighborhood areas",
       "source": {
         "path": "neighborhoods.geojson"
       },
@@ -15,9 +15,9 @@
       "id_field": "id",
       "label_field": "name",
       "field_labels": {
-        "name": "邻里名称",
-        "borough": "行政区",
-        "area_sqmi": "面积（平方英里）"
+        "name": "Neighborhood",
+        "borough": "Borough",
+        "area_sqmi": "Area (sq mi)"
       },
       "source_note": "NYC Open Data: 2020 Neighborhood Tabulation Areas (9nt8-h7nd), retrieved 2026-07-24",
       "search_fields": [
@@ -46,7 +46,7 @@
     },
     {
       "id": "bike_routes",
-      "name": "自行车线路",
+      "name": "Bicycle routes",
       "source": {
         "path": "bike_routes.geojson"
       },
@@ -54,10 +54,10 @@
       "id_field": "id",
       "label_field": "name",
       "field_labels": {
-        "name": "线路街道",
-        "facility_class": "设施等级",
-        "length_mi": "长度（英里）",
-        "segment_count": "原始线段数"
+        "name": "Route street",
+        "facility_class": "Facility class",
+        "length_mi": "Length (mi)",
+        "segment_count": "Source segment count"
       },
       "source_note": "NYC Open Data: New York City Bike Routes (mzxg-pwib), retrieved 2026-07-24",
       "search_fields": [
@@ -86,7 +86,7 @@
     },
     {
       "id": "subway_stations",
-      "name": "地铁站",
+      "name": "Subway stations",
       "source": {
         "path": "subway_stations.geojson"
       },
@@ -94,10 +94,10 @@
       "id_field": "id",
       "label_field": "name",
       "field_labels": {
-        "name": "车站名称",
-        "routes": "日间线路",
-        "entrance_count": "出入口数量",
-        "entrance_types": "出入口类型"
+        "name": "Station",
+        "routes": "Daytime routes",
+        "entrance_count": "Entrance count",
+        "entrance_types": "Entrance types"
       },
       "source_note": "MTA Open Data: Subway Entrances and Exits: 2024 (i9wp-a4ja), retrieved 2026-07-24",
       "search_fields": [

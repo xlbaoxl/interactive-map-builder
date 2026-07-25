@@ -9,6 +9,7 @@ from typing import Any, Dict, Tuple
 
 from jsonschema import Draft202012Validator
 
+from .locales import catalog_value, load_catalog
 from .resource_files import read_resource_text
 
 
@@ -49,6 +50,11 @@ def _apply_defaults(instance: Any, schema: Dict[str, Any], root: Dict[str, Any])
 
 
 def validate_spec(spec: Dict[str, Any]) -> Dict[str, Any]:
+    if spec.get("schema_version") == "1.0":
+        raise SpecError(
+            "MapSpec 1.0 is no longer supported. Re-run `interactive-map-builder inspect` "
+            "and `interactive-map-builder init-spec` to create a MapSpec 1.1 file."
+        )
     schema = load_schema()
     resolved = deepcopy(spec)
     _apply_defaults(resolved, schema, schema)
@@ -59,6 +65,12 @@ def validate_spec(spec: Dict[str, Any]) -> Dict[str, Any]:
             location = ".".join(str(part) for part in error.absolute_path) or "<root>"
             details.append(f"{location}: {error.message}")
         raise SpecError("Invalid map specification:\n- " + "\n- ".join(details))
+
+    catalog = load_catalog(str(resolved["locale"]))
+    missing_label = str(catalog_value(catalog, "style", "missing_label"))
+    for layer in resolved["layers"]:
+        style = layer.setdefault("style", {})
+        style.setdefault("missing_label", missing_label)
 
     layer_ids = [layer["id"] for layer in resolved["layers"]]
     if len(layer_ids) != len(set(layer_ids)):

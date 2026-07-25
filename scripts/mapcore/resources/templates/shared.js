@@ -288,18 +288,15 @@
     }
   }
 
-  function addBasemap(map, spec) {
+  function addBasemap(map, spec, messages) {
     var basemaps = spec && Array.isArray(spec.basemaps)
       ? spec.basemaps.filter(function (candidate) {
         return candidate && text(candidate.url);
       })
       : [];
-    var locale = text(
-      spec && spec.locale ? spec.locale : document.documentElement.lang || "zh-CN"
-    );
-    var isChinese = locale.toLocaleLowerCase().indexOf("zh") === 0;
-    var basemapLabel = isChinese ? "底图" : "Basemap";
-    var fullscreenLabel = isChinese ? "全屏地图" : "Fullscreen map";
+    var labels = messages && typeof messages === "object" ? messages : {};
+    var basemapLabel = text(firstDefined(labels.basemap, "Basemap"));
+    var fullscreenLabel = text(firstDefined(labels.fullscreen, "Fullscreen map"));
     var activeLayer = null;
     var activeIndex = -1;
     var attribution = document.getElementById("imb-map-attribution");

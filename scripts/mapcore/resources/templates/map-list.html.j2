@@ -27,7 +27,7 @@
       </div>
     </header>
 
-    <section class="imb-command-bar" aria-label="Map filters">
+    <section class="imb-command-bar" aria-label="{{ catalog.shared.map_filters }}">
       <div class="imb-search-shell">
         <span class="imb-search-icon" aria-hidden="true">⌕</span>
         <label id="imb-search-label" class="imb-visually-hidden" for="imb-search"></label>
@@ -38,7 +38,7 @@
     </section>
 
     <div class="imb-workspace">
-      <aside id="imb-sidebar" class="imb-sidebar" aria-label="Feature browser">
+      <aside id="imb-sidebar" class="imb-sidebar" aria-label="{{ catalog.shared.feature_browser }}">
         <div class="imb-panel-heading">
           <div class="imb-panel-heading-row">
             <div class="imb-panel-heading-copy">
@@ -62,13 +62,13 @@
           <h2 id="imb-linked-view-title" class="imb-linked-view-title"></h2>
           <svg id="imb-linked-chart" class="imb-linked-chart" viewBox="0 0 320 180" role="img"></svg>
         </section>
-        <div id="imb-list" class="imb-list" role="listbox" aria-label="Map features"></div>
+        <div id="imb-list" class="imb-list" role="listbox" aria-label="{{ catalog.shared.map_features }}"></div>
         <button id="imb-load-more" class="imb-button imb-load-more" type="button"></button>
       </aside>
 
-      <section class="imb-map-wrap" aria-label="Interactive map">
+      <section class="imb-map-wrap" aria-label="{{ catalog.shared.interactive_map }}">
         <div id="imb-map" class="imb-map"></div>
-        <section id="imb-legend" class="imb-atlas-legend" aria-label="Legend">
+        <section id="imb-legend" class="imb-atlas-legend" aria-label="{{ catalog.shared.legend }}">
           <button id="imb-legend-toggle" class="imb-legend-toggle" type="button" aria-expanded="true">
             <span id="imb-legend-title"></span>
             <span aria-hidden="true">⌃</span>
@@ -79,13 +79,13 @@
         <div id="imb-map-attribution" class="imb-map-attribution"></div>
       </section>
 
-      <aside id="imb-detail" class="imb-detail-panel" aria-label="Selected feature details" hidden>
+      <aside id="imb-detail" class="imb-detail-panel" aria-label="{{ catalog.shared.selected_feature_details }}" hidden>
         <div class="imb-detail-header">
           <div>
             <div id="imb-detail-kicker" class="imb-detail-kicker"></div>
             <h2 id="imb-detail-title" class="imb-detail-title"></h2>
           </div>
-          <button id="imb-detail-close" class="imb-icon-button" type="button" aria-label="Close">×</button>
+          <button id="imb-detail-close" class="imb-icon-button" type="button" aria-label="{{ catalog.shared.close }}">×</button>
         </div>
         <div id="imb-detail-body" class="imb-detail-body"></div>
       </aside>
@@ -108,70 +108,10 @@
         throw new Error("The map-list template requires at least one prepared layer.");
       }
 
-      var locale = IMB.text(spec.locale || document.documentElement.lang || "zh-CN");
-      var language = locale.toLocaleLowerCase().indexOf("zh") === 0 ? "zh" : "en";
-      var strings = {
-        zh: {
-          eyebrow: "ATLAS 数据浏览器",
-          collapse: "收起清单",
-          expand: "展开清单",
-          search: "搜索",
-          searchPlaceholder: "搜索名称、地址或属性…",
-          sort: "列表排序",
-          sortedBy: "当前：",
-          ascending: "升序",
-          descending: "降序",
-          loadMore: "加载更多",
-          results: "个结果",
-          shown: "已显示",
-          empty: "没有符合条件的记录",
-          reset: "重置",
-          legend: "图例",
-          details: "对象详情",
-          all: "全部",
-          filters: "项筛选",
-          from: "最小",
-          to: "最大",
-          missing: "未提供",
-          close: "关闭详情",
-          features: "对象数",
-          basemap: "底图",
-          fullscreen: "全屏地图",
-          filterBar: "地图筛选",
-          featureBrowser: "地图对象"
-        },
-        en: {
-          eyebrow: "ATLAS DATA EXPLORER",
-          collapse: "Collapse list",
-          expand: "Expand list",
-          search: "Search",
-          searchPlaceholder: "Search names, addresses, or attributes…",
-          sort: "List order",
-          sortedBy: "Current: ",
-          ascending: "Ascending",
-          descending: "Descending",
-          loadMore: "Load more",
-          results: "results",
-          shown: "Shown",
-          empty: "No records match the current filters",
-          reset: "Reset",
-          legend: "Legend",
-          details: "Feature details",
-          all: "All",
-          filters: "active filters",
-          from: "Min",
-          to: "Max",
-          missing: "Not provided",
-          close: "Close details",
-          features: "Features",
-          basemap: "Basemap",
-          fullscreen: "Fullscreen map",
-          filterBar: "Map filters",
-          featureBrowser: "Map features"
-        }
-      };
+      var locale = IMB.text(spec.locale || document.documentElement.lang || "en-US");
+      var strings = payload.catalog.map_list;
       function t(key) {
-        return strings[language][key] || strings.en[key] || key;
+        return strings[key] || key;
       }
 
       var requestedPrimary = IMB.text(spec.primary_layer);
@@ -254,7 +194,7 @@
       });
 
       var map = IMB.setupMap();
-      IMB.addBasemap(map, spec);
+      IMB.addBasemap(map, spec, payload.catalog.shared);
       var basemapSelect = document.querySelector(".imb-map-tool-select");
       if (basemapSelect) {
         basemapSelect.setAttribute("aria-label", t("basemap"));

@@ -28,8 +28,8 @@
 ## Multi-layer
 
 - Give every required layer a control, legend entry, tooltip policy, and deterministic style.
-- Label layers with business names such as `地铁站`, `自行车线路`, and `邻里分区`, not raw
-  geometry terms such as point, line, or polygon.
+- Label layers with business names such as `Subway stations`, `Bicycle routes`, and
+  `Neighborhood areas`, not raw geometry terms such as point, line, or polygon.
 - Search one selected business layer at a time when layers represent different entities. Keep
   the other layers visible as spatial context and update the field label, placeholder, result
   noun, and count when the selected layer changes.

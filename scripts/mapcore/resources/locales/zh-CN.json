@@ -1,0 +1,213 @@
+{
+  "locale": "zh-CN",
+  "input_aliases": {
+    "longitude": ["经度"],
+    "latitude": ["纬度"],
+    "wkt": ["几何"],
+    "id_tokens": ["编号", "编码", "代码"],
+    "label_tokens": ["名称", "项目", "社区", "地点"],
+    "category_tokens": ["状态", "类型", "类别", "行政区", "街道"],
+    "search_tokens": ["名称", "地址", "编号", "编码"]
+  },
+  "shared": {
+    "basemap": "底图",
+    "fullscreen": "全屏地图",
+    "map_filters": "地图筛选",
+    "feature_browser": "地图对象",
+    "map_features": "地图对象",
+    "interactive_map": "交互地图",
+    "legend": "图例",
+    "selected_feature_details": "所选对象详情",
+    "close": "关闭",
+    "search_map_layers": "搜索地图图层",
+    "search_results": "搜索结果",
+    "interactive_multilayer_map": "交互式多图层地图",
+    "layer_control": "图层控制"
+  },
+  "map_list": {
+    "eyebrow": "ATLAS 数据浏览器",
+    "collapse": "收起清单",
+    "expand": "展开清单",
+    "search": "搜索",
+    "searchPlaceholder": "搜索名称、地址或属性…",
+    "sort": "列表排序",
+    "sortedBy": "当前：",
+    "ascending": "升序",
+    "descending": "降序",
+    "loadMore": "加载更多",
+    "results": "个结果",
+    "shown": "已显示",
+    "empty": "没有符合条件的记录",
+    "reset": "重置",
+    "legend": "图例",
+    "details": "对象详情",
+    "all": "全部",
+    "filters": "项筛选",
+    "from": "最小",
+    "to": "最大",
+    "missing": "未提供",
+    "close": "关闭详情",
+    "features": "对象数",
+    "basemap": "底图",
+    "fullscreen": "全屏地图",
+    "filterBar": "地图筛选",
+    "featureBrowser": "地图对象"
+  },
+  "multilayer": {
+    "layers": "图层",
+    "legend": "图例",
+    "collapse": "收起搜索",
+    "expand": "展开搜索",
+    "search_layer": "按业务图层搜索",
+    "search": "搜索字段",
+    "search_placeholder": "输入关键词",
+    "search_prefix": "搜索",
+    "search_results_suffix": "搜索结果",
+    "field_separator": "、",
+    "empty": "没有符合条件的要素",
+    "limited": "仅显示前",
+    "visible_layers": "可见图层",
+    "features": "要素"
+  },
+  "style": {
+    "missing_label": "未分类"
+  },
+  "static": {
+    "source_prefix": "来源：",
+    "source_missing": "未注明",
+    "scale_approximate": "比例尺为近似值"
+  },
+  "usage_guide": {
+    "basemap_separator": "、",
+    "title": "{title}：使用说明",
+    "open_heading": "打开交互地图",
+    "open_html": "双击 `{html_name}`，使用现代浏览器打开。",
+    "embedded": "页面逻辑、Leaflet、样式和业务几何均已内嵌在单个 HTML 中。",
+    "online_basemap": "联网时可加载在线底图（{basemaps}）；断网时业务几何、搜索、筛选和图层控件仍可使用。",
+    "offline": "当前配置不依赖在线底图，可直接查看业务几何和控件。",
+    "figures_heading": "静态图",
+    "figure_item": "`{name}`：{description}。",
+    "figure_default": "静态地图",
+    "figure_descriptions": {
+      "map_slide_16x9.png": "1920×1080 汇报图",
+      "map_paper.png": "论文高分辨率 PNG",
+      "map_paper.svg": "论文矢量 SVG",
+      "map_paper.pdf": "论文矢量 PDF"
+    },
+    "verification_heading": "复现与核验",
+    "portable": "`map_spec.json` 与 `data/` 组成可移植重建包。",
+    "record_only": "`map_spec.json` 是构建记录；源路径仍以原配置目录为基准，不承诺脱离原始数据独立重建。",
+    "inspection": "`inspection.json` 记录输入图层、字段候选、CRS 和模板推荐。",
+    "report": "`build_report.json` 记录要素数量、几何修复、生成 ID、警告及输出哈希。",
+    "verify": "运行 `interactive-map-builder verify --dist <本目录>` 可复核成果。"
+  },
+  "demo": {
+    "display_suffix": "zh",
+    "map_list": {
+      "title": "Lower Manhattan 地块与用地",
+      "subtitle": "Financial District—Civic Center · {feature_count} 个真实税务地块 · NYC Open Data",
+      "layer_name": "税务地块",
+      "field_labels": {
+        "name": "地址",
+        "address": "地址",
+        "category": "用地大类",
+        "land_use": "详细用途",
+        "zoning": "主要分区",
+        "lot_area_sqft": "地块面积（平方英尺）",
+        "building_area_sqft": "建筑面积（平方英尺）",
+        "built_far": "已建容积率",
+        "floors": "楼层数",
+        "year_built": "建成年份",
+        "bbl": "地块编号 BBL"
+      },
+      "category_labels": {
+        "residential": "居住用地",
+        "mixed_commercial": "混合与商业用地",
+        "civic_other": "公共与其他用地"
+      },
+      "land_use_labels": {
+        "one_two_family_residential": "一至二户住宅",
+        "walk_up_multifamily": "多户无电梯住宅",
+        "elevator_multifamily": "多户电梯住宅",
+        "mixed_residential_commercial": "住宅与商业混合",
+        "commercial_office": "商业与办公",
+        "industrial_manufacturing": "工业与制造",
+        "transportation_utilities": "交通与公用设施",
+        "public_facilities_institutions": "公共设施与机构",
+        "open_space_recreation": "开放空间与游憩",
+        "parking": "停车设施",
+        "vacant_land": "空置地",
+        "unclassified": "未分类"
+      },
+      "summary_labels": {
+        "count": "匹配地块",
+        "building_area": "总建筑面积",
+        "year_built": "中位建成年份",
+        "built_far": "平均容积率"
+      }
+    },
+    "multilayer": {
+      "title": "Downtown Brooklyn 骑行与公共交通",
+      "subtitle": "4 个邻里分区 · 36 条自行车线路 · 16 个地铁站",
+      "layers": {
+        "neighborhoods": {
+          "name": "邻里分区",
+          "field_labels": {
+            "name": "邻里名称",
+            "borough": "行政区",
+            "area_sqmi": "面积（平方英里）"
+          }
+        },
+        "bike_routes": {
+          "name": "自行车线路",
+          "field_labels": {
+            "name": "线路街道",
+            "facility_class": "设施等级",
+            "length_mi": "长度（英里）",
+            "segment_count": "原始线段数"
+          }
+        },
+        "subway_stations": {
+          "name": "地铁站",
+          "field_labels": {
+            "name": "车站名称",
+            "routes": "日间线路",
+            "entrance_count": "出入口数量",
+            "entrance_types": "出入口类型"
+          }
+        }
+      }
+    }
+  },
+  "landing": {
+    "language_name": "English",
+    "page_title": "Interactive Map Builder——从空间数据到精致地图产品",
+    "description": "用于检查空间数据、构建和验证交互地图并导出汇报与论文图件的 Agent Skill。",
+    "nav_demos": "演示",
+    "nav_workflow": "工作流",
+    "eyebrow": "面向高质量地图交付的 AGENT SKILL",
+    "hero_title": "输入空间数据，交付地图产品。",
+    "hero_body": "把 Excel、CSV、GeoJSON、GeoPackage 和 Shapefile 转换为可搜索的交互地图、汇报图片和论文图件，并保留检查、来源与浏览器验证记录。",
+    "explore": "查看在线演示",
+    "source": "在 GitHub 查看源码",
+    "demo_eyebrow": "真实数据 · 真实生成的 HTML",
+    "demo_title": "两种地图产品，不是两张设计稿。",
+    "demo_body": "两个演示均由仓库内的确定性引擎根据固定的 NYC Open Data 快照构建。",
+    "map_list_title": "Lower Manhattan 地块浏览器",
+    "map_list_body": "搜索地址，筛选用地类别与数值字段，排序记录，并查看所选地块详情。",
+    "multilayer_title": "Downtown Brooklyn 交通环境",
+    "multilayer_body": "查看地铁站、自行车线路与邻里分区，独立控制图层并按业务图层搜索。",
+    "open_map": "打开在线地图",
+    "workflow_eyebrow": "一条可审计的交付路径",
+    "workflow_title": "检查、确认、配置、构建、验证。",
+    "workflow_body": "Skill 负责消除需求歧义，Python 引擎负责确定性数据处理与渲染。",
+    "steps": [
+      ["检查", "识别图层、几何、CRS、字段角色与阻塞项。"],
+      ["确认", "只补齐数据无法回答的信息差。"],
+      ["配置", "写入可复用的 MapSpec 1.1 文件。"],
+      ["构建", "生成单文件 Leaflet 应用与静态图。"],
+      ["验证", "检查浏览器行为、数量、哈希和数据来源。"]
+    ],
+    "footer": "Interactive Map Builder · MIT 许可证"
+  }
+}

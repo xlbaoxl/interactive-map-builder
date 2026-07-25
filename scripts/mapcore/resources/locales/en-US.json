@@ -1,0 +1,213 @@
+{
+  "locale": "en-US",
+  "input_aliases": {
+    "longitude": ["longitude", "longitude_wgs84", "lon", "lng", "x"],
+    "latitude": ["latitude", "latitude_wgs84", "lat", "y"],
+    "wkt": ["wkt", "geometry", "geom"],
+    "id_tokens": ["id", "code"],
+    "label_tokens": ["name", "title"],
+    "category_tokens": ["status", "type", "class", "kind", "category", "district", "borough", "region"],
+    "search_tokens": ["name", "title", "address", "code", "id"]
+  },
+  "shared": {
+    "basemap": "Basemap",
+    "fullscreen": "Fullscreen map",
+    "map_filters": "Map filters",
+    "feature_browser": "Feature browser",
+    "map_features": "Map features",
+    "interactive_map": "Interactive map",
+    "legend": "Legend",
+    "selected_feature_details": "Selected feature details",
+    "close": "Close",
+    "search_map_layers": "Search map layers",
+    "search_results": "Search results",
+    "interactive_multilayer_map": "Interactive multilayer map",
+    "layer_control": "Layer control"
+  },
+  "map_list": {
+    "eyebrow": "ATLAS DATA EXPLORER",
+    "collapse": "Collapse list",
+    "expand": "Expand list",
+    "search": "Search",
+    "searchPlaceholder": "Search names, addresses, or attributes…",
+    "sort": "List order",
+    "sortedBy": "Current: ",
+    "ascending": "Ascending",
+    "descending": "Descending",
+    "loadMore": "Load more",
+    "results": "results",
+    "shown": "Shown",
+    "empty": "No records match the current filters",
+    "reset": "Reset",
+    "legend": "Legend",
+    "details": "Feature details",
+    "all": "All",
+    "filters": "active filters",
+    "from": "Min",
+    "to": "Max",
+    "missing": "Not provided",
+    "close": "Close details",
+    "features": "Features",
+    "basemap": "Basemap",
+    "fullscreen": "Fullscreen map",
+    "filterBar": "Map filters",
+    "featureBrowser": "Map features"
+  },
+  "multilayer": {
+    "layers": "Layers",
+    "legend": "Legend",
+    "collapse": "Collapse search",
+    "expand": "Expand search",
+    "search_layer": "Search by layer",
+    "search": "Search field",
+    "search_placeholder": "Enter a keyword",
+    "search_prefix": "Search ",
+    "search_results_suffix": " search results",
+    "field_separator": ", ",
+    "empty": "No features match the current search",
+    "limited": "Showing first",
+    "visible_layers": "Visible layers",
+    "features": "Features"
+  },
+  "style": {
+    "missing_label": "Missing"
+  },
+  "static": {
+    "source_prefix": "Source: ",
+    "source_missing": "not specified",
+    "scale_approximate": "Scale is approximate"
+  },
+  "usage_guide": {
+    "basemap_separator": ", ",
+    "title": "{title}: Usage guide",
+    "open_heading": "Open the interactive map",
+    "open_html": "Double-click `{html_name}` and open it in a modern browser.",
+    "embedded": "The page logic, Leaflet runtime, styles, and business geometry are embedded in one HTML file.",
+    "online_basemap": "Online basemaps ({basemaps}) load when a network is available; business geometry, search, filters, and layer controls continue to work offline.",
+    "offline": "The current configuration does not require an online basemap.",
+    "figures_heading": "Static figures",
+    "figure_item": "`{name}`: {description}.",
+    "figure_default": "Static map",
+    "figure_descriptions": {
+      "map_slide_16x9.png": "1920×1080 presentation figure",
+      "map_paper.png": "high-resolution paper PNG",
+      "map_paper.svg": "vector paper SVG",
+      "map_paper.pdf": "vector paper PDF"
+    },
+    "verification_heading": "Rebuild and verify",
+    "portable": "`map_spec.json` and `data/` form a portable rebuild bundle.",
+    "record_only": "`map_spec.json` is a build record; source paths remain relative to the original specification directory, so an independent rebuild is not guaranteed.",
+    "inspection": "`inspection.json` records input layers, field candidates, CRS, and the template recommendation.",
+    "report": "`build_report.json` records feature counts, geometry repairs, generated IDs, warnings, and output hashes.",
+    "verify": "Run `interactive-map-builder verify --dist <this-directory>` to verify the deliverable."
+  },
+  "demo": {
+    "display_suffix": "en",
+    "map_list": {
+      "title": "Lower Manhattan Parcels and Land Use",
+      "subtitle": "Financial District—Civic Center · {feature_count} real tax lots · NYC Open Data",
+      "layer_name": "Tax lots",
+      "field_labels": {
+        "name": "Address",
+        "address": "Address",
+        "category": "Land-use group",
+        "land_use": "Detailed land use",
+        "zoning": "Primary zoning",
+        "lot_area_sqft": "Lot area (sq ft)",
+        "building_area_sqft": "Building area (sq ft)",
+        "built_far": "Built FAR",
+        "floors": "Floors",
+        "year_built": "Year built",
+        "bbl": "BBL"
+      },
+      "category_labels": {
+        "residential": "Residential",
+        "mixed_commercial": "Mixed and commercial",
+        "civic_other": "Civic and other"
+      },
+      "land_use_labels": {
+        "one_two_family_residential": "One- and two-family residential",
+        "walk_up_multifamily": "Walk-up multifamily residential",
+        "elevator_multifamily": "Elevator multifamily residential",
+        "mixed_residential_commercial": "Mixed residential and commercial",
+        "commercial_office": "Commercial and office",
+        "industrial_manufacturing": "Industrial and manufacturing",
+        "transportation_utilities": "Transportation and utilities",
+        "public_facilities_institutions": "Public facilities and institutions",
+        "open_space_recreation": "Open space and recreation",
+        "parking": "Parking",
+        "vacant_land": "Vacant land",
+        "unclassified": "Unclassified"
+      },
+      "summary_labels": {
+        "count": "Matching parcels",
+        "building_area": "Total building area",
+        "year_built": "Median year built",
+        "built_far": "Average FAR"
+      }
+    },
+    "multilayer": {
+      "title": "Downtown Brooklyn Cycling and Transit",
+      "subtitle": "4 neighborhood areas · 36 bicycle routes · 16 subway stations",
+      "layers": {
+        "neighborhoods": {
+          "name": "Neighborhood areas",
+          "field_labels": {
+            "name": "Neighborhood",
+            "borough": "Borough",
+            "area_sqmi": "Area (sq mi)"
+          }
+        },
+        "bike_routes": {
+          "name": "Bicycle routes",
+          "field_labels": {
+            "name": "Route street",
+            "facility_class": "Facility class",
+            "length_mi": "Length (mi)",
+            "segment_count": "Source segment count"
+          }
+        },
+        "subway_stations": {
+          "name": "Subway stations",
+          "field_labels": {
+            "name": "Station",
+            "routes": "Daytime routes",
+            "entrance_count": "Entrance count",
+            "entrance_types": "Entrance types"
+          }
+        }
+      }
+    }
+  },
+  "landing": {
+    "language_name": "Chinese",
+    "page_title": "Interactive Map Builder — spatial data to polished map products",
+    "description": "An Agent Skill that inspects spatial data, builds polished interactive maps, verifies them in a browser, and exports report-ready figures.",
+    "nav_demos": "Demos",
+    "nav_workflow": "Workflow",
+    "eyebrow": "AN AGENT SKILL FOR POLISHED MAP DELIVERY",
+    "hero_title": "Spatial data in. Map product out.",
+    "hero_body": "Turn Excel, CSV, GeoJSON, GeoPackage, and Shapefiles into searchable interactive maps, slide-ready images, and publication figures—with inspection, provenance, and browser verification built in.",
+    "explore": "Explore live demos",
+    "source": "View source on GitHub",
+    "demo_eyebrow": "REAL DATA · REAL GENERATED HTML",
+    "demo_title": "Two map products, not two screenshots.",
+    "demo_body": "Both demos are built from fixed NYC Open Data snapshots by the deterministic engine shipped in this repository.",
+    "map_list_title": "Lower Manhattan parcel explorer",
+    "map_list_body": "Search addresses, filter land-use classes and numeric fields, sort records, and inspect a selected parcel.",
+    "multilayer_title": "Downtown Brooklyn mobility context",
+    "multilayer_body": "Inspect subway stations, bicycle routes, and neighborhoods with independent visibility and layer-specific search.",
+    "open_map": "Open live map",
+    "workflow_eyebrow": "ONE AUDITABLE DELIVERY PATH",
+    "workflow_title": "Inspect, confirm, specify, build, and verify.",
+    "workflow_body": "The Skill resolves ambiguity while the Python engine owns deterministic data handling and rendering.",
+    "steps": [
+      ["Inspect", "Discover layers, geometry, CRS, field roles, and blocking issues."],
+      ["Confirm", "Close only the information gaps the data cannot answer."],
+      ["Specify", "Write a reusable MapSpec 1.1 file."],
+      ["Build", "Create a single-file Leaflet app and static figures."],
+      ["Verify", "Exercise browser behavior, counts, hashes, and provenance."]
+    ],
+    "footer": "Interactive Map Builder · MIT License"
+  }
+}

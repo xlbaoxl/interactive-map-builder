@@ -7,7 +7,7 @@ from mapcore.spec import SpecError, validate_spec
 
 def minimal_spec(template: str = "map-list"):
     spec = {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "template": template,
         "title": "测试地图",
         "layers": [
@@ -25,9 +25,36 @@ def minimal_spec(template: str = "map-list"):
 
 def test_defaults_are_applied():
     resolved = validate_spec(minimal_spec())
-    assert resolved["locale"] == "zh-CN"
+    assert resolved["locale"] == "en-US"
     assert resolved["layers"][0]["visible"] is True
     assert resolved["layers"][0]["required"] is True
+    assert resolved["layers"][0]["style"]["missing_label"] == "Missing"
+
+
+@pytest.mark.parametrize(
+    ("locale", "missing_label"),
+    (("en-US", "Missing"), ("zh-CN", "未分类")),
+)
+def test_supported_locales_apply_localized_missing_label(locale, missing_label):
+    spec = minimal_spec()
+    spec["locale"] = locale
+    resolved = validate_spec(spec)
+    assert resolved["locale"] == locale
+    assert resolved["layers"][0]["style"]["missing_label"] == missing_label
+
+
+def test_rejects_map_spec_1_0_with_rebuild_guidance():
+    spec = minimal_spec()
+    spec["schema_version"] = "1.0"
+    with pytest.raises(SpecError, match=r"inspect.*init-spec"):
+        validate_spec(spec)
+
+
+def test_rejects_unsupported_locale():
+    spec = minimal_spec()
+    spec["locale"] = "fr-FR"
+    with pytest.raises(SpecError, match="locale"):
+        validate_spec(spec)
 
 
 def test_multilayer_accepts_highlight_search_and_optional_legend():

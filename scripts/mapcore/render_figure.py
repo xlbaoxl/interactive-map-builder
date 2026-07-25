@@ -23,6 +23,8 @@ from matplotlib import font_manager
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 
+from .locales import DEFAULT_LOCALE, catalog_value, load_catalog
+
 
 OUTPUT_NAMES = {
     "slide_png": "map_slide_16x9.png",
@@ -447,20 +449,22 @@ def _render_canvas(
     if static.get("scale_bar", True):
         _add_scale_bar(axis)
 
+    messages = catalog_value(
+        load_catalog(str(spec.get("locale", DEFAULT_LOCALE))),
+        "static",
+    )
     title = static.get("title") or spec.get("title") or "Interactive map"
     axis.set_title(str(title), loc="left", fontsize=15, fontweight="bold", pad=12)
-    source = (
-        static.get("source_note")
-        or "Source: not specified"
-    )
-    source_text = str(source)
-    if not source_text.lower().startswith("source"):
-        source_text = "Source: " + source_text
+    source_prefix = str(messages["source_prefix"])
+    source = static.get("source_note")
+    source_text = str(source or messages["source_missing"])
+    if not source_text.startswith(source_prefix):
+        source_text = source_prefix + source_text
     figure.text(0.025, 0.025, source_text, ha="left", va="bottom", fontsize=7, color="#566573")
     figure.text(
         0.975,
         0.025,
-        "Scale is approximate",
+        str(messages["scale_approximate"]),
         ha="right",
         va="bottom",
         fontsize=7,

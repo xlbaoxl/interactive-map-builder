@@ -7,6 +7,7 @@ import re
 from pathlib import Path
 from typing import Any, Dict, List, Mapping, Optional
 
+from .locales import DEFAULT_LOCALE, require_locale
 from .spec import validate_spec
 
 
@@ -182,9 +183,11 @@ def init_spec_from_inspection(
     template: str = "auto",
     title: Optional[str] = None,
     primary_layer: Optional[str] = None,
+    locale: str = DEFAULT_LOCALE,
 ) -> Dict[str, Any]:
     """Convert inspection output into the smallest reusable valid MapSpec."""
 
+    selected_locale = require_locale(locale)
     layers = inspection.get("layers")
     if not isinstance(layers, list) or not layers:
         raise SpecInitError("Inspection contains no layers.")
@@ -227,11 +230,11 @@ def init_spec_from_inspection(
         raw_name = str(layers[0].get("name") or "Interactive map")
         inferred_title = re.sub(r"[_-]+", " ", raw_name).strip() or "Interactive map"
     spec: Dict[str, Any] = {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "template": selected,
         "title": inferred_title,
         "subtitle": "Generated from an editable MapSpec",
-        "locale": "zh-CN",
+        "locale": selected_locale,
         "layers": spec_layers,
         "basemaps": [
             {

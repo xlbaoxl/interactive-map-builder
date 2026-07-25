@@ -46,7 +46,7 @@ def _project(tmp_path: Path, *, locale: str = "en-US") -> Path:
     )
     frame.to_file(project / "parcels.geojson", driver="GeoJSON")
     spec = {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "template": "map-list",
         "title": "Atlas browser test",
         "subtitle": "Range filters and details",
@@ -261,5 +261,29 @@ def test_atlas_filters_kpis_detail_drawer_and_english_ui(tmp_path: Path) -> None
               const box = node.getBoundingClientRect();
               return box.left >= 0 && box.right <= window.innerWidth;
             }"""
+        )
+        browser.close()
+
+
+def test_atlas_chinese_ui_and_aria_labels(tmp_path: Path) -> None:
+    spec_path = _project(tmp_path, locale="zh-CN")
+    dist = tmp_path / "dist"
+    build_map(spec_path, dist)
+
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch()
+        page = browser.new_page(viewport={"width": 1000, "height": 760})
+        page.goto((dist / "map.html").resolve().as_uri())
+        _ready(page)
+
+        assert page.locator("html").get_attribute("lang") == "zh-CN"
+        assert page.get_by_text("ATLAS 数据浏览器", exact=True).is_visible()
+        assert page.locator("#imb-search").get_attribute("placeholder").startswith("搜索")
+        assert page.locator(".imb-command-bar").get_attribute("aria-label") == "地图筛选"
+        assert page.locator("#imb-sidebar").get_attribute("aria-label") == "地图对象"
+        assert page.locator(".imb-map-tool-button").get_attribute("title") == "全屏地图"
+        page.set_viewport_size({"width": 390, "height": 844})
+        assert page.locator("#imb-app").evaluate(
+            "node => node.scrollWidth <= node.clientWidth"
         )
         browser.close()

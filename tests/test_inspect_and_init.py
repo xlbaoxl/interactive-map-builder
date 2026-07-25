@@ -59,6 +59,7 @@ def test_init_spec_consumes_inspection_and_builds_csv_end_to_end(tmp_path: Path)
         spec_path=spec_path,
         template="auto",
         title="点位检查示例",
+        locale="zh-CN",
     )
     project.mkdir()
     spec_path.write_text(json.dumps(spec, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -71,7 +72,9 @@ def test_init_spec_consumes_inspection_and_builds_csv_end_to_end(tmp_path: Path)
     result = build_map(spec_path, tmp_path / "dist")
     assert result["report"]["checks"]["primary_count"] == 3
     assert (tmp_path / "dist" / "inspection.json").is_file()
-    assert (tmp_path / "dist" / "README_使用说明.md").is_file()
+    usage = tmp_path / "dist" / "README_USAGE.md"
+    assert usage.is_file()
+    assert "打开交互地图" in usage.read_text(encoding="utf-8")
 
 
 def test_init_spec_stops_for_ambiguous_tabular_geometry(tmp_path: Path) -> None:
@@ -149,13 +152,22 @@ def test_cli_three_step_workflow_and_output_listing(tmp_path: Path, capsys) -> N
             str(inspection_path),
             "--output",
             str(spec_path),
+            "--locale",
+            "zh-CN",
         ]
     ) == 0
     assert main(["build", str(spec_path), "--output", str(dist)]) == 0
     output = capsys.readouterr().out
     assert '"outputs"' in output
     assert "map.html" in output
-    assert "README_使用说明.md" in output
+    assert "README_USAGE.md" in output
+    assert json.loads(spec_path.read_text(encoding="utf-8"))["locale"] == "zh-CN"
+
+
+def test_cli_rejects_unsupported_locale() -> None:
+    with pytest.raises(SystemExit) as error:
+        main(["init-spec", "inspection.json", "--locale", "fr-FR"])
+    assert error.value.code == 2
 
 
 def test_run_quick_path_bundles_a_portable_input_copy(tmp_path: Path) -> None:
@@ -172,8 +184,12 @@ def test_run_quick_path_bundles_a_portable_input_copy(tmp_path: Path) -> None:
             "EPSG:4326",
             "--output",
             str(dist),
+            "--locale",
+            "en-US",
         ]
     ) == 0
     resolved = json.loads((dist / "map_spec.json").read_text(encoding="utf-8"))
+    assert resolved["schema_version"] == "1.1"
+    assert resolved["locale"] == "en-US"
     assert resolved["layers"][0]["source"]["path"] == "data/places.csv"
     assert (dist / "data" / "places.csv").is_file()

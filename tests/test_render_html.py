@@ -127,7 +127,9 @@ def test_map_list_renders_single_safe_html(tmp_path):
     assert "cdn.jsdelivr" not in html
 
     payload = _payload_from(html)
+    assert payload["version"] == "1.1"
     assert payload["template"] == "map-list"
+    assert payload["catalog"]["locale"] == "en-US"
     assert payload["layers"][0]["count"] == 2
     assert payload["layers"][0]["feature_collection"]["features"][0]["properties"]["name"] == attack
     assert payload["layers"][0]["feature_collection"]["features"][0]["properties"]["score"] is None
@@ -235,6 +237,30 @@ def test_multilayer_contains_safe_point_line_polygon_controls(tmp_path):
         "districts",
     ]
     assert sum(layer["count"] for layer in payload["layers"]) == 3
+
+
+def test_rendered_interface_uses_selected_chinese_catalog(tmp_path):
+    layer = _prepared_layer(
+        {"id": "items", "name": "Items", "label_field": "name"},
+        [_feature("x-1", "Place", {"type": "Point", "coordinates": [0.0, 0.0]})],
+    )
+    render_html(
+        {
+            "template": "map-list",
+            "title": "Localized",
+            "locale": "zh-CN",
+            "primary_layer": "items",
+        },
+        [layer],
+        tmp_path / "map.html",
+        LEAFLET_JS,
+        LEAFLET_CSS,
+    )
+    html = (tmp_path / "map.html").read_text(encoding="utf-8")
+    payload = _payload_from(html)
+    assert '<html lang="zh-CN">' in html
+    assert payload["catalog"]["shared"]["basemap"] == "底图"
+    assert payload["catalog"]["map_list"]["search"] == "搜索"
 
 
 def test_render_accepts_leaflet_asset_paths_and_layer_mapping(tmp_path):

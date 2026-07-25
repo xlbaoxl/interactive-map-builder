@@ -18,43 +18,56 @@ def test_demo_site_builds_atlas_landing_without_changing_source_specs(tmp_path: 
 
     site = build_demo_site(tmp_path / "_site")
 
-    for demo in ("map-list", "multilayer"):
-        html_path = site / demo / "index.html"
-        assert html_path.is_file()
-        assert html_path.stat().st_size > 10_000
-        html = html_path.read_text(encoding="utf-8")
-        assert "Leaflet" in html
-        assert '"FeatureCollection"' in html
-        assert "window.__interactiveMapBuilderQA" in html
-        assert "dataset.imbReady" in html
-        if demo == "map-list":
-            assert "1 BROADWAY" in html
-            assert '"template":"map-list"' in html
-            assert '"search_behavior":"highlight"' in html
-            assert "imb-detail-panel" in html
-            assert "rangeFilterCount" in html
-            assert "Lower Manhattan 地块与用地" in html
-        else:
-            assert "Jay St-MetroTech" in html
-            assert "Downtown Brooklyn 骑行与公共交通" in html
-            assert "imb-feature-types" in html
-            assert "setFeatureType" in html
+    expected_titles = {
+        ("en-US", "map-list"): "Lower Manhattan Parcels and Land Use",
+        ("zh-CN", "map-list"): "Lower Manhattan 地块与用地",
+        ("en-US", "multilayer"): "Downtown Brooklyn Cycling and Transit",
+        ("zh-CN", "multilayer"): "Downtown Brooklyn 骑行与公共交通",
+    }
+    for locale in ("en-US", "zh-CN"):
+        for demo in ("map-list", "multilayer"):
+            html_path = site / locale / demo / "index.html"
+            assert html_path.is_file()
+            assert html_path.stat().st_size > 10_000
+            html = html_path.read_text(encoding="utf-8")
+            assert f'<html lang="{locale}">' in html
+            assert expected_titles[(locale, demo)] in html
+            assert "Leaflet" in html
+            assert '"FeatureCollection"' in html
+            assert "window.__interactiveMapBuilderQA" in html
+            assert "dataset.imbReady" in html
+            if demo == "map-list":
+                assert "1 BROADWAY" in html
+                assert '"template":"map-list"' in html
+                assert '"search_behavior":"highlight"' in html
+                assert "imb-detail-panel" in html
+                assert "rangeFilterCount" in html
+            else:
+                assert "Jay St-MetroTech" in html
+                assert "imb-feature-types" in html
+                assert "setFeatureType" in html
 
     assert (site / ".nojekyll").is_file()
     root_html = (site / "index.html").read_text(encoding="utf-8")
     assert "http-equiv=\"refresh\"" not in root_html
-    assert "Spatial data in." in root_html
-    assert "Map product out." in root_html
-    assert 'src="./map-list/"' in root_html
-    assert 'src="./multilayer/"' in root_html
+    assert "Spatial data in. Map product out." in root_html
+    assert 'src="./en-US/map-list/"' in root_html
+    assert 'src="./en-US/multilayer/"' in root_html
     assert "Downtown Brooklyn mobility context" in root_html
+    assert 'href="./zh-CN/"' in root_html
+    english_landing = (site / "en-US" / "index.html").read_text(encoding="utf-8")
+    chinese_landing = (site / "zh-CN" / "index.html").read_text(encoding="utf-8")
+    assert 'href="../zh-CN/"' in english_landing
+    assert 'href="../en-US/"' in chinese_landing
+    assert "输入空间数据，交付地图产品。" in chinese_landing
     assert original_specs == {path: path.read_bytes() for path in spec_paths}
 
 
 def test_readme_links_to_both_interactive_demos() -> None:
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
-    assert f"{PAGES_URL}/map-list/" in readme
-    assert f"{PAGES_URL}/multilayer/" in readme
+    for locale in ("en-US", "zh-CN"):
+        assert f"{PAGES_URL}/{locale}/map-list/" in readme
+        assert f"{PAGES_URL}/{locale}/multilayer/" in readme
     assert "正在搜索 Broadway" in readme
 
 

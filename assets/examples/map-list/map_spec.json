@@ -1,14 +1,14 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "template": "map-list",
-  "title": "Lower Manhattan 商业与混合用地",
-  "subtitle": "Financial District—Civic Center · 1,233 个真实税务地块 · NYC Open Data",
-  "locale": "zh-CN",
+  "title": "Lower Manhattan Commercial and Mixed-Use Parcels",
+  "subtitle": "Financial District—Civic Center · 1,233 real tax lots · NYC Open Data",
+  "locale": "en-US",
   "primary_layer": "parcels",
   "layers": [
     {
       "id": "parcels",
-      "name": "商业与混合用地地块",
+      "name": "Commercial and mixed-use tax lots",
       "source": {
         "path": "mixed-commercial.geojson"
       },
@@ -24,12 +24,13 @@
       ],
       "tooltip_fields": [
         "name",
-        "land_use",
+        "category_en",
         "zoning"
       ],
       "popup_fields": [
         "address",
-        "land_use",
+        "category_en",
+        "land_use_en",
         "zoning",
         "lot_area_sqft",
         "building_area_sqft",
@@ -39,7 +40,7 @@
         "bbl"
       ],
       "filter_fields": [
-        "land_use",
+        "land_use_code",
         "year_built",
         "floors",
         "built_far"
@@ -60,31 +61,32 @@
         "building_area_sqft"
       ],
       "field_labels": {
-        "name": "地址",
-        "address": "地址",
-        "land_use": "用地类型",
-        "zoning": "主要分区",
-        "lot_area_sqft": "地块面积（平方英尺）",
-        "building_area_sqft": "建筑面积（平方英尺）",
-        "built_far": "已建容积率",
-        "floors": "楼层数",
-        "year_built": "建成年份",
-        "bbl": "地块编号 BBL"
+        "name": "Address",
+        "address": "Address",
+        "category_en": "Land-use group",
+        "land_use_en": "Detailed land use",
+        "zoning": "Primary zoning",
+        "lot_area_sqft": "Lot area (sq ft)",
+        "building_area_sqft": "Building area (sq ft)",
+        "built_far": "Built FAR",
+        "floors": "Floors",
+        "year_built": "Year built",
+        "bbl": "BBL"
       },
       "source_note": "NYC Open Data TAX_LOT_POLYGON (i38t-6if2) joined to PLUTO (64uk-42ks), snapshot 2026-07-24",
       "style": {
         "mode": "categorical",
-        "color_field": "land_use",
+        "color_field": "land_use_code",
         "weight": 0.75,
         "opacity": 0.92,
         "fill_opacity": 0.7,
         "categories": {
-          "商业与办公": {
-            "label": "商业与办公",
+          "commercial_office": {
+            "label": "Commercial and office",
             "color": "#d99037"
           },
-          "住宅与商业混合": {
-            "label": "住宅与商业混合",
+          "mixed_residential_commercial": {
+            "label": "Mixed residential and commercial",
             "color": "#39758a"
           }
         }
@@ -123,22 +125,22 @@
     "summary_metrics": [
       {
         "type": "count",
-        "label": "当前地块"
+        "label": "Current parcels"
       },
       {
         "type": "sum",
         "field": "building_area_sqft",
-        "label": "总建筑面积"
+        "label": "Total building area"
       },
       {
         "type": "median",
         "field": "year_built",
-        "label": "中位建年"
+        "label": "Median year built"
       },
       {
         "type": "mean",
         "field": "built_far",
-        "label": "平均容积率"
+        "label": "Average FAR"
       }
     ]
   },

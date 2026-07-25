@@ -11,25 +11,14 @@ import geopandas as gpd
 import pandas as pd
 
 from .loaders import DataLoadError, load_geodata
+from .locales import merged_input_aliases
 from .report import sha256_file
 
 
-LONGITUDE_NAMES = (
-    "longitude",
-    "longitude_wgs84",
-    "lon",
-    "lng",
-    "x",
-    "经度",
-)
-LATITUDE_NAMES = (
-    "latitude",
-    "latitude_wgs84",
-    "lat",
-    "y",
-    "纬度",
-)
-WKT_NAMES = ("wkt", "geometry", "geom", "几何")
+_INPUT_ALIASES = merged_input_aliases()
+LONGITUDE_NAMES = _INPUT_ALIASES["longitude"]
+LATITUDE_NAMES = _INPUT_ALIASES["latitude"]
+WKT_NAMES = _INPUT_ALIASES["wkt"]
 
 
 def _json_value(value: Any) -> Any:
@@ -113,24 +102,10 @@ def infer_field_candidates(
     by_name = {item["name"]: item for item in summaries}
     row_count = max(len(table), 1)
 
-    id_tokens = ("id", "code", "编号", "编码", "代码")
-    label_tokens = ("name", "title", "名称", "项目", "社区", "地点")
-    category_tokens = (
-        "status",
-        "type",
-        "class",
-        "kind",
-        "category",
-        "district",
-        "borough",
-        "region",
-        "状态",
-        "类型",
-        "类别",
-        "行政区",
-        "街道",
-    )
-    search_tokens = ("name", "title", "address", "code", "id", "名称", "地址", "编号", "编码")
+    id_tokens = _INPUT_ALIASES["id_tokens"]
+    label_tokens = _INPUT_ALIASES["label_tokens"]
+    category_tokens = _INPUT_ALIASES["category_tokens"]
+    search_tokens = _INPUT_ALIASES["search_tokens"]
 
     def id_score(name: str) -> Tuple[int, float, str]:
         item = by_name[name]

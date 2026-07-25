@@ -1,18 +1,20 @@
-"""Prepare repository demo projects without duplicating large source snapshots.
-
-The checked-in Lower Manhattan data is split into three GeoJSON files to make its
-provenance and category counts explicit.  The public Atlas demo should nevertheless
-exercise the real ``map-list`` workflow: one primary layer with a category field.
-This module creates that merged project in a temporary directory for Pages, browser
-checks, and deterministic screenshots.
-"""
+"""Prepare localized public demo projects from checked-in source snapshots."""
 
 from __future__ import annotations
 
 import json
 import shutil
+from copy import deepcopy
 from pathlib import Path
-from typing import Any, Dict, Iterable, Mapping, Sequence
+from typing import Any, Dict, Mapping, Sequence
+
+from mapcore.locales import (
+    DEFAULT_LOCALE,
+    catalog_value,
+    load_catalog,
+    require_locale,
+)
+
 
 LAND_USE_FILES: Sequence[str] = (
     "residential.geojson",
@@ -21,23 +23,9 @@ LAND_USE_FILES: Sequence[str] = (
 )
 
 LAND_USE_COLORS: Mapping[str, str] = {
-    "居住用地": "#2f7f83",
-    "混合与商业用地": "#e39a3b",
-    "公共与其他用地": "#8b68a6",
-}
-
-FIELD_LABELS: Mapping[str, str] = {
-    "name": "地址",
-    "address": "地址",
-    "category": "用地大类",
-    "land_use": "详细用途",
-    "zoning": "主要分区",
-    "lot_area_sqft": "地块面积（平方英尺）",
-    "building_area_sqft": "建筑面积（平方英尺）",
-    "built_far": "已建容积率",
-    "floors": "楼层数",
-    "year_built": "建成年份",
-    "bbl": "地块编号 BBL",
+    "residential": "#2f7f83",
+    "mixed_commercial": "#e39a3b",
+    "civic_other": "#8b68a6",
 }
 
 
@@ -67,9 +55,9 @@ def merge_land_use_snapshots(project: Path) -> Path:
         if not identifier:
             raise ValueError("Every demo parcel must have a stable id.")
         identifiers.append(identifier)
-        category = str(properties.get("category") or "").strip()
+        category = str(properties.get("category_code") or "").strip()
         if category not in LAND_USE_COLORS:
-            raise ValueError(f"Unknown land-use category in demo data: {category!r}")
+            raise ValueError(f"Unknown land-use category code in demo data: {category!r}")
 
     if len(identifiers) != len(set(identifiers)):
         raise ValueError("Merged demo parcel ids are not unique.")
@@ -90,38 +78,53 @@ def merge_land_use_snapshots(project: Path) -> Path:
     return destination
 
 
-def atlas_map_list_spec(feature_count: int) -> Dict[str, Any]:
-    """Return the v1 MapSpec used by the public Atlas parcel demo."""
+def atlas_map_list_spec(
+    feature_count: int,
+    locale: str = DEFAULT_LOCALE,
+) -> Dict[str, Any]:
+    """Return the MapSpec 1.1 configuration used by one public parcel demo."""
 
+    selected_locale = require_locale(locale)
+    catalog = load_catalog(selected_locale)
+    messages = catalog_value(catalog, "demo", "map_list")
+    suffix = str(catalog_value(catalog, "demo", "display_suffix"))
+    category_field = f"category_{suffix}"
+    land_use_field = f"land_use_{suffix}"
+    field_labels = dict(messages["field_labels"])
+    field_labels[category_field] = field_labels.pop("category")
+    field_labels[land_use_field] = field_labels.pop("land_use")
     categories = {
-        value: {"label": value, "color": color}
-        for value, color in LAND_USE_COLORS.items()
+        code: {
+            "label": str(messages["category_labels"][code]),
+            "color": color,
+        }
+        for code, color in LAND_USE_COLORS.items()
     }
+    summary_labels = messages["summary_labels"]
     return {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "template": "map-list",
-        "title": "Lower Manhattan 地块与用地",
-        "subtitle": (
-            f"Financial District—Civic Center · "
-            f"{feature_count:,} 个真实税务地块 · NYC Open Data"
+        "title": str(messages["title"]),
+        "subtitle": str(messages["subtitle"]).format(
+            feature_count=f"{feature_count:,}"
         ),
-        "locale": "zh-CN",
+        "locale": selected_locale,
         "primary_layer": "parcels",
         "layers": [
             {
                 "id": "parcels",
-                "name": "税务地块",
+                "name": str(messages["layer_name"]),
                 "source": {"path": "parcels.geojson"},
                 "required": True,
                 "visible": True,
                 "id_field": "id",
                 "label_field": "name",
                 "search_fields": ["name", "address", "zoning", "bbl"],
-                "tooltip_fields": ["name", "category", "zoning"],
+                "tooltip_fields": ["name", category_field, "zoning"],
                 "popup_fields": [
                     "address",
-                    "category",
-                    "land_use",
+                    category_field,
+                    land_use_field,
                     "zoning",
                     "lot_area_sqft",
                     "building_area_sqft",
@@ -130,7 +133,12 @@ def atlas_map_list_spec(feature_count: int) -> Dict[str, Any]:
                     "year_built",
                     "bbl",
                 ],
-                "filter_fields": ["category", "year_built", "floors", "built_far"],
+                "filter_fields": [
+                    "category_code",
+                    "year_built",
+                    "floors",
+                    "built_far",
+                ],
                 "card_fields": [
                     "zoning",
                     "floors",
@@ -146,14 +154,14 @@ def atlas_map_list_spec(feature_count: int) -> Dict[str, Any]:
                     "built_far",
                     "building_area_sqft",
                 ],
-                "field_labels": dict(FIELD_LABELS),
+                "field_labels": field_labels,
                 "source_note": (
                     "NYC Open Data TAX_LOT_POLYGON (i38t-6if2) joined to "
                     "PLUTO (64uk-42ks), snapshot 2026-07-24"
                 ),
                 "style": {
                     "mode": "categorical",
-                    "color_field": "category",
+                    "color_field": "category_code",
                     "weight": 0.75,
                     "opacity": 0.92,
                     "fill_opacity": 0.72,
@@ -191,21 +199,21 @@ def atlas_map_list_spec(feature_count: int) -> Dict[str, Any]:
             "collapsible": True,
             "summary_update_with_filter": True,
             "summary_metrics": [
-                {"type": "count", "label": "匹配地块"},
+                {"type": "count", "label": str(summary_labels["count"])},
                 {
                     "type": "sum",
                     "field": "building_area_sqft",
-                    "label": "总建筑面积",
+                    "label": str(summary_labels["building_area"]),
                 },
                 {
                     "type": "median",
                     "field": "year_built",
-                    "label": "中位建成年份",
+                    "label": str(summary_labels["year_built"]),
                 },
                 {
                     "type": "mean",
                     "field": "built_far",
-                    "label": "平均容积率",
+                    "label": str(summary_labels["built_far"]),
                 },
             ],
         },
@@ -220,14 +228,35 @@ def atlas_map_list_spec(feature_count: int) -> Dict[str, Any]:
     }
 
 
+def _localized_multilayer_spec(
+    base_spec: Mapping[str, Any],
+    locale: str,
+) -> Dict[str, Any]:
+    selected_locale = require_locale(locale)
+    messages = catalog_value(load_catalog(selected_locale), "demo", "multilayer")
+    spec = deepcopy(dict(base_spec))
+    spec["schema_version"] = "1.1"
+    spec["locale"] = selected_locale
+    spec["title"] = str(messages["title"])
+    spec["subtitle"] = str(messages["subtitle"])
+    layer_messages = messages["layers"]
+    for layer in spec["layers"]:
+        localized = layer_messages[str(layer["id"])]
+        layer["name"] = str(localized["name"])
+        layer["field_labels"] = dict(localized["field_labels"])
+    return spec
+
+
 def prepare_demo_project(
     example_name: str,
     *,
     examples_root: Path,
     destination: Path,
+    locale: str = DEFAULT_LOCALE,
 ) -> Path:
-    """Copy one checked-in example and prepare its public-demo MapSpec."""
+    """Copy one checked-in example and prepare its localized public MapSpec."""
 
+    selected_locale = require_locale(locale)
     source = examples_root / example_name
     if not source.is_dir():
         raise FileNotFoundError(f"Unknown example: {source}")
@@ -239,18 +268,28 @@ def prepare_demo_project(
     if example_name == "map-list":
         merged = merge_land_use_snapshots(destination)
         feature_count = len(_read_collection(merged)["features"])
-        spec = atlas_map_list_spec(feature_count)
-        spec_path.write_text(
-            json.dumps(spec, ensure_ascii=False, indent=2) + "\n",
-            encoding="utf-8",
+        spec = atlas_map_list_spec(feature_count, selected_locale)
+    elif example_name == "multilayer":
+        if not spec_path.is_file():
+            raise FileNotFoundError(f"Example is missing map_spec.json: {destination}")
+        spec = _localized_multilayer_spec(
+            json.loads(spec_path.read_text(encoding="utf-8")),
+            selected_locale,
         )
-    elif not spec_path.is_file():
-        raise FileNotFoundError(f"Example is missing map_spec.json: {destination}")
+    else:
+        if not spec_path.is_file():
+            raise FileNotFoundError(f"Example is missing map_spec.json: {destination}")
+        spec = json.loads(spec_path.read_text(encoding="utf-8"))
+        spec["schema_version"] = "1.1"
+        spec["locale"] = selected_locale
+    spec_path.write_text(
+        json.dumps(spec, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
     return spec_path
 
 
 __all__ = [
-    "FIELD_LABELS",
     "LAND_USE_COLORS",
     "LAND_USE_FILES",
     "atlas_map_list_spec",

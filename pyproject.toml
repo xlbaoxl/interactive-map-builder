@@ -1,13 +1,14 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "interactive-map-builder"
-version = "0.2.0"
+version = "0.3.0"
 description = "Build interactive Leaflet maps and report-ready static figures from local spatial data."
 requires-python = ">=3.9"
-license = {text = "MIT"}
+license = "MIT"
+license-files = ["LICENSE"]
 dependencies = [
   "geopandas>=0.12.2,<2",
   "pandas>=1.4.4,<3",
@@ -21,6 +22,11 @@ dependencies = [
   "requests>=2.28,<3",
   "jsonschema>=4.16,<5",
 ]
+
+[project.urls]
+Homepage = "https://xlbaoxl.github.io/interactive-map-builder/"
+Repository = "https://github.com/xlbaoxl/interactive-map-builder"
+Issues = "https://github.com/xlbaoxl/interactive-map-builder/issues"
 
 [project.scripts]
 interactive-map-builder = "map_builder:main"
@@ -36,6 +42,7 @@ include = ["mapcore*"]
 [tool.setuptools.package-data]
 mapcore = [
   "resources/*.json",
+  "resources/locales/*.json",
   "resources/templates/*.j2",
   "resources/templates/*.css",
   "resources/templates/*.js",

@@ -1,6 +1,8 @@
 # Interactive Map Builder
 
-[中文](#中文) · [English](#english)
+[中文](#中文) · [English](#english) ·
+[中文在线演示](https://xlbaoxl.github.io/interactive-map-builder/zh-CN/) ·
+[English live demos](https://xlbaoxl.github.io/interactive-map-builder/en-US/)
 
 Build lightweight, searchable Leaflet maps and report-ready figures from existing spatial
 data—without a frontend build system.
@@ -26,18 +28,18 @@ Interactive Map Builder 是一个给 Codex 和其他 AI 助手使用的地图 Sk
 搜索道路名称后，左侧会立即列出匹配地块；也可以分别开关居住、商业和公共用地，
 点击任意地块查看用途、分区、面积、容积率、楼层和建成年份。
 
-[![正在搜索 Broadway、带分类开关和地块详情的 Lower Manhattan 用地地图](assets/screenshots/map-list.png)](https://xlbaoxl.github.io/interactive-map-builder/map-list/)
+[![正在搜索 Broadway、带分类开关和地块详情的 Lower Manhattan 用地地图](assets/screenshots/zh-CN/map-list.png)](https://xlbaoxl.github.io/interactive-map-builder/zh-CN/map-list/)
 
-[打开并操作这张地图](https://xlbaoxl.github.io/interactive-map-builder/map-list/)
+[打开并操作这张地图](https://xlbaoxl.github.io/interactive-map-builder/zh-CN/map-list/)
 
 #### 可以开关的多图层地图
 
 可以同时查看 Downtown Brooklyn 的地铁站、自行车线路和邻里分区，按业务图层
 分别搜索，并随时开关图层或切换底图。
 
-[![带业务图层搜索、图层开关和分类图例的 Downtown Brooklyn 多图层地图](assets/screenshots/multilayer.png)](https://xlbaoxl.github.io/interactive-map-builder/multilayer/)
+[![带业务图层搜索、图层开关和分类图例的 Downtown Brooklyn 多图层地图](assets/screenshots/zh-CN/multilayer.png)](https://xlbaoxl.github.io/interactive-map-builder/zh-CN/multilayer/)
 
-[打开并操作这张地图](https://xlbaoxl.github.io/interactive-map-builder/multilayer/)
+[打开并操作这张地图](https://xlbaoxl.github.io/interactive-map-builder/zh-CN/multilayer/)
 
 ### 安装和使用（任选一种方法）
 
@@ -80,6 +82,20 @@ interactive-map-builder --help
 使用 $interactive-map-builder，把我选择的空间数据做成可以搜索和筛选的交互地图。
 ```
 
+#### 复杂任务建议使用 Plan mode
+
+如果任务包含多个图层、模板还没确定、CRS 或字段含义不清，或需要比较多项设计取舍，
+建议先用 `/plan` 或 `Shift+Tab` 切换到 Plan mode。若不切换，Skill 会继续推进，并用
+下面的需求清单持续补齐信息差：
+
+```markdown
+- [x] Confirmed：用户已经确认
+- [~] Inferred：根据数据或上下文推定，可随时修改
+- [ ] Needs confirmation：构建前必须确认
+```
+
+对话语言跟随用户；地图语言根据受众单独选择 `zh-CN` 或 `en-US`。
+
 ### 安装到其他 Agent
 
 将整个仓库复制到 Agent 可读取的 Skill/规则目录，让它加载 `SKILL.md`，再运行
@@ -98,6 +114,7 @@ interactive-map-builder inspect `
   --output inspection.json
 interactive-map-builder init-spec inspection.json `
   --template multilayer `
+  --locale zh-CN `
   --output map_spec.json
 interactive-map-builder build --spec map_spec.json --out dist
 interactive-map-builder verify --dist dist
@@ -106,7 +123,7 @@ interactive-map-builder verify --dist dist
 只有一个且没有歧义的图层时，也可以使用快捷命令：
 
 ```powershell
-interactive-map-builder run data.geojson --output dist
+interactive-map-builder run data.geojson --locale zh-CN --output dist
 ```
 
 ### 支持的输入
@@ -134,7 +151,7 @@ interactive-map-builder run data.geojson --output dist
 - `map_spec.json`：解析默认值后的构建记录
 - `inspection.json`：输入、字段候选、CRS 与模板确认状态
 - `build_report.json`：校验、修复、警告、性能指标、哈希与可移植状态
-- `README_使用说明.md`：交付给最终使用者的简短说明
+- `README_USAGE.md`：按地图语言生成、交付给最终使用者的简短说明
 
 静态 preset 另外生成：
 
@@ -191,7 +208,7 @@ interactive-map-builder verify --dist dist
 - 用更多真实但可公开的数据包扩充行为 eval
 - 改进超大 GeoJSON 的搜索和渐进加载
 - 增加可选的视觉回归测试
-- 在保持 MapSpec v1 稳定的前提下评估更多静态输出 preset
+- 在保持 MapSpec 1.1 稳定的前提下评估更多静态输出 preset
 
 ---
 
@@ -215,18 +232,18 @@ The online demos need an internet connection to load the street basemap.
 Search for a street to populate the matching parcel list, toggle residential, commercial, and
 public land-use classes, then select any parcel to inspect zoning, area, FAR, floors, and age.
 
-[![Lower Manhattan land-use map searching Broadway with class toggles and parcel details](assets/screenshots/map-list.png)](https://xlbaoxl.github.io/interactive-map-builder/map-list/)
+[![Lower Manhattan land-use map searching Broadway with class toggles and parcel details](assets/screenshots/en-US/map-list.png)](https://xlbaoxl.github.io/interactive-map-builder/en-US/map-list/)
 
-[Open the interactive map](https://xlbaoxl.github.io/interactive-map-builder/map-list/)
+[Open the interactive map](https://xlbaoxl.github.io/interactive-map-builder/en-US/map-list/)
 
 #### Toggleable multilayer map
 
 View Downtown Brooklyn subway stations, bicycle routes, and neighborhoods together, search
 within one business layer at a time, then toggle layers or switch basemaps.
 
-[![Downtown Brooklyn multilayer map with business-layer search, layer controls, and a categorical legend](assets/screenshots/multilayer.png)](https://xlbaoxl.github.io/interactive-map-builder/multilayer/)
+[![Downtown Brooklyn multilayer map with business-layer search, layer controls, and a categorical legend](assets/screenshots/en-US/multilayer.png)](https://xlbaoxl.github.io/interactive-map-builder/en-US/multilayer/)
 
-[Open the interactive map](https://xlbaoxl.github.io/interactive-map-builder/multilayer/)
+[Open the interactive map](https://xlbaoxl.github.io/interactive-map-builder/en-US/multilayer/)
 
 ### Install and use it (choose either method)
 
@@ -269,6 +286,21 @@ Attach a GeoJSON, Excel, CSV, or other spatial data file to Codex and send:
 Use $interactive-map-builder to turn my attached spatial data into a searchable, filterable interactive map.
 ```
 
+#### Prefer Plan mode for complex requests
+
+For multiple layers, an undecided template, unclear CRS or field semantics, or several design
+trade-offs, switch to Plan mode with `/plan` or `Shift+Tab`. If you stay in the default mode,
+the Skill continues with a visible requirements checklist:
+
+```markdown
+- [x] Confirmed
+- [~] Inferred
+- [ ] Needs confirmation
+```
+
+The conversation follows your language. Choose the map audience separately with `en-US` or
+`zh-CN`.
+
 ### Install for another agent
 
 Copy the complete repository into a Skill or rules directory that the agent can read, instruct
@@ -288,6 +320,7 @@ interactive-map-builder inspect \
   --output inspection.json
 interactive-map-builder init-spec inspection.json \
   --template multilayer \
+  --locale en-US \
   --output map_spec.json
 interactive-map-builder build --spec map_spec.json --out dist
 interactive-map-builder verify --dist dist
@@ -296,7 +329,7 @@ interactive-map-builder verify --dist dist
 For one unambiguous layer:
 
 ```bash
-interactive-map-builder run data.geojson --output dist
+interactive-map-builder run data.geojson --locale en-US --output dist
 ```
 
 ### Supported inputs
@@ -324,7 +357,7 @@ Every build writes:
 - `map_spec.json`: resolved build record
 - `inspection.json`: inputs, field candidates, CRS, and template-confirmation state
 - `build_report.json`: validation, repairs, warnings, performance, hashes, and portability
-- `README_使用说明.md`: short delivery note for the end user
+- `README_USAGE.md`: localized delivery note for the end user
 
 Static presets add:
 
@@ -380,7 +413,7 @@ when layers explicitly declare a semantically shared `link_key`.
 - Expand behavioral evals with additional redistributable real-world datasets
 - Improve search and progressive rendering for larger GeoJSON payloads
 - Add optional visual-regression coverage
-- Evaluate more static presets without expanding or fragmenting MapSpec v1
+- Evaluate more static presets without expanding or fragmenting MapSpec 1.1
 
 ## License
 

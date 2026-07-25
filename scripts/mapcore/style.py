@@ -81,7 +81,7 @@ def resolve_layer_style(
         if field and field in frame.columns:
             missing_count = int(frame[field].isna().sum())
             if missing_count:
-                missing_label = str(style.get("missing_label", "未分类 / Missing"))
+                missing_label = str(style.get("missing_label", "Missing"))
                 resolved_frame = frame.copy()
                 resolved_frame[field] = resolved_frame[field].where(
                     resolved_frame[field].notna(), missing_label
@@ -135,7 +135,7 @@ def resolve_layer_style(
         for index in range(class_count)
     ]
     palette = list(_colors(style.get("colors", []), class_count))
-    missing_label = str(style.get("missing_label", "未分类 / Missing"))
+    missing_label = str(style.get("missing_label", "Missing"))
     derived_field = "__imb_class"
     while derived_field in frame.columns:
         derived_field += "_"

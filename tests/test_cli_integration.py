@@ -19,6 +19,7 @@ def test_land_use_demo_build_and_verify_complete_bundle(tmp_path):
     result = build_map(spec, tmp_path)
     assert result["report"]["status"] == "pass"
     assert result["report"]["template"] == "map-list"
+    assert result["report"]["engine_version"] == "0.3.0"
     assert result["report"]["checks"]["rendered_layer_count"] == 1
     assert result["report"]["performance"]["feature_count"] == 1233
 
@@ -31,7 +32,7 @@ def test_land_use_demo_build_and_verify_complete_bundle(tmp_path):
         "map_spec.json",
         "inspection.json",
         "build_report.json",
-        "README_使用说明.md",
+        "README_USAGE.md",
     }
     assert expected == {path.name for path in tmp_path.iterdir()}
 
@@ -117,7 +118,7 @@ def test_gpkg_zip_csv_and_excel_build_end_to_end(tmp_path: Path) -> None:
     for name, source in cases:
         case_dir = tmp_path / name
         spec = {
-            "schema_version": "1.0",
+            "schema_version": "1.1",
             "template": "map-list",
             "title": "{} input".format(name),
             "primary_layer": "places",
@@ -153,7 +154,7 @@ def test_graduated_style_is_resolved_once_for_html_and_static_outputs(tmp_path: 
         crs="EPSG:4326",
     ).to_file(source, driver="GeoJSON")
     spec = {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "template": "map-list",
         "title": "Graduated",
         "primary_layer": "scores",

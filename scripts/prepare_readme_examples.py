@@ -15,6 +15,8 @@ from shapely import make_valid, set_precision
 from shapely.geometry import Point, mapping
 from shapely.ops import unary_union
 
+from mapcore.locales import catalog_value, load_catalog
+
 
 ROOT = Path(__file__).resolve().parents[1]
 EXAMPLES = ROOT / "assets" / "examples"
@@ -35,18 +37,22 @@ DATASETS = {
     "subway_entrances": "i9wp-a4ja",
 }
 
-LAND_USE_LABELS = {
-    "1": "一至二户住宅",
-    "2": "多户无电梯住宅",
-    "3": "多户电梯住宅",
-    "4": "住宅与商业混合",
-    "5": "商业与办公",
-    "6": "工业与制造",
-    "7": "交通与公用设施",
-    "8": "公共设施与机构",
-    "9": "开放空间与游憩",
-    "10": "停车设施",
-    "11": "空置地",
+LAND_USE_CODES = {
+    "1": "one_two_family_residential",
+    "2": "walk_up_multifamily",
+    "3": "elevator_multifamily",
+    "4": "mixed_residential_commercial",
+    "5": "commercial_office",
+    "6": "industrial_manufacturing",
+    "7": "transportation_utilities",
+    "8": "public_facilities_institutions",
+    "9": "open_space_recreation",
+    "10": "parking",
+    "11": "vacant_land",
+}
+DEMO_MESSAGES = {
+    locale: catalog_value(load_catalog(locale), "demo", "map_list")
+    for locale in ("en-US", "zh-CN")
 }
 
 
@@ -212,22 +218,27 @@ def _prepare_land_use() -> dict[str, int]:
             continue
         code = str(info.get("landuse") or "").strip()
         if code in {"1", "2", "3"}:
-            category = "居住用地"
+            category_code = "residential"
             file_name = "residential.geojson"
         elif code in {"4", "5"}:
-            category = "混合与商业用地"
+            category_code = "mixed_commercial"
             file_name = "mixed-commercial.geojson"
         else:
-            category = "公共与其他用地"
+            category_code = "civic_other"
             file_name = "civic-other.geojson"
         address = str(info.get("address") or "").strip()
+        land_use_code = LAND_USE_CODES.get(code, "unclassified")
         records.append(
             {
                 "id": f"lot-{bbl}",
-                "name": address or f"地块 BBL {bbl}",
+                "name": address or f"BBL {bbl}",
                 "address": address or "—",
-                "category": category,
-                "land_use": LAND_USE_LABELS.get(code, "未分类"),
+                "category_code": category_code,
+                "category_en": DEMO_MESSAGES["en-US"]["category_labels"][category_code],
+                "category_zh": DEMO_MESSAGES["zh-CN"]["category_labels"][category_code],
+                "land_use_code": land_use_code,
+                "land_use_en": DEMO_MESSAGES["en-US"]["land_use_labels"][land_use_code],
+                "land_use_zh": DEMO_MESSAGES["zh-CN"]["land_use_labels"][land_use_code],
                 "zoning": str(info.get("zonedist1") or "—"),
                 "lot_area_sqft": _number(info.get("lotarea"), 0),
                 "building_area_sqft": _number(info.get("bldgarea"), 0),
@@ -248,8 +259,12 @@ def _prepare_land_use() -> dict[str, int]:
         "id",
         "name",
         "address",
-        "category",
-        "land_use",
+        "category_code",
+        "category_en",
+        "category_zh",
+        "land_use_code",
+        "land_use_en",
+        "land_use_zh",
         "zoning",
         "lot_area_sqft",
         "building_area_sqft",

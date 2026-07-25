@@ -19,7 +19,7 @@
       <div id="imb-summary" class="imb-multilayer-summary" aria-live="polite"></div>
     </header>
     <div class="imb-workspace">
-      <aside id="imb-sidebar" class="imb-sidebar" aria-label="Search map layers">
+      <aside id="imb-sidebar" class="imb-sidebar" aria-label="{{ catalog.shared.search_map_layers }}">
         <div class="imb-toolbar">
           <div class="imb-field">
             <span id="imb-feature-type-label" class="imb-field-label"></span>
@@ -39,15 +39,15 @@
           <span id="imb-result-count"></span>
           <span id="imb-result-limit"></span>
         </div>
-        <div id="imb-list" class="imb-list" role="listbox" aria-label="Search results"></div>
+        <div id="imb-list" class="imb-list" role="listbox" aria-label="{{ catalog.shared.search_results }}"></div>
       </aside>
-      <section class="imb-map-wrap" aria-label="Interactive multilayer map">
+      <section class="imb-map-wrap" aria-label="{{ catalog.shared.interactive_multilayer_map }}">
         <div id="imb-map" class="imb-map"></div>
-        <section id="imb-layer-control" class="imb-control-card imb-layer-control" aria-label="Layer control">
+        <section id="imb-layer-control" class="imb-control-card imb-layer-control" aria-label="{{ catalog.shared.layer_control }}">
           <h2 id="imb-layer-title" class="imb-control-title"></h2>
           <div id="imb-layer-options" class="imb-control-list"></div>
         </section>
-        <section id="imb-legend" class="imb-control-card imb-legend" aria-label="Legend">
+        <section id="imb-legend" class="imb-control-card imb-legend" aria-label="{{ catalog.shared.legend }}">
           <h2 id="imb-legend-title" class="imb-control-title"></h2>
           <div id="imb-legend-groups"></div>
         </section>
@@ -72,38 +72,10 @@
         throw new Error("The multilayer template requires at least one prepared layer.");
       }
 
-      var locale = IMB.text(spec.locale || document.documentElement.lang || "zh-CN");
-      var language = locale.toLocaleLowerCase().indexOf("zh") === 0 ? "zh" : "en";
-      var strings = {
-        zh: {
-          layers: "图层",
-          legend: "图例",
-          collapse: "收起搜索",
-          expand: "展开搜索",
-          search_layer: "按业务图层搜索",
-          search: "搜索字段",
-          search_placeholder: "输入关键词",
-          empty: "没有符合条件的要素",
-          limited: "仅显示前",
-          visible_layers: "可见图层",
-          features: "要素"
-        },
-        en: {
-          layers: "Layers",
-          legend: "Legend",
-          collapse: "Collapse search",
-          expand: "Expand search",
-          search_layer: "Search by layer",
-          search: "Search field",
-          search_placeholder: "Enter a keyword",
-          empty: "No features match the current search",
-          limited: "Showing first",
-          visible_layers: "Visible layers",
-          features: "Features"
-        }
-      };
-      function label(key, fallback) {
-        return strings[language][key] || fallback;
+      var locale = IMB.text(spec.locale || document.documentElement.lang || "en-US");
+      var strings = payload.catalog.multilayer;
+      function label(key) {
+        return strings[key] || key;
       }
 
       var title = IMB.text(IMB.firstDefined(spec.title, "Interactive map"));
@@ -111,16 +83,16 @@
       document.title = title;
       document.getElementById("imb-title").textContent = title;
       document.getElementById("imb-subtitle").textContent = subtitle;
-      document.getElementById("imb-layer-title").textContent = label("layers", "图层");
-      document.getElementById("imb-legend-title").textContent = label("legend", "图例");
+      document.getElementById("imb-layer-title").textContent = label("layers");
+      document.getElementById("imb-legend-title").textContent = label("legend");
       var collapse = document.getElementById("imb-collapse");
-      collapse.textContent = label("collapse", "收起搜索");
+      collapse.textContent = label("collapse");
       var search = document.getElementById("imb-search");
       document.getElementById("imb-feature-type-label").textContent =
-        label("search_layer", "按业务图层搜索");
+        label("search_layer");
 
       var map = IMB.setupMap();
-      IMB.addBasemap(map, spec);
+      IMB.addBasemap(map, spec, payload.catalog.shared);
       var mapControls = spec.map && spec.map.controls && typeof spec.map.controls === "object"
         ? spec.map.controls
         : {};
@@ -360,15 +332,13 @@
           return definition.label;
         });
         document.getElementById("imb-search-label").textContent =
-          fieldLabels.join("、") || label("search", "搜索字段");
-        search.placeholder = language === "zh"
-          ? "搜索" + (fieldLabels.join("、") || runtime.title)
-          : "Search " + (fieldLabels.join(", ") || runtime.title);
+          fieldLabels.join(strings.field_separator) || label("search");
+        search.placeholder =
+          strings.search_prefix
+          + (fieldLabels.join(strings.field_separator) || runtime.title);
         listNode.setAttribute(
           "aria-label",
-          language === "zh"
-            ? runtime.title + "搜索结果"
-            : runtime.title + " search results"
+          runtime.title + strings.search_results_suffix
         );
       }
 
@@ -405,13 +375,13 @@
         if (!state.matches.length) {
           listNode.appendChild(IMB.element(
             "p",
-            label("empty", "没有符合条件的要素") + " · " + activeRuntime().title,
+            label("empty") + " · " + activeRuntime().title,
             "imb-empty"
           ));
         }
         resultCount.textContent = activeRuntime().title + ": " + state.matches.length;
         resultLimit.textContent = state.matches.length > resultLimitValue
-          ? label("limited", "仅显示前") + " " + resultLimitValue
+          ? label("limited") + " " + resultLimitValue
           : "";
         IMB.qa.visibleRecordCount = state.matches.length;
         IMB.qa.renderedListCount = visibleMatches.length;
@@ -475,8 +445,8 @@
           return runtime.enabled;
         }).length;
         summary.replaceChildren(
-          IMB.element("span", label("visible_layers", "可见图层") + ": " + enabledCount),
-          IMB.element("span", label("features", "要素") + ": " + totalFeatures)
+          IMB.element("span", label("visible_layers") + ": " + enabledCount),
+          IMB.element("span", label("features") + ": " + totalFeatures)
         );
       }
 
@@ -569,7 +539,7 @@
         var app = document.getElementById("imb-app");
         var collapsed = app.classList.toggle("is-sidebar-collapsed");
         collapse.setAttribute("aria-expanded", collapsed ? "false" : "true");
-        collapse.textContent = collapsed ? label("expand", "展开搜索") : label("collapse", "收起搜索");
+        collapse.textContent = collapsed ? label("expand") : label("collapse");
         window.setTimeout(function () { map.invalidateSize(); }, 220);
       });
 

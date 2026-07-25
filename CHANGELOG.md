@@ -26,21 +26,49 @@ do not yet have Git tags or GitHub Releases.
 
 ## [Unreleased] / 未发布
 
+## [0.3.0] - 2026-07-25
+
+### Added / 新增
+
+- 新增确定性的 `en-US` 与 `zh-CN` locale 资源，统一管理界面文案、ARIA 标签、字段别名、
+  缺失值、静态图说明和交付指南。
+  Added deterministic `en-US` and `zh-CN` locale resources for interface copy, ARIA labels,
+  field aliases, missing values, static-figure notes, and delivery guidance.
+- 新增中英文 GitHub Pages 首页及四个本地化地图页面，并提供四张 1600×900 对应截图。
+  Added English and Chinese GitHub Pages landing pages, four localized map pages, and four
+  matching 1600×900 screenshots.
+- 对复杂或含糊的任务在首轮非阻塞建议 Plan mode；用户不切换时，持续使用
+  `[x] Confirmed`、`[~] Inferred` 与 `[ ] Needs confirmation` 需求清单补齐信息差。
+  Added a non-blocking first-round Plan mode recommendation for complex or ambiguous tasks,
+  with a persistent Confirmed/Inferred/Needs confirmation checklist when users stay in the
+  default mode.
+
 ### Changed / 变更
 
-- 优化清单地图和多图层示例的交互、示例数据与说明，使搜索、图层切换和地图浏览更聚焦。
-  Refined the map-list and multilayer demos, sample data, and guidance for more focused search,
-  layer switching, and map exploration.
-- 补充交互地图设计经验和下一版本体验要求。
-  Documented interactive-map design lessons and user-experience requirements for the next
-  version.
+- MapSpec 直接升级到 1.1，仅接受 `schema_version: "1.1"`；`locale` 仅接受 `en-US`
+  或 `zh-CN`，默认值改为 `en-US`。
+  Upgraded MapSpec directly to 1.1, accepting only `schema_version: "1.1"`; `locale` now accepts
+  only `en-US` or `zh-CN` and defaults to `en-US`.
+- `init-spec` 与 `run` 新增 `--locale`；所有模板、示例、测试和文档均升级到 MapSpec 1.1。
+  Added `--locale` to `init-spec` and `run`, and upgraded templates, examples, tests, and
+  documentation to MapSpec 1.1.
+- 构建交付说明统一改名为 `README_USAGE.md`，并按地图 locale 生成内容。
+  Renamed the build delivery guide to `README_USAGE.md` and localized its contents according to
+  the map locale.
+- 真实 NYC 示例改用语言中立分类代码与本地化显示字段；官方地名继续保留原文。
+  Refactored the real NYC examples to use language-neutral category codes and localized display
+  fields while preserving official place names.
+- 包版本更新为 0.3.0，并补充 Homepage、Repository 与 Issues 元数据。
+  Updated the package version to 0.3.0 and added Homepage, Repository, and Issues metadata.
 
-### Fixed / 修复
+### Removed / 移除
 
-- 稳定数值范围筛选器的打开、切换和关闭行为，同步 `aria-expanded` 状态，并在关闭后恢复
-  键盘焦点。
-  Stabilized range-filter opening, switching, and closing, kept `aria-expanded` in sync, and
-  restored keyboard focus after closing.
+- 移除 MapSpec 1.0 支持与兼容代码；旧配置会提示重新运行 `inspect` 与 `init-spec`。
+  Removed MapSpec 1.0 support and compatibility code; old configurations now direct users to
+  rerun `inspect` and `init-spec`.
+- 删除已完成蒸馏的中文实施记录和冗余产品调研文件，保留规则已并入英文技术指南。
+  Removed the distilled Chinese implementation note and redundant product-research file after
+  preserving durable rules in the English technical guidance.
 
 ## [0.2.0] - 2026-07-24
 

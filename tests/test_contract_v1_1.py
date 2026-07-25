@@ -15,7 +15,7 @@ from mapcore.spec import SpecError, validate_spec
 
 def _minimal_spec() -> dict:
     return {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "template": "map-list",
         "title": "Contract",
         "primary_layer": "places",
@@ -145,7 +145,7 @@ def test_canonical_fields_affect_build_and_nulls_are_soft(tmp_path: Path) -> Non
 
     assert (dist / "map_slide_16x9.png").is_file()
     assert not (dist / "map_paper.pdf").exists()
-    assert resolved["layers"][0]["style"]["categories"]["未分类 / Missing"] == "#9ca3af"
+    assert resolved["layers"][0]["style"]["categories"]["Missing"] == "#9ca3af"
     assert '"__label":"a"' in html
     assert "Review status" in html
     assert "Ready label" in html
@@ -165,7 +165,7 @@ def test_bundle_sources_deduplicates_and_rebuilds_after_move(tmp_path: Path) -> 
         crs="EPSG:4326",
     ).to_file(project / "shared.geojson", driver="GeoJSON")
     spec = {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "template": "multilayer",
         "title": "Bundle",
         "layers": [

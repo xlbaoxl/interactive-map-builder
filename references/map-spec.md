@@ -1,14 +1,18 @@
-# Map specification v1
+# Map specification 1.1
 
 Treat `scripts/mapcore/resources/map-spec.schema.json` as the only machine-readable
 contract. Use canonical `snake_case` keys only. Resolve source paths relative to the
 specification file; output names are fixed by the builder.
 
+MapSpec 1.1 is the only accepted version. MapSpec 1.0 is rejected without a migration path;
+run `inspect` and `init-spec` again. Set `locale` to `en-US` or `zh-CN`; the default is
+`en-US`.
+
 ## Minimal map and list
 
 ```json
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "template": "map-list",
   "title": "Candidate places",
   "primary_layer": "places",
@@ -43,7 +47,7 @@ specification file; output names are fixed by the builder.
 
 ```json
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "template": "multilayer",
   "title": "Project context",
   "layers": [
@@ -114,7 +118,7 @@ a portable rebuild bundle. The quick `run` command bundles its inputs by default
 
 ```powershell
 interactive-map-builder inspect data.geojson --output inspection.json
-interactive-map-builder init-spec inspection.json --template map-list --primary-layer sites --output map_spec.json
+interactive-map-builder init-spec inspection.json --template map-list --primary-layer sites --locale en-US --output map_spec.json
 ```
 
 One inspected layer may use `--template auto`. Multiple layers always require explicit

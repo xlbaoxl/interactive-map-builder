@@ -1,16 +1,20 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/xlbaoxl/interactive-map-builder/map-spec.schema.json",
-  "title": "Interactive Map Builder specification v1",
+  "title": "Interactive Map Builder specification v1.1",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema_version", "template", "title", "layers"],
   "properties": {
-    "schema_version": {"const": "1.0"},
+    "schema_version": {"const": "1.1"},
     "template": {"enum": ["map-list", "multilayer"]},
     "title": {"type": "string", "minLength": 1},
     "subtitle": {"type": "string"},
-    "locale": {"type": "string", "default": "zh-CN"},
+    "locale": {
+      "type": "string",
+      "enum": ["en-US", "zh-CN"],
+      "default": "en-US"
+    },
     "primary_layer": {"type": "string"},
     "layers": {
       "type": "array",
@@ -99,7 +103,7 @@
           "items": {"type": "string"}
         },
         "missing_color": {"type": "string", "default": "#9ca3af"},
-        "missing_label": {"type": "string", "default": "未分类 / Missing"},
+        "missing_label": {"type": "string"},
         "legend_title": {"type": "string"},
         "categories": {
           "type": "object",

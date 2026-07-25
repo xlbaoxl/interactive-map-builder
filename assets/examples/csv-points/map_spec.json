@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "template": "map-list",
   "title": "CSV 经纬度点示例",
   "subtitle": "从非空间表格直接生成可搜索地图",

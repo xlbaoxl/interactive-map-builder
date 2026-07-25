@@ -66,7 +66,7 @@ def test_searchable_land_use_browser_smoke(tmp_path: Path) -> None:
         assert page.evaluate("window.__interactiveMapBuilderQA.mapFeatureCount") == 1699
 
         assert page.evaluate(
-            "window.__interactiveMapBuilderQA.actions.toggleCategory('category', '居住用地')"
+            "window.__interactiveMapBuilderQA.actions.toggleCategory('category_code', 'residential')"
         )
         assert page.evaluate("window.__interactiveMapBuilderQA.activeFilterCount") == 2
         page.evaluate("window.__interactiveMapBuilderQA.actions.resetFilters()")
@@ -106,9 +106,9 @@ def test_multilayer_business_search_and_line_colors(tmp_path: Path) -> None:
 
         assert initial["recordCount"] == 56
         assert page.locator(".imb-type-button").all_inner_texts() == [
-            "地铁站 16",
-            "自行车线路 36",
-            "邻里分区 4",
+            "Subway stations 16",
+            "Bicycle routes 36",
+            "Neighborhood areas 4",
         ]
         assert page.evaluate("window.__interactiveMapBuilderQA.activeLayerId") == (
             "subway_stations"
@@ -172,7 +172,7 @@ def _write_multilayer_project(project: Path, *, linked: bool) -> Path:
             layer["link_key"] = "shared"
         layers.append(layer)
     spec = {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "template": "multilayer",
         "title": "Duplicate ID test",
         "locale": "en-US",
