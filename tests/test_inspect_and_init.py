@@ -10,6 +10,7 @@ from shapely.geometry import Point
 
 from map_builder import build_map, main
 from mapcore.inspect_data import inspect_inputs, inspection_summary
+from mapcore.spec import current_schema_version
 from mapcore.spec_init import SpecInitError, init_spec_from_inspection
 
 
@@ -64,6 +65,8 @@ def test_init_spec_consumes_inspection_and_builds_csv_end_to_end(tmp_path: Path)
     project.mkdir()
     spec_path.write_text(json.dumps(spec, ensure_ascii=False, indent=2), encoding="utf-8")
 
+    assert spec["schema_version"] == current_schema_version()
+    assert "subtitle" not in spec
     assert spec["layers"][0]["source"]["geometry"] == {
         "type": "lonlat",
         "x_field": "经度",
@@ -189,7 +192,7 @@ def test_run_quick_path_bundles_a_portable_input_copy(tmp_path: Path) -> None:
         ]
     ) == 0
     resolved = json.loads((dist / "map_spec.json").read_text(encoding="utf-8"))
-    assert resolved["schema_version"] == "1.1"
+    assert resolved["schema_version"] == current_schema_version()
     assert resolved["locale"] == "en-US"
     assert resolved["layers"][0]["source"]["path"] == "data/places.csv"
     assert (dist / "data" / "places.csv").is_file()
