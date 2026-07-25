@@ -68,10 +68,12 @@ def test_readme_screenshots_have_fixed_dimensions_and_fit_the_size_budget():
             assert len(payload) <= 1_700_000
 
 
-def test_skill_guides_plan_mode_and_default_mode_checklist():
+def test_skill_uses_cross_agent_requirements_checklist():
     skill = (ROOT / "SKILL.md").read_text(encoding="utf-8")
-    readme = (ROOT / "README.md").read_text(encoding="utf-8")
-    for expected in ("/plan", "Shift+Tab", "[x] Confirmed", "[~] Inferred", "[ ] Needs confirmation"):
+    wizard = (ROOT / "references" / "wizard-flow.md").read_text(encoding="utf-8")
+    for expected in ("[x] Confirmed", "[~] Inferred", "[ ] Needs confirmation"):
         assert expected in skill
-        assert expected in readme
-    assert "Build only after no blocking `[ ]` item remains." in skill
+        assert expected in wizard
+    assert "no blocking `[ ]` item remains." in skill
+    assert "/plan" not in skill
+    assert "Shift+Tab" not in skill

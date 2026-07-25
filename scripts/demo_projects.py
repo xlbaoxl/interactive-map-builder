@@ -14,6 +14,7 @@ from mapcore.locales import (
     load_catalog,
     require_locale,
 )
+from mapcore.spec import current_schema_version
 
 
 LAND_USE_FILES: Sequence[str] = (
@@ -82,7 +83,7 @@ def atlas_map_list_spec(
     feature_count: int,
     locale: str = DEFAULT_LOCALE,
 ) -> Dict[str, Any]:
-    """Return the MapSpec 1.1 configuration used by one public parcel demo."""
+    """Return the current MapSpec configuration used by one public parcel demo."""
 
     selected_locale = require_locale(locale)
     catalog = load_catalog(selected_locale)
@@ -102,7 +103,7 @@ def atlas_map_list_spec(
     }
     summary_labels = messages["summary_labels"]
     return {
-        "schema_version": "1.1",
+        "schema_version": current_schema_version(),
         "template": "map-list",
         "title": str(messages["title"]),
         "subtitle": str(messages["subtitle"]).format(
@@ -235,7 +236,7 @@ def _localized_multilayer_spec(
     selected_locale = require_locale(locale)
     messages = catalog_value(load_catalog(selected_locale), "demo", "multilayer")
     spec = deepcopy(dict(base_spec))
-    spec["schema_version"] = "1.1"
+    spec["schema_version"] = current_schema_version()
     spec["locale"] = selected_locale
     spec["title"] = str(messages["title"])
     spec["subtitle"] = str(messages["subtitle"])
@@ -280,7 +281,7 @@ def prepare_demo_project(
         if not spec_path.is_file():
             raise FileNotFoundError(f"Example is missing map_spec.json: {destination}")
         spec = json.loads(spec_path.read_text(encoding="utf-8"))
-        spec["schema_version"] = "1.1"
+        spec["schema_version"] = current_schema_version()
         spec["locale"] = selected_locale
     spec_path.write_text(
         json.dumps(spec, ensure_ascii=False, indent=2) + "\n",

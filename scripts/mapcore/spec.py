@@ -21,6 +21,16 @@ def load_schema() -> Dict[str, Any]:
     return json.loads(read_resource_text("map-spec.schema.json"))
 
 
+def current_schema_version() -> str:
+    """Return the only MapSpec version accepted by the packaged Schema."""
+
+    schema = load_schema()
+    value = schema.get("properties", {}).get("schema_version", {}).get("const")
+    if not isinstance(value, str) or not value:
+        raise RuntimeError("The packaged MapSpec Schema does not declare a version constant.")
+    return value
+
+
 def _is_absolute_on_any_platform(value: str) -> bool:
     return (
         Path(value).is_absolute()
@@ -50,11 +60,6 @@ def _apply_defaults(instance: Any, schema: Dict[str, Any], root: Dict[str, Any])
 
 
 def validate_spec(spec: Dict[str, Any]) -> Dict[str, Any]:
-    if spec.get("schema_version") == "1.0":
-        raise SpecError(
-            "MapSpec 1.0 is no longer supported. Re-run `interactive-map-builder inspect` "
-            "and `interactive-map-builder init-spec` to create a MapSpec 1.1 file."
-        )
     schema = load_schema()
     resolved = deepcopy(spec)
     _apply_defaults(resolved, schema, schema)
@@ -110,3 +115,13 @@ def write_resolved_spec(spec: Dict[str, Any], path: Path) -> None:
     with path.open("w", encoding="utf-8", newline="\n") as handle:
         json.dump(spec, handle, ensure_ascii=False, indent=2)
         handle.write("\n")
+
+
+__all__ = [
+    "SpecError",
+    "current_schema_version",
+    "load_schema",
+    "load_spec",
+    "validate_spec",
+    "write_resolved_spec",
+]

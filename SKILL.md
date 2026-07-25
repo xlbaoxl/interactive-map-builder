@@ -1,6 +1,6 @@
 ---
 name: interactive-map-builder
-description: Build lightweight, shareable interactive HTML maps and report-ready PNG, SVG, and PDF figures from GeoJSON, GeoPackage, zipped Shapefile, CSV, Excel, or ArcGIS FeatureServer data. Use when Codex needs to create a searchable map with a collapsible record list, a multi-layer point/line/polygon explorer, legends, filters, sorting, tooltips, popups, basic CRS or geometry cleanup, or presentation and paper map exports. Require existing coordinates or geometry; do not use for geocoding, substantive spatial analysis, vector-tile systems, or offline basemap acquisition.
+description: Build lightweight, shareable interactive HTML maps and report-ready PNG, SVG, and PDF figures from GeoJSON, GeoPackage, zipped Shapefile, CSV, Excel, or ArcGIS FeatureServer data. Use when an agent needs to create a searchable map with a collapsible record list, a multi-layer point/line/polygon explorer, legends, filters, sorting, tooltips, popups, basic CRS or geometry cleanup, or presentation and paper map exports. Require existing coordinates or geometry; do not use for geocoding, substantive spatial analysis, vector-tile systems, or offline basemap acquisition.
 ---
 
 # Interactive Map Builder
@@ -19,18 +19,10 @@ separate from rendering, preserve provenance, and expose every cleanup in the bu
    Read [supported-inputs.md](references/supported-inputs.md) for GeoPackage, Shapefile ZIP,
    CSV, Excel, encoding, and field-mapping rules.
 
-2. Decide whether planning support is useful before the first requirements round.
-
-   - For multiple layers, an undecided template, unclear CRS or field semantics, or several
-     design trade-offs, non-blockingly suggest Plan mode with `/plan` or `Shift+Tab`.
-   - Do not repeat the suggestion when already in Plan mode.
-   - Proceed directly for a clear, single-layer request.
-
-3. Present one compact summary per layer: feature count, geometry type, CRS, likely
+2. Present one compact summary per layer: feature count, geometry type, CRS, likely
    ID/label/category fields, template candidates, and whether confirmation is required.
 
-4. When the user does not enter Plan mode, maintain this Markdown requirements checklist in
-   each requirements update:
+3. Maintain this Markdown requirements checklist while choices remain unresolved:
 
    ```markdown
    - [x] Confirmed: ...
@@ -41,10 +33,10 @@ separate from rendering, preserve provenance, and expose every cleanup in the bu
    Derive it from the request and inspected data. Keep inferred decisions visible and easy to
    correct. Ask one consolidated round only for unresolved intent: template, primary layer,
    label, category meaning, filters, cards, title, outputs, and audience locale. Never guess a
-   missing CRS. Always confirm the template when inspection finds multiple layers.
-   Build only after no blocking `[ ]` item remains.
+   missing CRS. Always confirm the template when inspection finds multiple layers. Build only
+   after no blocking `[ ]` item remains.
 
-5. Initialize `map_spec.json`, then apply confirmed choices. Read
+4. Initialize `map_spec.json`, then apply confirmed choices. Read
    [map-spec.md](references/map-spec.md); the canonical Schema is
    `scripts/mapcore/resources/map-spec.schema.json`.
 
@@ -52,32 +44,32 @@ separate from rendering, preserve provenance, and expose every cleanup in the bu
    python scripts/map_builder.py init-spec inspection.json --template map-list --primary-layer <id> --locale en-US --output map_spec.json
    ```
 
-6. Download ArcGIS FeatureServer data before building. Read
+5. Download ArcGIS FeatureServer data before building. Read
    [arcgis.md](references/arcgis.md).
 
    ```powershell
    python scripts/map_builder.py fetch-arcgis --url <layer-url> --out data/source.geojson
    ```
 
-7. Build once from the resolved specification. Add `--bundle-sources` only when the user
+6. Build once from the resolved specification. Add `--bundle-sources` only when the user
    wants a portable rebuild bundle and accepts copying source data.
 
    ```powershell
    python scripts/map_builder.py build --spec map_spec.json --out dist
    ```
 
-8. Verify, inspect `build_report.json`, and open `map.html`.
+7. Verify, inspect `build_report.json`, and open `map.html`.
 
    ```powershell
    python scripts/map_builder.py verify --dist dist
    ```
 
-9. Exercise search, filters, sorting, layer visibility, hover/click linkage, keyboard
+8. Exercise search, filters, sorting, layer visibility, hover/click linkage, keyboard
    selection, panel collapse, and narrow-screen layout. Confirm that every visible control
    produces an observable result. Read
    [design-guidelines.md](references/design-guidelines.md).
 
-10. Deliver the whole `dist` directory. Summarize repairs, generated IDs, null display
+9. Deliver the whole `dist` directory. Summarize repairs, generated IDs, null display
    values, simplification, performance warnings, online basemaps, font fallback, portability,
    and source attribution.
 
@@ -125,9 +117,9 @@ interactive-map-builder --help
 ## Output contract
 
 Always return `map.html`, resolved `map_spec.json`, `inspection.json`, `build_report.json`, and
-`README_USAGE.md` in the selected locale. Generate `map_slide_16x9.png` for the slide preset and paper PNG/SVG/PDF
-files for the paper preset. Treat an unbundled `map_spec.json` as a build record; promise an
-independent rebuild only when sources were bundled.
+`README_USAGE.md` in the selected locale. Generate `map_slide_16x9.png` for the slide preset and
+paper PNG/SVG/PDF files for the paper preset. Treat an unbundled `map_spec.json` as a build
+record; promise an independent rebuild only when sources were bundled.
 
 ## Resources
 

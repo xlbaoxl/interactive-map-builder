@@ -9,6 +9,7 @@ on:
       - "assets/examples/**"
       - "pyproject.toml"
       - "scripts/build_demo_site.py"
+      - "scripts/demo_projects.py"
       - "scripts/map_builder.py"
       - "scripts/mapcore/**"
   workflow_dispatch:
@@ -27,10 +28,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
           cache: pip

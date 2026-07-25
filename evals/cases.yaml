@@ -42,20 +42,20 @@ cases:
       invocation: trigger
       behavior: "Inspect the field, ask the user to define each category, and never invent domain meaning."
 
-  - id: complex-plan-mode-recommendation
+  - id: complex-requirements-checklist
     prompt: "把三个图层做成地图，但主图层、坐标系和筛选字段还没确定，版式也请你帮我比较。"
     expected:
       invocation: trigger
-      behavior: "In the first response, non-blockingly recommend Plan mode with /plan or Shift+Tab before consolidating the unresolved choices."
+      behavior: "Inspect first, present a Confirmed/Inferred/Needs confirmation checklist, and ask one consolidated round for blocking choices."
 
-  - id: default-mode-requirements-checklist
-    prompt: "我不切换 Plan mode。继续把这两份数据做成多图层地图，语言用中文。"
+  - id: unresolved-options-block-build
+    prompt: "先继续推进这两份数据，模板和主图层我之后再决定。"
     expected:
       invocation: trigger
-      behavior: "Maintain a checklist with [x] Confirmed, [~] Inferred, and [ ] Needs confirmation; do not build until blocking unchecked items are cleared."
+      behavior: "Continue inspection and recommendations, keep template and primary layer as Needs confirmation, and do not build yet."
 
-  - id: clear-single-layer-no-plan-prompt
+  - id: clear-single-layer-direct
     prompt: "把这个带 EPSG:4326 的点 GeoJSON 做成英文可搜索地图，名称字段是 name。"
     expected:
       invocation: trigger
-      behavior: "Proceed directly without repeating a Plan mode suggestion, set en-US, and inspect before building."
+      behavior: "Proceed directly to inspection and the minimal confirmation checklist, set en-US, and avoid extra planning ceremony."

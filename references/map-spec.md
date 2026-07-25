@@ -4,9 +4,9 @@ Treat `scripts/mapcore/resources/map-spec.schema.json` as the only machine-reada
 contract. Use canonical `snake_case` keys only. Resolve source paths relative to the
 specification file; output names are fixed by the builder.
 
-MapSpec 1.1 is the only accepted version. MapSpec 1.0 is rejected without a migration path;
-run `inspect` and `init-spec` again. Set `locale` to `en-US` or `zh-CN`; the default is
-`en-US`.
+Set `schema_version` to the constant declared by the packaged Schema. The current accepted
+value is `1.1`; unsupported values fail normal Schema validation. Set `locale` to `en-US` or
+`zh-CN`; the default is `en-US`.
 
 ## Minimal map and list
 

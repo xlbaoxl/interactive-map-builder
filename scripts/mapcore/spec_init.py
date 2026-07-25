@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Mapping, Optional
 
 from .locales import DEFAULT_LOCALE, require_locale
-from .spec import validate_spec
+from .spec import current_schema_version, validate_spec
 
 
 class SpecInitError(ValueError):
@@ -230,10 +230,9 @@ def init_spec_from_inspection(
         raw_name = str(layers[0].get("name") or "Interactive map")
         inferred_title = re.sub(r"[_-]+", " ", raw_name).strip() or "Interactive map"
     spec: Dict[str, Any] = {
-        "schema_version": "1.1",
+        "schema_version": current_schema_version(),
         "template": selected,
         "title": inferred_title,
-        "subtitle": "Generated from an editable MapSpec",
         "locale": selected_locale,
         "layers": spec_layers,
         "basemaps": [
