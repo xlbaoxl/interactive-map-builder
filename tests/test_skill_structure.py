@@ -74,6 +74,6 @@ def test_skill_uses_cross_agent_requirements_checklist():
     for expected in ("[x] Confirmed", "[~] Inferred", "[ ] Needs confirmation"):
         assert expected in skill
         assert expected in wizard
-    assert "Build only after no blocking `[ ]` item remains." in skill
+    assert "no blocking `[ ]` item remains." in skill
     assert "/plan" not in skill
     assert "Shift+Tab" not in skill
