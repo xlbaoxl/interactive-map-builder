@@ -9,6 +9,7 @@ on:
       - "assets/examples/**"
       - "pyproject.toml"
       - "scripts/build_demo_site.py"
+      - "scripts/demo_projects.py"
       - "scripts/map_builder.py"
       - "scripts/mapcore/**"
   workflow_dispatch:
