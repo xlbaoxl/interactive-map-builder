@@ -15,8 +15,6 @@
 
 </div>
 
-[![Interactive Map Builder 地块查询与统计地图](assets/screenshots/zh-CN/map-list.png)](https://xlbaoxl.github.io/interactive-map-builder/zh-CN/map-list/)
-
 Interactive Map Builder 是一个 **以 Codex 为主要使用场景、兼容 Agent Skills 工作流**的地图
 Skill。把 GeoJSON、GeoPackage、Shapefile、CSV、Excel 或 ArcGIS 数据交给它，它会先检查
 数据，只询问数据本身无法回答的选项，再写入可审计的 MapSpec，生成单文件 Leaflet 地图，
@@ -85,10 +83,9 @@ Skill 会先检查数据，并在仍有不确定项时维护一份简短需求�
 输出格式和地图受众语言。
 
 <details>
-<summary><strong>Windows 手动安装</strong></summary>
+<summary><strong>手动安装</strong></summary>
 
-先安装 [Git for Windows](https://git-scm.com/download/win) 和
-[Python 3.9 或更高版本](https://www.python.org/downloads/windows/)，然后在 PowerShell 中运行：
+**Windows PowerShell**
 
 ```powershell
 New-Item -ItemType Directory -Force "$HOME\.agents\skills" | Out-Null
@@ -96,6 +93,17 @@ git clone https://github.com/xlbaoxl/interactive-map-builder.git `
   "$HOME\.agents\skills\interactive-map-builder"
 Set-Location "$HOME\.agents\skills\interactive-map-builder"
 py -m pip install .
+interactive-map-builder --help
+```
+
+**macOS 或 Linux**
+
+```bash
+mkdir -p "$HOME/.agents/skills"
+git clone https://github.com/xlbaoxl/interactive-map-builder.git \
+  "$HOME/.agents/skills/interactive-map-builder"
+cd "$HOME/.agents/skills/interactive-map-builder"
+python3 -m pip install .
 interactive-map-builder --help
 ```
 
