@@ -15,6 +15,7 @@ from jinja2 import DictLoader, Environment, StrictUndefined, select_autoescape
 
 from .locales import DEFAULT_LOCALE, load_catalog, require_locale
 from .resource_files import read_resource_text
+from .spec import current_schema_version
 
 
 PathLike = Union[str, Path]
@@ -241,7 +242,7 @@ def render_html(
     )
     template = environment.get_template(_TEMPLATE_FILES[selected_template])
     payload = {
-        "version": "1.1",
+        "version": str(spec.get("schema_version") or current_schema_version()),
         "template": selected_template,
         "spec": _jsonable(spec),
         "layers": layers,
