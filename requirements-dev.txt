@@ -1,4 +1,4 @@
--r requirements.txt
+-e .
 pytest>=7.2,<9
 PyYAML>=6,<7
 build>=1,<2
