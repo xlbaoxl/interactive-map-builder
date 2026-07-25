@@ -8,6 +8,7 @@ a map.
 from .arcgis import ArcGISDownloadResult, ArcGISError, download_feature_service, fetch_arcgis
 from .loaders import DataLoadError, load_geodata, load_input, load_source
 from .normalize import NormalizationReport, normalize_geodata, stable_feature_id
+from .spec import current_schema_version
 from .validate import (
     ValidationError,
     ValidationReport,
@@ -22,6 +23,7 @@ __all__ = [
     "NormalizationReport",
     "ValidationError",
     "ValidationReport",
+    "current_schema_version",
     "download_feature_service",
     "ensure_count_consistency",
     "fetch_arcgis",
