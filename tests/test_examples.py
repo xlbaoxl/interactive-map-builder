@@ -14,12 +14,11 @@ ROOT = Path(__file__).resolve().parents[1]
 EXAMPLES = ROOT / "assets" / "examples"
 
 
-def test_all_example_specs_validate_and_sources_exist() -> None:
+def test_checked_in_example_specs_validate_and_sources_exist() -> None:
     specs = sorted(EXAMPLES.glob("*/map_spec.json"))
     assert [path.parent.name for path in specs] == [
         "csv-points",
         "linked-by-id",
-        "map-list",
         "multilayer",
     ]
 
@@ -82,14 +81,9 @@ def test_linked_by_id_example_is_generic_and_ids_align() -> None:
         assert forbidden not in corpus
 
 
-def test_searchable_land_use_example_has_expected_fixed_snapshot() -> None:
+def test_map_list_demo_snapshots_have_expected_fixed_source_data() -> None:
     example = EXAMPLES / "map-list"
-    spec = json.loads((example / "map_spec.json").read_text(encoding="utf-8"))
-    assert spec["template"] == "map-list"
-    assert spec["primary_layer"] == "parcels"
-    assert spec["layers"][0]["source"]["path"] == "mixed-commercial.geojson"
-    assert spec["map"]["search_behavior"] == "highlight"
-    assert spec["map"]["controls"]["legend"] is True
+    assert not (example / "map_spec.json").exists()
 
     expected_counts = {
         "residential.geojson": 242,
