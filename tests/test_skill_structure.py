@@ -26,23 +26,34 @@ def test_openai_interface_mentions_skill():
     assert "$interactive-map-builder" in data["interface"]["default_prompt"]
 
 
-def test_behavior_evals_and_bilingual_readme_are_present():
+def test_behavior_evals_and_localized_readmes_are_present():
     evals = yaml.safe_load((ROOT / "evals" / "cases.yaml").read_text(encoding="utf-8"))
     assert evals["version"] == 1
     assert len(evals["cases"]) == 10
     invocations = {case["expected"]["invocation"] for case in evals["cases"]}
     assert invocations == {"trigger", "do_not_use"}
 
-    readme = (ROOT / "README.md").read_text(encoding="utf-8")
-    assert "## 中文" in readme
-    assert "## English" in readme
-    for locale in ("en-US", "zh-CN"):
-        assert f"assets/screenshots/{locale}/map-list.png" in readme
-        assert f"assets/screenshots/{locale}/multilayer.png" in readme
-    assert "$skill-installer" in readme
-    assert "$HOME\\.agents\\skills" in readme
-    assert "三分钟开始" not in readme
-    assert "Three-minute quick start" not in readme
+    readme_en = (ROOT / "README.md").read_text(encoding="utf-8")
+    readme_zh = (ROOT / "README.zh-CN.md").read_text(encoding="utf-8")
+
+    assert "[中文说明](README.zh-CN.md)" in readme_en
+    assert "[English](README.md)" in readme_zh
+    assert "assets/screenshots/en-US/map-list.png" in readme_en
+    assert "assets/screenshots/en-US/multilayer.png" in readme_en
+    assert "assets/screenshots/zh-CN/map-list.png" in readme_zh
+    assert "assets/screenshots/zh-CN/multilayer.png" in readme_zh
+
+    for readme in (readme_en, readme_zh):
+        assert "$skill-installer" in readme
+        assert "$HOME\\.agents\\skills" in readme
+        assert "Plan mode" not in readme
+        assert "/plan" not in readme
+        assert "Shift+Tab" not in readme
+
+    assert "## Quick start" in readme_en
+    assert "## 快速开始" in readme_zh
+    assert "## 中文" not in readme_en
+    assert "## English" not in readme_en
 
 
 def test_readme_example_provenance_is_documented():
