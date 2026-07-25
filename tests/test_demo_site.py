@@ -9,12 +9,12 @@ ROOT = Path(__file__).resolve().parents[1]
 PAGES_URL = "https://xlbaoxl.github.io/interactive-map-builder"
 
 
-def test_demo_site_builds_atlas_landing_without_changing_source_specs(tmp_path: Path) -> None:
-    spec_paths = [
-        ROOT / "assets" / "examples" / demo / "map_spec.json"
-        for demo in ("map-list", "multilayer")
+def test_demo_site_builds_atlas_landing_without_changing_source_assets(tmp_path: Path) -> None:
+    source_paths = [
+        ROOT / "assets" / "examples" / "multilayer" / "map_spec.json",
+        *sorted((ROOT / "assets" / "examples" / "map-list").glob("*.geojson")),
     ]
-    original_specs = {path: path.read_bytes() for path in spec_paths}
+    original_assets = {path: path.read_bytes() for path in source_paths}
 
     site = build_demo_site(tmp_path / "_site")
 
@@ -49,7 +49,7 @@ def test_demo_site_builds_atlas_landing_without_changing_source_specs(tmp_path: 
 
     assert (site / ".nojekyll").is_file()
     root_html = (site / "index.html").read_text(encoding="utf-8")
-    assert "http-equiv=\"refresh\"" not in root_html
+    assert 'http-equiv="refresh"' not in root_html
     assert "Spatial data in. Map product out." in root_html
     assert 'src="./en-US/map-list/"' in root_html
     assert 'src="./en-US/multilayer/"' in root_html
@@ -60,7 +60,7 @@ def test_demo_site_builds_atlas_landing_without_changing_source_specs(tmp_path: 
     assert 'href="../zh-CN/"' in english_landing
     assert 'href="../en-US/"' in chinese_landing
     assert "输入空间数据，交付地图产品。" in chinese_landing
-    assert original_specs == {path: path.read_bytes() for path in spec_paths}
+    assert original_assets == {path: path.read_bytes() for path in source_paths}
 
 
 def test_readme_links_to_both_interactive_demos() -> None:
@@ -84,6 +84,7 @@ def test_pages_workflow_uses_official_actions_and_permissions() -> None:
         "actions/upload-pages-artifact@v3",
         "actions/deploy-pages@v5",
         "python scripts/build_demo_site.py --output _site",
+        "scripts/demo_projects.py",
         "path: _site",
     ):
         assert expected in workflow
