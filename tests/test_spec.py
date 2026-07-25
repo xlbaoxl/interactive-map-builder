@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import pytest
 
-from mapcore.spec import SpecError, validate_spec
+from mapcore.spec import SpecError, current_schema_version, validate_spec
 
 
 def minimal_spec(template: str = "map-list"):
     spec = {
-        "schema_version": "1.1",
+        "schema_version": current_schema_version(),
         "template": template,
         "title": "测试地图",
         "layers": [
@@ -21,6 +21,10 @@ def minimal_spec(template: str = "map-list"):
     if template == "map-list":
         spec["primary_layer"] = "places"
     return spec
+
+
+def test_current_schema_version_comes_from_packaged_contract():
+    assert current_schema_version() == "1.1"
 
 
 def test_defaults_are_applied():
@@ -43,10 +47,10 @@ def test_supported_locales_apply_localized_missing_label(locale, missing_label):
     assert resolved["layers"][0]["style"]["missing_label"] == missing_label
 
 
-def test_rejects_map_spec_1_0_with_rebuild_guidance():
+def test_rejects_any_unsupported_schema_version_through_schema_validation():
     spec = minimal_spec()
-    spec["schema_version"] = "1.0"
-    with pytest.raises(SpecError, match=r"inspect.*init-spec"):
+    spec["schema_version"] = "unsupported"
+    with pytest.raises(SpecError, match="schema_version"):
         validate_spec(spec)
 
 
