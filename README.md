@@ -15,8 +15,6 @@
 
 </div>
 
-[![Interactive Map Builder parcel explorer](assets/screenshots/en-US/map-list.png)](https://xlbaoxl.github.io/interactive-map-builder/en-US/map-list/)
-
 Interactive Map Builder is a **Codex-first Agent Skill** for turning GeoJSON, GeoPackage,
 Shapefile, CSV, Excel, and ArcGIS data into shareable map products. The Skill inspects the data,
 closes only the requirements gaps the data cannot answer, writes an auditable MapSpec, builds a
@@ -89,10 +87,9 @@ It asks one consolidated round only for blocking choices such as CRS, template, 
 category meaning, display fields, output formats, and audience locale.
 
 <details>
-<summary><strong>Manual installation on Windows</strong></summary>
+<summary><strong>Manual installation</strong></summary>
 
-Install [Git for Windows](https://git-scm.com/download/win) and
-[Python 3.9 or newer](https://www.python.org/downloads/windows/), then run:
+**Windows PowerShell**
 
 ```powershell
 New-Item -ItemType Directory -Force "$HOME\.agents\skills" | Out-Null
@@ -100,6 +97,17 @@ git clone https://github.com/xlbaoxl/interactive-map-builder.git `
   "$HOME\.agents\skills\interactive-map-builder"
 Set-Location "$HOME\.agents\skills\interactive-map-builder"
 py -m pip install .
+interactive-map-builder --help
+```
+
+**macOS or Linux**
+
+```bash
+mkdir -p "$HOME/.agents/skills"
+git clone https://github.com/xlbaoxl/interactive-map-builder.git \
+  "$HOME/.agents/skills/interactive-map-builder"
+cd "$HOME/.agents/skills/interactive-map-builder"
+python3 -m pip install .
 interactive-map-builder --help
 ```
 
@@ -246,9 +254,7 @@ frameworks and one MapSpec contract. Near-term work is driven by real user feedb
 next steps including point clustering, proportional symbols, value-scaled line widths, polygon
 aggregation, filtered-data export, and larger-data rendering.
 
-See the [changelog](CHANGELOG.md) for completed work and the
-[product research report](product-research-report.zh-CN.md) when it is present in a development
-workspace. The repository itself keeps only durable product rules and public documentation.
+See the [changelog](CHANGELOG.md) for completed work.
 
 ## Development
 
