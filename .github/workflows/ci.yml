@@ -3,6 +3,7 @@ name: ci
 on:
   push:
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -53,7 +54,7 @@ jobs:
           /tmp/imb-wheel/bin/python -m pip install --upgrade pip
           /tmp/imb-wheel/bin/python -m pip install --force-reinstall dist/*.whl
           mkdir -p /tmp/imb-project
-          cp -R assets/examples/map-list/. /tmp/imb-project/
+          cp -R assets/examples/csv-points/. /tmp/imb-project/
           cd /tmp
           /tmp/imb-wheel/bin/interactive-map-builder build \
             --spec /tmp/imb-project/map_spec.json \
