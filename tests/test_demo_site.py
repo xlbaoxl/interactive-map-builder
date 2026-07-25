@@ -63,22 +63,30 @@ def test_demo_site_builds_atlas_landing_without_changing_source_assets(tmp_path:
     assert original_assets == {path: path.read_bytes() for path in source_paths}
 
 
-def test_readme_links_to_both_interactive_demos() -> None:
-    readme = (ROOT / "README.md").read_text(encoding="utf-8")
-    for locale in ("en-US", "zh-CN"):
-        assert f"{PAGES_URL}/{locale}/map-list/" in readme
-        assert f"{PAGES_URL}/{locale}/multilayer/" in readme
+def test_localized_readmes_link_to_their_interactive_demos() -> None:
+    readme_en = (ROOT / "README.md").read_text(encoding="utf-8")
+    readme_zh = (ROOT / "README.zh-CN.md").read_text(encoding="utf-8")
+
+    assert f"{PAGES_URL}/en-US/map-list/" in readme_en
+    assert f"{PAGES_URL}/en-US/multilayer/" in readme_en
+    assert f"{PAGES_URL}/zh-CN/map-list/" in readme_zh
+    assert f"{PAGES_URL}/zh-CN/multilayer/" in readme_zh
+
     for expected in (
-        "#### 地块分类统计",
-        "#### 多图层可视化",
-        "**功能：**",
-        "**优势：**",
-        "#### Parcel classification and statistics",
-        "#### Multilayer visualization",
-        "**Capabilities:**",
-        "**Advantages:**",
+        "## Live demos",
+        "**Map + list.**",
+        "**Multilayer.**",
+        "## Quick start",
     ):
-        assert expected in readme
+        assert expected in readme_en
+
+    for expected in (
+        "## 在线演示",
+        "**地图＋清单。**",
+        "**多图层。**",
+        "## 快速开始",
+    ):
+        assert expected in readme_zh
 
 
 def test_pages_workflow_uses_official_actions_and_permissions() -> None:
