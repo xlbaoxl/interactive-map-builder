@@ -68,7 +68,17 @@ def test_readme_links_to_both_interactive_demos() -> None:
     for locale in ("en-US", "zh-CN"):
         assert f"{PAGES_URL}/{locale}/map-list/" in readme
         assert f"{PAGES_URL}/{locale}/multilayer/" in readme
-    assert "正在搜索 Broadway" in readme
+    for expected in (
+        "#### 地块分类统计",
+        "#### 多图层可视化",
+        "**功能：**",
+        "**优势：**",
+        "#### Parcel classification and statistics",
+        "#### Multilayer visualization",
+        "**Capabilities:**",
+        "**Advantages:**",
+    ):
+        assert expected in readme
 
 
 def test_pages_workflow_uses_official_actions_and_permissions() -> None:

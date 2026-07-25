@@ -34,6 +34,9 @@ do not yet have Git tags or GitHub Releases.
   Made the packaged JSON Schema the single source of truth for the current MapSpec version.
 - 公共 `map-list` 演示仅保留固定数据快照，展示配置统一由演示构建器生成。
   Made the demo builder the sole source of truth for the public `map-list` configuration.
+- README 的模板展示改为以功能和优势为中心，并用用户选定的完整中文界面截图替换中文预览图。
+  Reframed the README template showcase around capabilities and advantages, and replaced the
+  Chinese previews with the user-selected full-interface screenshots.
 
 ### Fixed / 修复
 
