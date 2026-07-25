@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 HAN = re.compile(r"[\u3400-\u9fff\uf900-\ufaff]")
 ALLOWED_FILES = {
     ROOT / "README.md",
+    ROOT / "README.zh-CN.md",
     ROOT / "CHANGELOG.md",
     ROOT / "scripts" / "mapcore" / "resources" / "locales" / "zh-CN.json",
 }
