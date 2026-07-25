@@ -8,20 +8,29 @@ import geopandas as gpd
 import pandas as pd
 from shapely.geometry import Point
 
+from demo_projects import prepare_demo_project
 from map_builder import build_map, verify_dist
+from mapcore.spec import current_schema_version
 
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_land_use_demo_build_and_verify_complete_bundle(tmp_path):
-    spec = ROOT / "assets" / "examples" / "map-list" / "map_spec.json"
-    result = build_map(spec, tmp_path)
+    project = tmp_path / "project"
+    spec = prepare_demo_project(
+        "map-list",
+        examples_root=ROOT / "assets" / "examples",
+        destination=project,
+        locale="en-US",
+    )
+    dist = tmp_path / "dist"
+    result = build_map(spec, dist)
     assert result["report"]["status"] == "pass"
     assert result["report"]["template"] == "map-list"
     assert result["report"]["engine_version"] == "0.3.0"
     assert result["report"]["checks"]["rendered_layer_count"] == 1
-    assert result["report"]["performance"]["feature_count"] == 1233
+    assert result["report"]["performance"]["feature_count"] == 1699
 
     expected = {
         "map.html",
@@ -34,11 +43,11 @@ def test_land_use_demo_build_and_verify_complete_bundle(tmp_path):
         "build_report.json",
         "README_USAGE.md",
     }
-    assert expected == {path.name for path in tmp_path.iterdir()}
+    assert expected == {path.name for path in dist.iterdir()}
 
-    verification = verify_dist(tmp_path)
+    verification = verify_dist(dist)
     assert verification["status"] == "pass"
-    report = json.loads((tmp_path / "build_report.json").read_text(encoding="utf-8"))
+    report = json.loads((dist / "build_report.json").read_text(encoding="utf-8"))
     assert report["checks"]["output_counts_consistent"] is True
     assert report["checks"]["html_qa"]["leaflet_embedded"] is True
 
@@ -118,7 +127,7 @@ def test_gpkg_zip_csv_and_excel_build_end_to_end(tmp_path: Path) -> None:
     for name, source in cases:
         case_dir = tmp_path / name
         spec = {
-            "schema_version": "1.1",
+            "schema_version": current_schema_version(),
             "template": "map-list",
             "title": "{} input".format(name),
             "primary_layer": "places",
@@ -154,7 +163,7 @@ def test_graduated_style_is_resolved_once_for_html_and_static_outputs(tmp_path: 
         crs="EPSG:4326",
     ).to_file(source, driver="GeoJSON")
     spec = {
-        "schema_version": "1.1",
+        "schema_version": current_schema_version(),
         "template": "map-list",
         "title": "Graduated",
         "primary_layer": "scores",
