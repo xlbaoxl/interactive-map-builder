@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from scripts.mapcore.render_html import render_html
+from scripts.mapcore.spec import current_schema_version
 
 
 LEAFLET_JS = "window.L = window.L || {version: '1.9.4'};"
@@ -16,7 +17,8 @@ def _feature(identifier, name, geometry, **properties):
         "type": "Feature",
         "id": identifier,
         "properties": {
-            "__feature_id": identifier,
+            "__map_id": identifier,
+            "__label": name,
             "name": name,
             **properties,
         },
@@ -62,36 +64,48 @@ def test_map_list_renders_single_safe_html(tmp_path):
         _feature(
             "a-2",
             "第二居住区",
-            {"type": "Polygon", "coordinates": [[[116.3, 39.8], [116.5, 39.8], [116.5, 40.0], [116.3, 39.8]]]},
+            {
+                "type": "Polygon",
+                "coordinates": [
+                    [[116.3, 39.8], [116.5, 39.8], [116.5, 40.0], [116.3, 39.8]]
+                ],
+            },
             district="路南区",
             score=2,
         ),
     ]
     spec = {
+        "schema_version": current_schema_version(),
         "template": "map-list",
         "title": attack,
         "subtitle": "地图—清单双向联动",
+        "locale": "zh-CN",
         "primary_layer": "homes",
-        "list_batch_size": 20,
-        "basemap": {"attribution": "测试数据"},
+        "list": {"batch_size": 20, "collapsible": True},
+        "layers": [],
     }
     layer_spec = {
         "id": "homes",
-        "title": "历史居住区",
-        "id_field": "__feature_id",
+        "name": "历史居住区",
+        "id_field": "__map_id",
         "label_field": "name",
-        "category_field": "district",
         "search_fields": ["name", "district"],
-        "filter_fields": [{"field": "district", "label": "行政区"}],
+        "filter_fields": ["district"],
         "sort_fields": ["name", "score"],
-        "card_fields": [{"field": "district", "label": "行政区"}],
+        "card_fields": ["district"],
         "tooltip_fields": ["name"],
         "popup_fields": ["name", "district"],
-        "categories": {
-            "路北区": {"label": "路北区", "color": "#1668dc"},
-            "路南区": {"label": "路南区", "color": "#dc5a2a"},
+        "field_labels": {"district": "行政区"},
+        "style": {
+            "mode": "categorical",
+            "color_field": "district",
+            "categories": {
+                "路北区": {"label": "路北区", "color": "#1668dc"},
+                "路南区": {"label": "路南区", "color": "#dc5a2a"},
+            },
         },
     }
+    spec["layers"] = [layer_spec]
     output = tmp_path / "map.html"
 
     result = render_html(
@@ -121,15 +135,15 @@ def test_map_list_renders_single_safe_html(tmp_path):
     assert "textContent" in html
     assert "window.link_by_id" in html
     assert "window.__interactiveMapBuilderQA" in html
-    assert "list_batch_size" in html
     assert "data-feature-id" in html
     assert "https://unpkg" not in html
     assert "cdn.jsdelivr" not in html
 
     payload = _payload_from(html)
-    assert payload["version"] == "1.1"
+    assert payload["version"] == current_schema_version()
     assert payload["template"] == "map-list"
-    assert payload["catalog"]["locale"] == "en-US"
+    assert payload["catalog"]["locale"] == "zh-CN"
+    assert payload["spec"]["list"]["batch_size"] == 20
     assert payload["layers"][0]["count"] == 2
     assert payload["layers"][0]["feature_collection"]["features"][0]["properties"]["name"] == attack
     assert payload["layers"][0]["feature_collection"]["features"][0]["properties"]["score"] is None
@@ -140,7 +154,7 @@ def test_multilayer_contains_safe_point_line_polygon_controls(tmp_path):
         _prepared_layer(
             {
                 "id": "places",
-                "title": "地点",
+                "name": "地点",
                 "required": True,
                 "label_field": "name",
                 "search_fields": ["name"],
@@ -158,7 +172,7 @@ def test_multilayer_contains_safe_point_line_polygon_controls(tmp_path):
         _prepared_layer(
             {
                 "id": "routes",
-                "title": "道路",
+                "name": "道路",
                 "required": True,
                 "label_field": "name",
                 "popup_fields": ["name"],
@@ -178,13 +192,16 @@ def test_multilayer_contains_safe_point_line_polygon_controls(tmp_path):
         _prepared_layer(
             {
                 "id": "districts",
-                "title": "分区",
+                "name": "分区",
                 "required": True,
                 "label_field": "name",
-                "category_field": "kind",
-                "categories": [
-                    {"value": "core", "label": "核心区", "color": "#16856b"}
-                ],
+                "style": {
+                    "mode": "categorical",
+                    "color_field": "kind",
+                    "categories": {
+                        "core": {"label": "核心区", "color": "#16856b"}
+                    },
+                },
             },
             [
                 _feature(
@@ -202,8 +219,10 @@ def test_multilayer_contains_safe_point_line_polygon_controls(tmp_path):
         ),
     ]
     spec = {
+        "schema_version": current_schema_version(),
         "template": "multilayer",
         "title": "点线面综合图",
+        "locale": "zh-CN",
         "layers": [layer["spec"] for layer in layers],
     }
 
@@ -246,10 +265,12 @@ def test_rendered_interface_uses_selected_chinese_catalog(tmp_path):
     )
     render_html(
         {
+            "schema_version": current_schema_version(),
             "template": "map-list",
             "title": "Localized",
             "locale": "zh-CN",
             "primary_layer": "items",
+            "layers": [layer["spec"]],
         },
         [layer],
         tmp_path / "map.html",
@@ -269,18 +290,18 @@ def test_render_accepts_leaflet_asset_paths_and_layer_mapping(tmp_path):
     js_path.write_text("window.LEAFLET_PATH_SENTINEL = true;", encoding="utf-8")
     css_path.write_text(".LEAFLET_PATH_SENTINEL{display:block}", encoding="utf-8")
     layer = _prepared_layer(
-        {"id": "items", "label_field": "name"},
-        [
-            _feature(
-                "x-1",
-                "项目",
-                {"type": "Point", "coordinates": [0.0, 0.0]},
-            )
-        ],
+        {"id": "items", "name": "Items", "label_field": "name"},
+        [_feature("x-1", "项目", {"type": "Point", "coordinates": [0.0, 0.0]})],
     )
 
     result = render_html(
-        {"template": "map-list", "title": "Path assets"},
+        {
+            "schema_version": current_schema_version(),
+            "template": "map-list",
+            "title": "Path assets",
+            "primary_layer": "items",
+            "layers": [layer["spec"]],
+        },
         {"items": layer},
         tmp_path / "nested" / "map.html",
         js_path,
@@ -296,20 +317,20 @@ def test_render_accepts_leaflet_asset_paths_and_layer_mapping(tmp_path):
 
 def test_inline_vendor_source_cannot_close_its_element(tmp_path):
     layer = _prepared_layer(
-        {"id": "items", "label_field": "name"},
-        [
-            _feature(
-                "x-1",
-                "项目",
-                {"type": "Point", "coordinates": [0.0, 0.0]},
-            )
-        ],
+        {"id": "items", "name": "Items", "label_field": "name"},
+        [_feature("x-1", "项目", {"type": "Point", "coordinates": [0.0, 0.0]})],
     )
     malicious_js = "window.L={}; /* </script><script>alert(1)</script> */"
     malicious_css = "/* </style><script>alert(2)</script> */"
 
     render_html(
-        {"template": "map-list", "title": "Safe vendor assets"},
+        {
+            "schema_version": current_schema_version(),
+            "template": "map-list",
+            "title": "Safe vendor assets",
+            "primary_layer": "items",
+            "layers": [layer["spec"]],
+        },
         [layer],
         tmp_path / "map.html",
         malicious_js,
@@ -325,17 +346,11 @@ def test_inline_vendor_source_cannot_close_its_element(tmp_path):
 def test_rejects_unknown_template(tmp_path):
     with pytest.raises(ValueError, match="Unsupported HTML template"):
         render_html(
-            {"template": "unknown"},
+            {"schema_version": current_schema_version(), "template": "unknown"},
             [
                 _prepared_layer(
-                    {"id": "items"},
-                    [
-                        _feature(
-                            "x-1",
-                            "项目",
-                            {"type": "Point", "coordinates": [0.0, 0.0]},
-                        )
-                    ],
+                    {"id": "items", "name": "Items"},
+                    [_feature("x-1", "项目", {"type": "Point", "coordinates": [0.0, 0.0]})],
                 )
             ],
             tmp_path / "map.html",
@@ -346,20 +361,15 @@ def test_rejects_unknown_template(tmp_path):
 
 def test_multilayer_rejects_missing_required_layer(tmp_path):
     present = _prepared_layer(
-        {"id": "places"},
-        [
-            _feature(
-                "x-1",
-                "项目",
-                {"type": "Point", "coordinates": [0.0, 0.0]},
-            )
-        ],
+        {"id": "places", "name": "Places"},
+        [_feature("x-1", "项目", {"type": "Point", "coordinates": [0.0, 0.0]})],
     )
     spec = {
+        "schema_version": current_schema_version(),
         "template": "multilayer",
         "layers": [
-            {"id": "places", "required": True},
-            {"id": "roads", "required": True},
+            {"id": "places", "name": "Places", "required": True},
+            {"id": "roads", "name": "Roads", "required": True},
         ],
     }
 
