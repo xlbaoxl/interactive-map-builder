@@ -1,4 +1,4 @@
 interface:
   display_name: "Interactive Map Builder"
-  short_description: "Build searchable maps and report-ready figures"
-  default_prompt: "Use $interactive-map-builder to inspect my spatial data, close requirements gaps, and build a verified localized map with requested static figures."
+  short_description: "Turn existing spatial data into verified shareable maps"
+  default_prompt: "Use $interactive-map-builder whenever the user wants existing spatial or coordinate data turned into a browser-openable, searchable, filterable, sortable, or multilayer map, even if they do not mention GIS. Inspect first, ask only blocking questions, build and verify with the packaged engine, and do not replace it with an ad hoc Folium or Leaflet page."

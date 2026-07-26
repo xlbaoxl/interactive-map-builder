@@ -9,6 +9,7 @@ dist/
 build/
 _site/
 inspection.json
+evals/results/
 *.log
 .DS_Store
 Thumbs.db

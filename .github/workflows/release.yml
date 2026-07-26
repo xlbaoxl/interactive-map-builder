@@ -1,0 +1,79 @@
+name: release
+
+on:
+  workflow_run:
+    workflows: ["ci"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the verified commit
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Read and validate the release version
+        id: version
+        shell: bash
+        run: |
+          VERSION=$(python - <<'PY'
+          import tomllib
+          from pathlib import Path
+
+          data = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
+          print(data["project"]["version"])
+          PY
+          )
+          grep -F "## [$VERSION]" CHANGELOG.md
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Check whether the version already exists
+        id: existing
+        shell: bash
+        run: |
+          git fetch --tags --force
+          if git rev-parse "v${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build release assets
+        if: steps.existing.outputs.exists == 'false'
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build
+          python scripts/build_skill_package.py \
+            --output "dist/interactive-map-builder-skill-v${{ steps.version.outputs.version }}.zip"
+
+      - name: Create GitHub Release
+        if: steps.existing.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_SHA: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+        shell: bash
+        run: |
+          gh release create "v${{ steps.version.outputs.version }}" \
+            dist/*.whl \
+            dist/*.tar.gz \
+            "dist/interactive-map-builder-skill-v${{ steps.version.outputs.version }}.zip" \
+            --target "$RELEASE_SHA" \
+            --title "Interactive Map Builder v${{ steps.version.outputs.version }}" \
+            --generate-notes \
+            --latest

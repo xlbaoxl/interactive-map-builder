@@ -23,6 +23,7 @@ jobs:
           cache: pip
       - run: python -m pip install --upgrade pip
       - run: python -m pip install -r requirements-dev.txt
+      - run: python scripts/evaluate_triggers.py validate
       - run: python -m pytest -q -m "not browser"
 
   browser:
@@ -48,11 +49,16 @@ jobs:
           cache: pip
       - run: python -m pip install --upgrade pip build
       - run: python -m build --wheel
-      - name: Install wheel in a clean environment and build outside the repository
+      - run: python scripts/build_skill_package.py
+      - name: Install wheel in a clean environment and run the offline doctor
         run: |
           python -m venv /tmp/imb-wheel
           /tmp/imb-wheel/bin/python -m pip install --upgrade pip
           /tmp/imb-wheel/bin/python -m pip install --force-reinstall dist/*.whl
+          /tmp/imb-wheel/bin/interactive-map-builder --version
+          /tmp/imb-wheel/bin/interactive-map-builder doctor
+      - name: Build outside the repository from the installed wheel
+        run: |
           mkdir -p /tmp/imb-project
           cp -R assets/examples/csv-points/. /tmp/imb-project/
           cd /tmp
@@ -62,3 +68,24 @@ jobs:
           /tmp/imb-wheel/bin/interactive-map-builder verify --dist /tmp/imb-dist
           test -s /tmp/imb-dist/map.html
           test -s /tmp/imb-dist/build_report.json
+      - name: Verify the lean Skill archive
+        run: |
+          ls dist/interactive-map-builder-skill-v*.zip >/dev/null
+          python - <<'PY'
+          import zipfile
+          from pathlib import Path
+
+          archive = next(Path("dist").glob("interactive-map-builder-skill-v*.zip"))
+          with zipfile.ZipFile(archive) as handle:
+              names = set(handle.namelist())
+          required = {
+              "interactive-map-builder/SKILL.md",
+              "interactive-map-builder/agents/openai.yaml",
+              "interactive-map-builder/pyproject.toml",
+              "interactive-map-builder/scripts/cli.py",
+              "interactive-map-builder/scripts/map_builder.py",
+              "interactive-map-builder/PACKAGE_MANIFEST.json",
+          }
+          assert required <= names
+          assert not any("/tests/" in name or "/assets/" in name for name in names)
+          PY

@@ -1,61 +1,346 @@
-version: 1
+version: 2
+name: interactive-map-builder-intent-triggering
+description: Evaluator-neutral cases for activation, clarification, direct-build, and non-activation behavior.
 cases:
-  - id: gpkg-collapsible-list
-    prompt: "把这个 GeoPackage 做成带可收起清单、搜索和筛选的交互地图。"
-    expected:
-      invocation: trigger
-      behavior: "Inspect the package, confirm the primary layer and display fields, then build map-list."
-
-  - id: multiple-geojson-layers
-    prompt: "把这三个 GeoJSON 做成可以切换图层的点线面地图。"
-    expected:
-      invocation: trigger
-      behavior: "Inspect every layer, confirm multilayer intent, then build the multilayer template."
-
-  - id: csv-unknown-crs
-    prompt: "CSV 里有 x 和 y 两列，请直接生成地图，但我不知道坐标系。"
-    expected:
-      invocation: trigger
-      behavior: "Stop before building and ask for the source CRS; never infer it from coordinate values."
-
-  - id: address-geocoding
-    prompt: "把地址列批量地理编码后做成地图。"
-    expected:
-      invocation: do_not_use
-      behavior: "Explain that existing coordinates or geometry are required."
-
-  - id: buffer-site-analysis
-    prompt: "给学校做一公里缓冲区并计算覆盖人口，最后推荐选址。"
-    expected:
-      invocation: do_not_use
-      behavior: "Do not perform substantive spatial analysis or make a site-selection recommendation."
-
-  - id: vector-tile-system
-    prompt: "帮我搭一套支持千万级要素的矢量瓦片服务。"
-    expected:
-      invocation: do_not_use
-      behavior: "Do not invoke this lightweight single-file map builder."
-
-  - id: category-scientific-meaning
-    prompt: "字段 class_code 是 1、2、3，请自动解释科学含义并配色。"
-    expected:
-      invocation: trigger
-      behavior: "Inspect the field, ask the user to define each category, and never invent domain meaning."
-
-  - id: complex-requirements-checklist
-    prompt: "把三个图层做成地图，但主图层、坐标系和筛选字段还没确定，版式也请你帮我比较。"
-    expected:
-      invocation: trigger
-      behavior: "Inspect first, present a Confirmed/Inferred/Needs confirmation checklist, and ask one consolidated round for blocking choices."
-
-  - id: unresolved-options-block-build
-    prompt: "先继续推进这两份数据，模板和主图层我之后再决定。"
-    expected:
-      invocation: trigger
-      behavior: "Continue inspection and recommendations, keep template and primary layer as Needs confirmation, and do not build yet."
-
-  - id: clear-single-layer-direct
-    prompt: "把这个带 EPSG:4326 的点 GeoJSON 做成英文可搜索地图，名称字段是 name。"
-    expected:
-      invocation: trigger
-      behavior: "Proceed directly to inspection and the minimal confirmation checklist, set en-US, and avoid extra planning ceremony."
+- id: gpkg-collapsible-list
+  category: explicit
+  locale: zh-CN
+  prompt: 把这个 GeoPackage 做成带可收起清单、搜索和筛选的交互地图。
+  expected:
+    invocation: trigger
+    behavior: Inspect the package, confirm the primary layer and display fields, then build map-list.
+    ask_user: true
+    direct_build: false
+- id: multiple-geojson-layers
+  category: explicit
+  locale: zh-CN
+  prompt: 把这三个 GeoJSON 做成可以切换图层的点线面地图。
+  expected:
+    invocation: trigger
+    behavior: Inspect every layer, confirm multilayer intent, then build the multilayer template.
+    ask_user: true
+    direct_build: false
+- id: csv-known-lonlat
+  category: explicit
+  locale: en-US
+  prompt: This CSV has id, name, longitude, and latitude in EPSG:4326. Build a searchable English facility map and
+    a 16:9 slide image.
+  expected:
+    invocation: trigger
+    behavior: Inspect the CSV, use the declared coordinates and locale, then build and verify map-list with the
+      requested slide export.
+    ask_user: false
+    direct_build: true
+- id: excel-known-lonlat
+  category: explicit
+  locale: zh-CN
+  prompt: Excel 里已经有 longitude、latitude、name 和 type，坐标系是 WGS84。请做成可搜索、按类型筛选的中文设施地图。
+  expected:
+    invocation: trigger
+    behavior: Inspect the workbook and proceed with a Chinese map-list using the declared fields and CRS.
+    ask_user: false
+    direct_build: true
+- id: shapefile-parcel-list
+  category: explicit
+  locale: zh-CN
+  prompt: 把这个地块 Shapefile 做成地图＋清单页面，可以按用地类型筛选、按面积排序并查看地块详情。
+  expected:
+    invocation: trigger
+    behavior: Inspect the archive, confirm any ambiguous labels or category meanings, and build map-list.
+    ask_user: true
+    direct_build: false
+- id: arcgis-single-html
+  category: explicit
+  locale: en-US
+  prompt: Download this ArcGIS FeatureServer layer and turn it into a shareable single-file HTML map with search
+    and popups.
+  expected:
+    invocation: trigger
+    behavior: Fetch a complete local snapshot with provenance, inspect it, then build and verify a single-file map.
+    ask_user: false
+    direct_build: true
+- id: paper-vector-export
+  category: explicit
+  locale: en-US
+  prompt: Use the attached GeoJSON to create an interactive map plus paper-ready PNG, SVG, and PDF outputs.
+  expected:
+    invocation: trigger
+    behavior: Inspect the layer, resolve only blocking display choices, and enable the paper export preset.
+    ask_user: true
+    direct_build: false
+- id: planning-multilayer
+  category: explicit
+  locale: zh-CN
+  prompt: 我有道路、水系、绿地、停车位四组空间数据，请做一张可独立开关图层、查看对象详情的规划汇报地图。
+  expected:
+    invocation: trigger
+    behavior: Inspect all four inputs, confirm names and intended visibility, then build the multilayer product.
+    ask_user: true
+    direct_build: false
+- id: clear-single-layer-direct
+  category: explicit
+  locale: en-US
+  prompt: Turn this EPSG:4326 point GeoJSON into an English searchable map. Use name as the label and category as
+    the filter.
+  expected:
+    invocation: trigger
+    behavior: Proceed after inspection with the explicit fields, locale, and map-list intent.
+    ask_user: false
+    direct_build: true
+- id: spreadsheet-browser-page
+  category: implicit
+  locale: en-US
+  prompt: I have a spreadsheet of stores with longitude and latitude. Make something I can open in a browser, search
+    by store name, and send to colleagues.
+  expected:
+    invocation: trigger
+    behavior: Recognize the existing coordinates and browser-delivery goal, inspect the sheet, and build a shareable
+      map-list.
+    ask_user: true
+    direct_build: false
+- id: parcel-screening-page
+  category: implicit
+  locale: zh-CN
+  prompt: 这些候选地块需要在一个页面里按名称查找、按面积和类型筛选，还要点一下就看到详细信息。
+  expected:
+    invocation: trigger
+    behavior: Recognize a spatial screening map-and-list use case and inspect the supplied parcel data.
+    ask_user: true
+    direct_build: false
+- id: share-without-arcgis
+  category: implicit
+  locale: zh-CN
+  prompt: 同事电脑没有 ArcGIS，我想把现有图层做成双击就能打开、可以点击查看信息的成果。
+  expected:
+    invocation: trigger
+    behavior: Recognize the shareable single-file map goal and use the packaged builder instead of requiring desktop
+      GIS.
+    ask_user: true
+    direct_build: false
+- id: project-list-map
+  category: implicit
+  locale: en-US
+  prompt: Put these projects on one page so reviewers can search, sort, filter by status, and see where each project
+    is located.
+  expected:
+    invocation: trigger
+    behavior: Recognize a project map-list task, inspect the spatial records, and confirm display and filter fields.
+    ask_user: true
+    direct_build: false
+- id: planning-context-comparison
+  category: implicit
+  locale: en-US
+  prompt: I need to compare district boundaries, streets, public facilities, and green space in one presentation
+    page with layer switches.
+  expected:
+    invocation: trigger
+    behavior: Recognize a multilayer planning explorer and inspect the independent point, line, and polygon inputs.
+    ask_user: true
+    direct_build: false
+- id: same-data-ppt-paper
+  category: implicit
+  locale: zh-CN
+  prompt: 希望同一份空间数据同时产出一个可交互页面、一张 PPT 图和论文里能编辑的矢量图。
+  expected:
+    invocation: trigger
+    behavior: Recognize the combined HTML, slide, and paper map deliverables and use one MapSpec for all outputs.
+    ask_user: true
+    direct_build: false
+- id: engineering-layer-handoff
+  category: implicit
+  locale: zh-CN
+  prompt: 我从工程项目里导出了地块、道路和停车位图层，想整理成一个汇报时能切换和查询的页面。
+  expected:
+    invocation: trigger
+    behavior: Recognize a multilayer map handoff, inspect each exported layer, and confirm the intended audience
+      and labels.
+    ask_user: true
+    direct_build: false
+- id: single-file-map-delivery
+  category: implicit
+  locale: en-US
+  prompt: Please turn the attached spatial records into one HTML file that works without a frontend build and lets
+    people search the records.
+  expected:
+    invocation: trigger
+    behavior: Recognize the single-file searchable map goal and build with the deterministic engine.
+    ask_user: true
+    direct_build: false
+- id: facilities-search-filter
+  category: implicit
+  locale: zh-CN
+  prompt: 这批公共服务设施已经有坐标，我需要按设施类型筛选、按名称搜索，并在地图和清单之间联动。
+  expected:
+    invocation: trigger
+    behavior: Recognize a coordinate-backed facility map-list and inspect the supplied table.
+    ask_user: true
+    direct_build: false
+- id: natural-language-no-gis
+  category: implicit
+  locale: en-US
+  prompt: 'Make these locations easier to explore: I want a browser page where I can search, filter, click a record,
+    and share the result.'
+  expected:
+    invocation: trigger
+    behavior: Trigger from the interaction and delivery intent even though the user does not mention GIS, Leaflet,
+      or a Skill.
+    ask_user: true
+    direct_build: false
+- id: more-visual-attached-spatial
+  category: ambiguous
+  locale: zh-CN
+  prompt: 我上传了几份带几何的数据，怎样展示得更直观一些？
+  expected:
+    invocation: trigger
+    behavior: Inspect the files and ask one consolidated question about audience, map product, primary layer, and
+      outputs before building.
+    ask_user: true
+    direct_build: false
+- id: three-files-unknown-product
+  category: ambiguous
+  locale: en-US
+  prompt: These three files describe districts, roads, and facilities. Help me present them clearly.
+  expected:
+    invocation: trigger
+    behavior: Inspect all inputs and ask whether the user wants independent layers or a primary record list.
+    ask_user: true
+    direct_build: false
+- id: csv-unknown-crs
+  category: ambiguous
+  locale: zh-CN
+  prompt: CSV 里有 x 和 y 两列，请直接生成地图，但我不知道坐标系。
+  expected:
+    invocation: trigger
+    behavior: Stop before building and ask for the source CRS; never infer it from coordinate values.
+    ask_user: true
+    direct_build: false
+- id: category-scientific-meaning
+  category: ambiguous
+  locale: zh-CN
+  prompt: 字段 class_code 是 1、2、3，请自动解释科学含义并配色。
+  expected:
+    invocation: trigger
+    behavior: Inspect the field, ask the user to define each category, and never invent domain meaning.
+    ask_user: true
+    direct_build: false
+- id: unresolved-primary-layer
+  category: ambiguous
+  locale: en-US
+  prompt: Continue with these two spatial datasets; I will decide the template and primary layer later.
+  expected:
+    invocation: trigger
+    behavior: Continue inspection and recommendations, keep template and primary layer unresolved, and do not build
+      yet.
+    ask_user: true
+    direct_build: false
+- id: meeting-map-unknown-output
+  category: ambiguous
+  locale: zh-CN
+  prompt: 下周汇报要用这组地块数据，帮我做一张地图。
+  expected:
+    invocation: trigger
+    behavior: Inspect the data and ask once about audience locale, interactive versus static outputs, and desired
+      screening interactions.
+    ask_user: true
+    direct_build: false
+- id: shapefile-and-parking-unclear
+  category: ambiguous
+  locale: en-US
+  prompt: I have a CAD export as Shapefile plus a parking table. Turn it into a useful map for the project team.
+  expected:
+    invocation: trigger
+    behavior: Inspect both inputs and clarify geometry, coordinate fields, relationship, and desired map product
+      before building.
+    ask_user: true
+    direct_build: false
+- id: address-geocoding
+  category: do_not_use
+  locale: zh-CN
+  prompt: 把地址列批量地理编码后做成地图。
+  expected:
+    invocation: do_not_use
+    behavior: Explain that existing coordinates or geometry are required and use a geocoding-capable workflow instead.
+    ask_user: false
+    direct_build: false
+- id: buffer-coverage
+  category: do_not_use
+  locale: zh-CN
+  prompt: 给学校做一公里缓冲区并计算覆盖人口。
+  expected:
+    invocation: do_not_use
+    behavior: Use a substantive spatial-analysis workflow rather than this map-product builder.
+    ask_user: false
+    direct_build: false
+- id: site-selection-model
+  category: do_not_use
+  locale: en-US
+  prompt: Rank possible hospital sites using accessibility, population, land cost, and environmental constraints.
+  expected:
+    invocation: do_not_use
+    behavior: Use a site-selection and spatial-analysis workflow; do not invoke the lightweight map builder.
+    ask_user: false
+    direct_build: false
+- id: vector-tile-system
+  category: do_not_use
+  locale: zh-CN
+  prompt: 帮我搭一套支持千万级要素的矢量瓦片服务。
+  expected:
+    invocation: do_not_use
+    behavior: Use a scalable WebGIS and vector-tile architecture instead of this single-file renderer.
+    ask_user: false
+    direct_build: false
+- id: three-dimensional-digital-twin
+  category: do_not_use
+  locale: en-US
+  prompt: Build a 3D city digital twin with terrain, buildings, shadows, and real-time sensors.
+  expected:
+    invocation: do_not_use
+    behavior: Use a 3D GIS or digital-twin stack; this Skill does not provide those capabilities.
+    ask_user: false
+    direct_build: false
+- id: offline-basemap-download
+  category: do_not_use
+  locale: zh-CN
+  prompt: 把某市全部在线底图瓦片下载下来，离线部署。
+  expected:
+    invocation: do_not_use
+    behavior: Use an authorized offline basemap acquisition workflow; this Skill does not download tile sets.
+    ask_user: false
+    direct_build: false
+- id: nonspatial-dashboard
+  category: do_not_use
+  locale: en-US
+  prompt: Create a sales dashboard with monthly revenue bars, a funnel chart, and no geographic view.
+  expected:
+    invocation: do_not_use
+    behavior: Use a dashboard or charting workflow because the requested product is not a map.
+    ask_user: false
+    direct_build: false
+- id: route-optimization
+  category: do_not_use
+  locale: en-US
+  prompt: Optimize delivery routes for 200 stops with time windows and vehicle capacities.
+  expected:
+    invocation: do_not_use
+    behavior: Use a vehicle-routing or network-analysis tool; map rendering is not the main task.
+    ask_user: false
+    direct_build: false
+- id: spatial-regression-hotspots
+  category: do_not_use
+  locale: zh-CN
+  prompt: 对这些街区做空间回归、热点分析并解释显著性。
+  expected:
+    invocation: do_not_use
+    behavior: Use a spatial-statistics workflow; the builder must not perform or interpret this analysis.
+    ask_user: false
+    direct_build: false
+- id: edit-existing-leaflet-app
+  category: do_not_use
+  locale: en-US
+  prompt: Refactor the authentication and state management in my existing custom Leaflet React application.
+  expected:
+    invocation: do_not_use
+    behavior: Use a general software-engineering workflow because the request is to modify an existing application,
+      not build from spatial data with this Skill.
+    ask_user: false
+    direct_build: false
