@@ -4,11 +4,19 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "interactive-map-builder"
-version = "0.3.0"
-description = "Build interactive Leaflet maps and report-ready static figures from local spatial data."
+version = "0.3.1"
+description = "Turn existing spatial data into verified interactive maps and report-ready figures with AI agents."
 requires-python = ">=3.9"
 license = "MIT"
 license-files = ["LICENSE"]
+keywords = [
+  "agent-skills",
+  "codex",
+  "claude-code",
+  "geospatial",
+  "interactive-maps",
+  "leaflet",
+]
 dependencies = [
   "geopandas>=0.12.2,<2",
   "pandas>=1.4.4,<3",
@@ -25,15 +33,17 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://xlbaoxl.github.io/interactive-map-builder/"
+Documentation = "https://github.com/xlbaoxl/interactive-map-builder#readme"
 Repository = "https://github.com/xlbaoxl/interactive-map-builder"
+Changelog = "https://github.com/xlbaoxl/interactive-map-builder/blob/main/CHANGELOG.md"
 Issues = "https://github.com/xlbaoxl/interactive-map-builder/issues"
 
 [project.scripts]
-interactive-map-builder = "map_builder:main"
+interactive-map-builder = "cli:main"
 
 [tool.setuptools]
 package-dir = {"" = "scripts"}
-py-modules = ["map_builder"]
+py-modules = ["cli", "map_builder"]
 
 [tool.setuptools.packages.find]
 where = ["scripts"]

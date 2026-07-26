@@ -8,10 +8,11 @@ This file records notable user-facing changes to Interactive Map Builder. Its fo
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
-早期版本条目根据项目提交历史回填；这些版本尚未创建 Git 标签或 GitHub Release。
+早期版本条目根据项目提交历史回填；0.3.1 是第一版具有自动标签、发行包和 GitHub Release
+流程的版本。
 
-Entries for earlier versions were reconstructed from the project commit history; those versions
-do not yet have Git tags or GitHub Releases.
+Entries for earlier versions were reconstructed from the project history. Version 0.3.1 is the
+first release with an automated tag, distribution assets, and GitHub Release workflow.
 
 ## 维护规则 / Maintenance
 
@@ -26,25 +27,59 @@ do not yet have Git tags or GitHub Releases.
 
 ## [Unreleased] / 未发布
 
+## [0.3.1] - 2026-07-27
+
+### Added / 新增
+
+- 新增按用户意图触发的 Skill 描述和调用规则：即使用户未提及 GIS、Leaflet、Web Map、Skill
+  名称或具体格式，也能根据“搜索、筛选、分享、汇报、多图层”等目标识别任务。
+  Added intent-based Skill metadata and invocation guidance so matching tasks can activate from
+  search, filtering, sharing, reporting, and multilayer goals without requiring GIS, Leaflet,
+  Web Map, the Skill name, or a specific file format.
+- 新增 `interactive-map-builder doctor`，使用临时坐标数据离线完成加载、构建、打包资源检查和
+  输出哈希验证，为安装后的首次使用提供可重复自检。
+  Added `interactive-map-builder doctor`, an offline end-to-end installation check that loads
+  generated coordinate data, builds a map, verifies packaged resources, and validates output
+  hashes.
+- 将触发评估集扩展为 36 条中英文案例，覆盖明确触发、隐式触发、模糊需求和不应触发任务；
+  同时新增验证与评分脚本，用于记录覆盖率、触发召回率、误触发率、澄清行为和多次运行稳定性。
+  Expanded the trigger suite to 36 English and Chinese cases across explicit, implicit,
+  ambiguous, and out-of-scope requests, with a validator and scorer for coverage, trigger recall,
+  false positives, clarification behavior, and repeated-run stability.
+- 新增确定性的精简 Skill ZIP 构建器。发行包保留 Skill 元数据、Agent 配置、参考文档、Python
+  引擎和网页资源，排除演示数据、截图、测试和 CI 文件。
+  Added a deterministic lean Skill ZIP builder that keeps Skill metadata, Agent configuration,
+  references, the Python engine, and web resources while excluding demos, screenshots, tests,
+  and CI files.
+- 新增发布工作流：`main` 中出现新版本且 CI 通过后，自动创建 Git 标签和 GitHub Release，并
+  附带 wheel、源码包和版本化 Skill ZIP。
+  Added release automation that creates a Git tag and GitHub Release after a new version on
+  `main` passes CI, attaching the wheel, source archive, and versioned Skill ZIP.
+
 ### Changed / 变更
 
-- 向导改用跨 Agent 的统一需求清单，不再依赖特定客户端的 Plan mode、快捷键或界面状态。
-  Replaced client-specific planning controls with one cross-agent requirements checklist.
-- MapSpec 当前版本由打包的 JSON Schema 单点定义，示例、初始化器和 HTML 载荷不再分别硬编码版本号。
-  Made the packaged JSON Schema the single source of truth for the current MapSpec version.
-- 公共 `map-list` 演示仅保留固定数据快照，展示配置统一由演示构建器生成。
-  Made the demo builder the sole source of truth for the public `map-list` configuration.
-- 将英文主 README 与独立中文 README 分开，并围绕价值主张、在线演示、快速开始、模板选择、
-  输入输出和工程流程重新组织内容；同时移除已废弃的客户端 Plan mode 说明。
-  Split the English and Chinese READMEs and rewrote them around the value proposition, live
-  demos, quick start, product choice, inputs, deliverables, and engineering workflow while
-  removing obsolete client-specific Plan mode guidance.
+- 包版本更新为 0.3.1，CLI 入口增加轻量封装层，在保持原有 `inspect`、`init-spec`、`build`、
+  `verify`、`run` 行为不变的基础上提供 `doctor` 和 `--version`。
+  Updated the package to 0.3.1 and added a lightweight CLI wrapper that preserves the existing
+  commands while providing `doctor` and `--version`.
+- `agents/openai.yaml` 的短描述和默认提示词改为以用户成果为中心，并明确优先使用确定性引擎，
+  不在适用任务中临时改写 Folium 或 Leaflet 页面。
+  Reworked the OpenAI Agent metadata around user outcomes and made the packaged deterministic
+  engine the preferred path over ad hoc Folium or Leaflet implementations.
+- 英文主 README 与中文 README 增加自然语言触发示例、安装自检、正式发行包和自动发布说明。
+  Updated both READMEs with natural-language activation examples, installation verification,
+  versioned distribution assets, and automated release behavior.
+- 向导继续使用跨 Agent 的统一需求清单，不依赖特定客户端界面状态；MapSpec 版本继续由打包的
+  JSON Schema 单点定义，公共演示继续由演示构建器生成。
+  Kept the cross-agent requirements checklist, the packaged JSON Schema as the single MapSpec
+  source of truth, and the demo builder as the source of public demo configurations.
 
 ### Fixed / 修复
 
-- GitHub Pages 在演示项目逻辑变化时会重新构建；wheel 隔离测试改用独立、可直接构建的 CSV 示例。
-  Rebuilds GitHub Pages when demo-project logic changes and keeps wheel validation independent
-  from generated demo configurations.
+- GitHub Pages 在演示项目逻辑变化时重新构建；wheel 隔离测试继续使用独立、可直接构建的 CSV
+  示例，并新增安装后 `doctor` 验证。
+  Rebuilds GitHub Pages when demo-project logic changes, keeps wheel validation independent from
+  generated demo configurations, and adds the installed `doctor` check.
 - 默认初始化不再写入与受众语言无关的英文占位副标题。
   Removed the English placeholder subtitle from newly initialized maps.
 
@@ -95,10 +130,9 @@ do not yet have Git tags or GitHub Releases.
 
 ### Added / 新增
 
-- 引入 Atlas UI，包括搜索驱动的地图清单、关键指标摘要、分类与数值范围筛选，以及要素
-  详情面板。
-  Introduced the Atlas UI with a search-driven map list, KPI summaries, category and numeric
-  range filters, and feature details.
+- 引入 Atlas UI，包括搜索驱动的地图清单、关键指标摘要、分类与数值范围筛选，以及要素详情面板。
+  Introduced the Atlas UI with a search-driven map list, KPI summaries, category and numeric range
+  filters, and feature details.
 - 新增演示项目构建流程，为真实地图示例生成可部署的 GitHub Pages 站点。
   Added a demo-project build workflow that produces a deployable GitHub Pages site from real map
   examples.
@@ -106,8 +140,8 @@ do not yet have Git tags or GitHub Releases.
 ### Changed / 变更
 
 - 重新设计共享 HTML、CSS 和 JavaScript 模板，统一清单地图与多图层地图的响应式界面。
-  Redesigned the shared HTML, CSS, and JavaScript templates for a consistent responsive
-  map-list and multilayer interface.
+  Redesigned the shared HTML, CSS, and JavaScript templates for a consistent responsive map-list
+  and multilayer interface.
 - 将用地示例升级为可搜索、可分类的 Lower Manhattan 地块地图，并更新演示截图和说明。
   Upgraded the land-use example to a searchable, classified Lower Manhattan parcel map and
   refreshed its screenshots and documentation.
@@ -118,18 +152,17 @@ do not yet have Git tags or GitHub Releases.
 
 - 发布 `inspect`、`init-spec`、`build`、`verify` 和 `run` 命令，形成从数据检查到地图交付的
   完整命令行流程。
-  Released the `inspect`, `init-spec`, `build`, `verify`, and `run` commands for an end-to-end
-  workflow from data inspection to map delivery.
+  Released `inspect`, `init-spec`, `build`, `verify`, and `run` for an end-to-end workflow from
+  data inspection to map delivery.
 - 支持 GeoJSON、GeoPackage、Shapefile ZIP、CSV、Excel 和 ArcGIS FeatureServer 数据，并对
   CRS、字段和配置进行显式检查。
-  Added support for GeoJSON, GeoPackage, Shapefile ZIP, CSV, Excel, and ArcGIS FeatureServer
-  data with explicit CRS, field, and configuration checks.
-- 提供 `map-list` 与 `multilayer` 模板、MapSpec v1 配置，以及按语义键进行跨图层关联的
-  能力。
+  Added support for GeoJSON, GeoPackage, Shapefile ZIP, CSV, Excel, and ArcGIS FeatureServer data
+  with explicit CRS, field, and configuration checks.
+- 提供 `map-list` 与 `multilayer` 模板、MapSpec v1 配置，以及按语义键进行跨图层关联的能力。
   Added `map-list` and `multilayer` templates, the MapSpec v1 configuration, and semantic-key
   linking across layers.
-- 支持生成单文件 Leaflet 地图、构建报告、交付说明，以及用于幻灯片和论文的 PNG、SVG 与
-  PDF 静态输出。
+- 支持生成单文件 Leaflet 地图、构建报告、交付说明，以及用于幻灯片和论文的 PNG、SVG 与 PDF
+  静态输出。
   Added single-file Leaflet maps, build reports, delivery notes, and PNG, SVG, and PDF static
   outputs for slides and papers.
 - 建立示例、浏览器检查、契约测试和多 Python 版本持续集成。

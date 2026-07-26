@@ -5,42 +5,46 @@
 **把已有空间数据交给 AI Agent，得到漂亮、可验证、可直接交付的地图产品。**
 
 [![CI](https://github.com/xlbaoxl/interactive-map-builder/actions/workflows/ci.yml/badge.svg)](https://github.com/xlbaoxl/interactive-map-builder/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/xlbaoxl/interactive-map-builder)](https://github.com/xlbaoxl/interactive-map-builder/releases)
 [![Python 3.9+](https://img.shields.io/badge/Python-3.9%2B-3776AB?logo=python&logoColor=white)](pyproject.toml)
 [![MapSpec 1.1](https://img.shields.io/badge/MapSpec-1.1-0f766e)](references/map-spec.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-2ea44f.svg)](LICENSE)
 
 [在线演示](https://xlbaoxl.github.io/interactive-map-builder/zh-CN/) ·
 [English](README.md) ·
+[版本发布](https://github.com/xlbaoxl/interactive-map-builder/releases) ·
 [更新日志](CHANGELOG.md)
 
 </div>
 
-Interactive Map Builder 是一个 **以 Codex 为主要使用场景、兼容 Agent Skills 工作流**的地图
-Skill。把 GeoJSON、GeoPackage、Shapefile、CSV、Excel 或 ArcGIS 数据交给它，它会先检查
-数据，只询问数据本身无法回答的选项，再写入可审计的 MapSpec，生成单文件 Leaflet 地图，
-检查交互结果，并同步导出适合 PPT 和论文的静态图。
+Interactive Map Builder 是一个**以 Codex 为主要使用场景、兼容 Agent Skills 工作流**的地图
+Skill。用户即使没有说出 GIS、Leaflet、Web Map 或项目名称，只要表达了“把已有空间数据做成
+可搜索、筛选、分享和汇报的地图”这一目标，Agent 也能够识别任务。Skill 会检查 GeoJSON、
+GeoPackage、Shapefile、CSV、Excel 或 ArcGIS 数据，只询问真正影响结果的选项，再写入可审计
+的 MapSpec，生成单文件 Leaflet 地图，并同步导出适合 PPT 和论文的静态图。
 
 ```text
-空间数据 → 检查 → 集中确认 → MapSpec → 构建 → 浏览器验证 → HTML + PNG/SVG/PDF
+用户目标 + 空间数据 → 检查 → 集中确认 → MapSpec → 构建 → 验证 → HTML + PNG/SVG/PDF
 ```
 
-不需要前端工程，不需要手写 Folium 页面，也不会隐藏数据清洗过程。
+不需要前端工程，不需要临时手写 Folium 页面，也不会隐藏数据清洗过程。
 
 ## 核心特点
 
-- **用自然语言配置地图**：用户只需说明想回答什么问题，不必先掌握分级设色、图层控制等
-  GIS 术语。
-- **确定性构建**：Agent 负责理解需求和编写 MapSpec，Python 引擎统一负责读取、清洗、
-  样式、渲染和校验，避免每次临时生成一套不同代码。
+- **按用户意图触发**：能够识别“把这张经纬度表做成可搜索页面”“把道路、水系、绿地和
+  停车位放到一张汇报图里”等自然表达。
+- **用自然语言配置地图**：用户只需说明想完成什么，不必先掌握分级设色、图层控制等 GIS
+  术语。
+- **确定性构建**：Agent 负责理解需求和编写 MapSpec，Python 引擎统一负责读取、清洗、样式、
+  渲染和校验，避免每次临时生成一套不同代码。
 - **两种成熟地图产品**：可搜索筛选的“地图＋清单”，以及可独立开关点、线、面数据的
   “多图层地图”。
 - **单文件交付**：Leaflet、界面逻辑和业务几何都嵌入 `map.html`；只有在线街道底图需要网络。
 - **汇报与论文输出**：同一份配置可生成 16:9 PNG，以及论文用 PNG、SVG 和 PDF。
-- **完整构建记录**：自动保存数据检查、几何修复、生成 ID、性能提示、数据来源、文件哈希
-  和可移植状态。
-- **真实浏览器测试**：搜索、筛选、排序、图层开关、对象选择、键盘操作和窄屏布局均有
-  Chromium 测试。
-- **中英文地图界面**：内置稳定的 `zh-CN` 和 `en-US` 文案、ARIA 标签、交付说明和公开演示。
+- **完整构建记录**：自动保存数据检查、几何修复、生成 ID、性能提示、数据来源、文件哈希和
+  可移植状态。
+- **安装后自动体检**：`interactive-map-builder doctor` 会离线完成一次真实构建和哈希验证。
+- **跨 Agent 触发评估**：36 条中英文案例覆盖明确触发、隐式触发、模糊需求和不应触发任务。
 
 ## 在线演示
 
@@ -53,6 +57,25 @@ Skill。把 GeoJSON、GeoPackage、Shapefile、CSV、Excel 或 ArcGIS 数据交�
 两个演示都由仓库中的确定性引擎根据固定的
 [NYC Open Data 数据快照](assets/examples/SOURCES.md)生成，不是另外制作的设计稿。
 
+## 直接描述成果，不必记住工具名称
+
+下面这些表达都属于 Skill 应当识别的任务：
+
+```text
+这张 Excel 已经有经纬度，请做成一个能按设施名称搜索、按类型筛选、点击查看详情并分享给
+同事的浏览器页面。
+```
+
+```text
+把地块、道路、水系、绿地和停车位放到一张规划汇报地图里，可以独立开关图层和查看对象信息。
+```
+
+```text
+同事电脑没有 ArcGIS，请把这些现有图层做成一个 HTML 文件，同时导出一张 16:9 汇报图。
+```
+
+用户仍然可以显式调用 `$interactive-map-builder`，但在任务匹配时不需要知道 Skill 名称。
+
 ## 快速开始
 
 ### 1. 在 Codex 中安装 Skill
@@ -60,7 +83,7 @@ Skill。把 GeoJSON、GeoPackage、Shapefile、CSV、Excel 或 ArcGIS 数据交�
 打开一个新的 Codex 任务，发送：
 
 ```text
-$skill-installer 请从 https://github.com/xlbaoxl/interactive-map-builder 安装这个 Skill，并安装它需要的 Python 依赖。
+$skill-installer 请从 https://github.com/xlbaoxl/interactive-map-builder 安装这个 Skill，并安装它需要的 Python 依赖。安装后运行 interactive-map-builder doctor。
 ```
 
 安装完成后新建任务。如果新任务中没有出现该 Skill，再重启一次 Codex。
@@ -68,7 +91,7 @@ $skill-installer 请从 https://github.com/xlbaoxl/interactive-map-builder 安�
 ### 2. 上传数据并描述目标
 
 ```text
-使用 $interactive-map-builder，把我上传的空间数据做成可以搜索和筛选的中文交互地图，同时导出一张 16:9 汇报图。
+把我上传的空间数据做成可以搜索和筛选的中文交互地图，同时导出一张 16:9 汇报图。
 ```
 
 Skill 会先检查数据，并在仍有不确定项时维护一份简短需求清单：
@@ -79,8 +102,17 @@ Skill 会先检查数据，并在仍有不确定项时维护一份简短需求�
 - [ ] Needs confirmation：构建前必须确认
 ```
 
-它只会集中询问一次真正影响结果的内容，例如 CRS、模板、主图层、分类含义、展示字段、
-输出格式和地图受众语言。
+它只会集中询问一次真正影响结果的内容，例如 CRS、模板、主图层、分类含义、展示字段、输出
+格式和地图受众语言。
+
+### 3. 验证安装结果
+
+```bash
+interactive-map-builder doctor
+```
+
+`doctor` 会在临时目录中生成一张坐标表，离线完成数据读取、地图构建、Leaflet 资源检查和输出
+哈希验证，返回 JSON 结果后删除临时文件。该命令不会下载底图，也不会发送使用统计。
 
 <details>
 <summary><strong>手动安装</strong></summary>
@@ -93,7 +125,7 @@ git clone https://github.com/xlbaoxl/interactive-map-builder.git `
   "$HOME\.agents\skills\interactive-map-builder"
 Set-Location "$HOME\.agents\skills\interactive-map-builder"
 py -m pip install .
-interactive-map-builder --help
+interactive-map-builder doctor
 ```
 
 **macOS 或 Linux**
@@ -104,24 +136,38 @@ git clone https://github.com/xlbaoxl/interactive-map-builder.git \
   "$HOME/.agents/skills/interactive-map-builder"
 cd "$HOME/.agents/skills/interactive-map-builder"
 python3 -m pip install .
-interactive-map-builder --help
+interactive-map-builder doctor
 ```
+
+</details>
+
+<details>
+<summary><strong>从正式版本安装</strong></summary>
+
+从 v0.3.1 开始，每个 GitHub Release 会同时发布：
+
+- `interactive-map-builder-skill-vX.Y.Z.zip`：包含 `SKILL.md`、Agent 元数据、参考文档、确定性
+  引擎和网页资源的精简 Skill 包；
+- Python wheel 与源码包：用于常规 Python 安装。
+
+精简 Skill 包不包含演示数据、截图、测试和 CI 文件。将它解压到 Agent Skills 目录后，运行
+`python -m pip install .`，再运行 `interactive-map-builder doctor`。
 
 </details>
 
 <details>
 <summary><strong>在 Claude Code 或其他 Agent Skills 客户端中使用</strong></summary>
 
-把完整仓库复制到客户端能够读取的 Skill 或规则目录，让它加载 `SKILL.md`，然后安装一次
-确定性引擎：
+把完整仓库或正式版本中的 Skill ZIP 放到客户端能够读取的 Skill 或规则目录，让它加载
+`SKILL.md`，然后安装一次确定性引擎：
 
 ```bash
 python -m pip install .
-interactive-map-builder --help
+interactive-map-builder doctor
 ```
 
-工作流不依赖特定客户端界面：检查数据、维护需求清单、写入当前 MapSpec、使用仓库内引擎
-构建、验证并交付完整 `dist` 目录。
+工作流不依赖特定客户端界面：检查数据、维护需求清单、写入当前 MapSpec、使用打包引擎构建、
+验证并交付完整 `dist` 目录。
 
 </details>
 
@@ -132,8 +178,8 @@ interactive-map-builder --help
 | 查找、筛选、排序和比较每条记录 | `map-list` | 地块、建筑、设施、门店、项目、事件、候选地点 | 搜索、分类与数值筛选、排序、动态统计、地图清单联动、详情面板 |
 | 同时查看多个相互独立的空间主题 | `multilayer` | 边界、道路、线路、设施、环境和规划背景 | 图层开关、分图层搜索、点线面样式、图例、底图切换、对象详情 |
 
-`map-list` 也可以附带行政区或道路等背景图层。存在多个输入时，Skill 不会仅凭几何类型
-猜测业务意图，而会要求用户确认模板和主图层。
+`map-list` 也可以附带行政区或道路等背景图层。存在多个输入时，Skill 不会仅凭几何类型猜测
+业务意图，而会要求用户确认模板和主图层。
 
 ## 支持的数据
 
@@ -146,8 +192,8 @@ interactive-map-builder --help
 | Excel | 具有经纬度字段或 WKT，并明确源 CRS |
 | ArcGIS FeatureServer | 先下载为本地 GeoJSON 快照，再进入地图构建 |
 
-在推荐地图之前，检查阶段会输出要素数量、几何类型、CRS、字段样例、候选 ID/名称/分类
-字段、歧义和性能提示。
+在推荐地图之前，检查阶段会输出要素数量、几何类型、CRS、字段样例、候选 ID、名称、分类字段、
+歧义和性能提示。
 
 ## 交付内容
 
@@ -161,8 +207,8 @@ interactive-map-builder --help
 | `build_report.json` | 数量、修复、警告、性能、哈希和可移植状态 |
 | `README_USAGE.md` | 面向地图接收者的本地化使用说明 |
 
-普通构建不会复制源数据，`map_spec.json` 只作为原项目中的构建记录。需要把整个结果移动到
-其他电脑后独立重建时，使用 `--bundle-sources`。
+普通构建不会复制源数据，`map_spec.json` 只作为原项目中的构建记录。需要把整个结果移动到其他
+电脑后独立重建时，使用 `--bundle-sources`。
 
 ## 工作原理
 
@@ -225,23 +271,24 @@ interactive-map-builder verify --dist dist
 
 ## 能力边界
 
-Interactive Map Builder 专注于 **已有空间数据 → 可交付地图成品**，目前不负责：
+Interactive Map Builder 专注于**已有空间数据 → 可交付地图成品**，目前不负责：
 
 - 把地址批量转换成坐标；
-- 缓冲区、叠加、选址模型和统计推断；
+- 缓冲区、叠加、路径规划、选址模型和统计推断；
 - 矢量瓦片服务和千万级要素 WebGIS；
 - 离线底图下载；
 - 根据坐标数值猜测 CRS；
-- 三维地形、建筑和数字孪生。
+- 三维地形、建筑和数字孪生；
+- 维护已有的定制 Leaflet 或 React 应用。
 
-对于较大的 GeoJSON，构建报告会建议使用 `light` 或 `medium` 几何简化，但不会在用户不知情
-时切换渲染引擎。
+对于较大的 GeoJSON，构建报告会建议使用 `light` 或 `medium` 几何简化，但不会在用户不知情时
+切换渲染引擎。
 
 ## 项目状态
 
-项目当前处于 **v0.3 Beta**。这一阶段稳定维护两套页面框架和一份 MapSpec 契约，不继续盲目
-增加页面模板。下一步由真实用户反馈决定，候选方向包括点聚合、比例圆点、按数值变化的线宽、
-区域汇总、导出当前筛选结果和更大数据量的渲染。
+项目当前处于 **v0.3.1 Beta**。这一版本稳定维护两种地图产品和一份 MapSpec 契约，并重点改善
+自然语言意图触发、安装后验证和版本化分发。新的渲染功能继续由真实使用场景驱动，不以增加
+模板数量作为迭代目标。
 
 已经完成的变化见[更新日志](CHANGELOG.md)。
 
@@ -249,19 +296,22 @@ Interactive Map Builder 专注于 **已有空间数据 → 可交付地图成品
 
 ```bash
 python -m pip install -r requirements-dev.txt
+python scripts/evaluate_triggers.py validate
 python -m pytest -q -m "not browser"
 python -m playwright install chromium
 python -m pytest -q -m browser
 ```
 
-构建中英文 GitHub Pages 演示：
+构建中英文 GitHub Pages 演示和精简 Skill 发行包：
 
 ```bash
 python scripts/build_demo_site.py --output _site
+python scripts/build_skill_package.py
 ```
 
-CI 覆盖 Python 3.9、3.10、3.12、Chromium 交互测试、wheel 构建，以及在仓库之外安装 wheel 后
-重新生成并验证地图。
+CI 覆盖 Python 3.9、3.10、3.12、触发评估集验证、Chromium 交互测试、wheel 构建、离线安装体检、
+仓库外构建验证和 Skill ZIP。`main` 中出现新的包版本且 CI 全部通过后，会自动创建对应的 GitHub
+Release。
 
 ## 许可证
 
