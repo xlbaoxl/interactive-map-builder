@@ -1,0 +1,23 @@
+name: source snapshot v0.4.1
+
+on:
+  push:
+    branches:
+      - agent/v0.4.1-contract-and-overview
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Upload source checkout
+        uses: actions/upload-artifact@v4
+        with:
+          name: interactive-map-builder-v041-source
+          path: .
+          include-hidden-files: true
+          retention-days: 1
