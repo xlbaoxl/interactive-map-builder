@@ -1,0 +1,120 @@
+name: audit-v043-release
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
+    paths:
+      - ".github/workflows/audit-v043-release.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Check out audit branch
+        uses: actions/checkout@v6
+        with:
+          ref: audit/v0.4.3-release
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Download and verify v0.4.3 Release
+        shell: bash
+        run: |
+          set -euo pipefail
+          RELEASE_DIR=/tmp/imb-v043-release
+          SKILL_DIR=/tmp/imb-v043-skill
+          rm -rf "$RELEASE_DIR" "$SKILL_DIR" /tmp/imb-v043-venv
+          mkdir -p "$RELEASE_DIR" "$SKILL_DIR"
+
+          gh release view v0.4.3 --json tagName,isLatest,assets > /tmp/imb-v043-metadata.json
+          gh release download v0.4.3 --dir "$RELEASE_DIR"
+
+          cd "$RELEASE_DIR"
+          test -f SHA256SUMS.txt
+          test -f interactive-map-builder-skill-v0.4.3.zip
+          test -f interactive_map_builder-0.4.3-py3-none-any.whl
+          test -f interactive_map_builder-0.4.3.tar.gz
+          test "$(find . -maxdepth 1 -type f | wc -l)" -eq 4
+          sha256sum --check --strict SHA256SUMS.txt
+          unzip -q interactive-map-builder-skill-v0.4.3.zip -d "$SKILL_DIR"
+
+          python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+
+          root = Path('/tmp/imb-v043-skill/interactive-map-builder')
+          manifest = json.loads((root / 'PACKAGE_MANIFEST.json').read_text(encoding='utf-8'))
+          assert manifest['name'] == 'interactive-map-builder'
+          assert manifest['version'] == '0.4.3'
+          expected = set()
+          for entry in manifest['files']:
+              relative = entry['path']
+              path = root / relative
+              assert path.is_file(), relative
+              payload = path.read_bytes()
+              assert len(payload) == entry['bytes'], relative
+              assert hashlib.sha256(payload).hexdigest() == entry['sha256'], relative
+              expected.add(relative)
+          actual = {
+              path.relative_to(root).as_posix()
+              for path in root.rglob('*')
+              if path.is_file() and path.name != 'PACKAGE_MANIFEST.json'
+          }
+          assert actual == expected, (sorted(actual - expected), sorted(expected - actual))
+          PY
+
+          python -m venv /tmp/imb-v043-venv
+          /tmp/imb-v043-venv/bin/python -m pip install --disable-pip-version-check -q interactive_map_builder-0.4.3-py3-none-any.whl
+          test "$(/tmp/imb-v043-venv/bin/interactive-map-builder --version)" = "0.4.3"
+          /tmp/imb-v043-venv/bin/interactive-map-builder doctor > /tmp/imb-v043-doctor.json
+
+          cd "$GITHUB_WORKSPACE"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          metadata = json.loads(Path('/tmp/imb-v043-metadata.json').read_text(encoding='utf-8'))
+          doctor = json.loads(Path('/tmp/imb-v043-doctor.json').read_text(encoding='utf-8'))
+          assets = sorted(path.name for path in Path('/tmp/imb-v043-release').iterdir() if path.is_file())
+          assert metadata['tagName'] == 'v0.4.3'
+          assert doctor['status'] == 'pass'
+          report = {
+              'status': 'pass',
+              'tag': metadata['tagName'],
+              'is_latest': metadata['isLatest'],
+              'assets': assets,
+              'asset_count': len(assets),
+              'checksums_verified': True,
+              'skill_manifest_verified': True,
+              'installed_version': '0.4.3',
+              'doctor_status': doctor['status'],
+              'doctor_package_version': doctor.get('package_version'),
+          }
+          Path('.release-audit-v043.json').write_text(
+              json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          PY
+
+      - name: Commit audit report
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .release-audit-v043.json
+          git commit -m "chore: record v0.4.3 release audit"
+          git push origin HEAD:audit/v0.4.3-release
