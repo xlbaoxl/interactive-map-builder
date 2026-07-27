@@ -1,0 +1,430 @@
+/* Atlas Studio Light: a restrained editorial layer over the stable Atlas layout. */
+:root {
+  --imb-canvas: #eef1ed;
+  --imb-panel: rgba(251, 252, 249, 0.98);
+  --imb-panel-solid: #fbfcf9;
+  --imb-ink: #26363a;
+  --imb-ink-soft: #465a5e;
+  --imb-muted: #788789;
+  --imb-line: rgba(55, 77, 80, 0.13);
+  --imb-line-strong: rgba(55, 77, 80, 0.22);
+  --imb-accent: #4e8587;
+  --imb-accent-dark: #2f6467;
+  --imb-accent-soft: #e7f0ee;
+  --imb-highlight: #e7efe9;
+  --imb-shadow-sm: 0 5px 16px rgba(36, 53, 56, 0.07);
+  --imb-shadow-md: 0 14px 38px rgba(36, 53, 56, 0.11);
+  --imb-radius-sm: 7px;
+  --imb-radius: 10px;
+  --imb-radius-lg: 13px;
+  font-family: Inter, ui-sans-serif, "Noto Sans SC", "Microsoft YaHei", system-ui,
+    -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+html,
+body {
+  background: #eef1ed;
+}
+
+.imb-app {
+  background: var(--imb-canvas);
+}
+
+.imb-header {
+  min-height: 60px;
+  padding: 7px 16px;
+  border-bottom-color: var(--imb-line);
+  background: rgba(250, 251, 248, 0.98);
+  backdrop-filter: none;
+}
+
+.imb-heading h1 {
+  color: #25353a;
+  font-size: clamp(1.03rem, 1.42vw, 1.34rem);
+  font-weight: 720;
+  letter-spacing: -0.025em;
+}
+
+.imb-eyebrow {
+  margin-bottom: 1px;
+  color: #477d80;
+  font-size: 0.59rem;
+  font-weight: 760;
+  letter-spacing: 0.11em;
+}
+
+.imb-subtitle {
+  margin-top: 2px;
+  color: #7d898b;
+  font-size: 0.68rem;
+}
+
+.imb-button,
+.imb-icon-button,
+.imb-compact-select,
+.imb-search-input,
+.imb-range-number,
+.imb-input,
+.imb-select {
+  border-color: var(--imb-line);
+  background: rgba(252, 253, 250, 0.97);
+  box-shadow: none;
+}
+
+.imb-button,
+.imb-icon-button {
+  border-radius: 8px;
+}
+
+.imb-button {
+  min-height: 34px;
+  padding: 6px 11px;
+  color: #405256;
+  font-size: 0.72rem;
+  font-weight: 680;
+}
+
+.imb-button:hover,
+.imb-icon-button:hover {
+  border-color: rgba(78, 133, 135, 0.36);
+  background: #f5f8f5;
+}
+
+.imb-command-bar {
+  min-height: 55px;
+  padding: 7px 16px;
+  border-bottom-color: var(--imb-line);
+  background: rgba(248, 250, 247, 0.98);
+  backdrop-filter: none;
+}
+
+.imb-search-input {
+  height: 36px;
+  border-radius: 8px;
+  font-size: 0.76rem;
+}
+
+.imb-chip,
+.imb-range-filter > summary {
+  min-height: 32px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(252, 253, 250, 0.92);
+  font-size: 0.7rem;
+  font-weight: 660;
+}
+
+.imb-chip.is-active,
+.imb-range-filter[open] > summary {
+  color: #344d50;
+  border-color: rgba(78, 133, 135, 0.28);
+  background: #f7faf7;
+  box-shadow: 0 2px 8px rgba(36, 53, 56, 0.05);
+}
+
+.imb-workspace {
+  gap: 10px;
+  padding: 10px;
+}
+
+.imb-sidebar,
+.imb-map-wrap,
+.imb-detail-panel {
+  border-color: var(--imb-line);
+  border-radius: 11px;
+  background: var(--imb-panel);
+  box-shadow: none;
+}
+
+.imb-sidebar {
+  overflow: hidden;
+}
+
+.imb-panel-heading {
+  padding: 10px 12px 9px;
+  border-bottom-color: var(--imb-line);
+  background: #fafbf8;
+}
+
+.imb-panel-title {
+  font-size: 0.84rem;
+  font-weight: 720;
+}
+
+.imb-panel-caption,
+.imb-sort-status {
+  color: #849092;
+}
+
+.imb-list {
+  padding: 0 9px 8px;
+}
+
+.imb-list-card {
+  position: relative;
+  margin: 0;
+  padding: 10px 10px 10px 11px;
+  gap: 5px;
+  border: 0;
+  border-bottom: 1px solid var(--imb-line);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+}
+
+.imb-list-card:hover {
+  border-color: var(--imb-line);
+  background: rgba(238, 243, 239, 0.68);
+  box-shadow: none;
+  transform: none;
+}
+
+.imb-list-card.has-category-color {
+  border-color: var(--imb-line);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: inset 2px 0 0 color-mix(in srgb, var(--imb-card-category-color) 72%, transparent);
+}
+
+.imb-list-card.has-category-color:hover {
+  border-color: var(--imb-line);
+  background: color-mix(in srgb, var(--imb-card-category-color) 7%, #f8faf7);
+  box-shadow: inset 2px 0 0 var(--imb-card-category-color);
+}
+
+.imb-list-card.is-linked-active,
+.imb-list-card[aria-selected="true"],
+.imb-list-card.has-category-color.is-linked-active,
+.imb-list-card.has-category-color[aria-selected="true"] {
+  border-color: var(--imb-line);
+  background: color-mix(in srgb, var(--imb-card-category-color, var(--imb-accent)) 9%, #f5f8f5);
+  box-shadow: inset 3px 0 0 var(--imb-card-category-color, var(--imb-accent));
+}
+
+.imb-card-title {
+  color: #2c4c52;
+  font-size: 0.86rem;
+  font-weight: 720;
+  line-height: 1.22;
+}
+
+.imb-card-meta {
+  gap: 4px 10px;
+}
+
+.imb-card-meta-key {
+  color: #819092;
+  font-size: 0.58rem;
+}
+
+.imb-card-meta-value {
+  color: #53676b;
+  font-size: 0.67rem;
+  font-weight: 620;
+}
+
+.imb-card-badge {
+  padding: 2px 6px;
+  background: rgba(250, 251, 248, 0.7);
+  font-size: 0.59rem;
+}
+
+.imb-load-more {
+  min-height: 33px;
+  margin-top: 7px;
+  background: #fafbf8;
+}
+
+.imb-map-wrap {
+  background: #e4e9e5;
+}
+
+.leaflet-container {
+  background: #e6ebe7;
+}
+
+.imb-detail-panel {
+  background: #fafbf8;
+}
+
+.imb-detail-header {
+  min-height: 66px;
+  padding: 12px 13px 10px;
+  border-bottom-color: var(--imb-line);
+  background: #f8faf7;
+}
+
+.imb-detail-kicker {
+  color: #568083;
+  font-size: 0.57rem;
+  letter-spacing: 0.09em;
+}
+
+.imb-detail-title {
+  color: #293b3f;
+  font-size: 1rem;
+  font-weight: 720;
+}
+
+.imb-detail-body {
+  padding: 12px;
+}
+
+.imb-detail-grid {
+  border-color: var(--imb-line);
+  border-radius: 7px;
+}
+
+.imb-detail-grid dt,
+.imb-detail-grid dd {
+  padding: 8px 9px;
+  border-bottom-color: var(--imb-line);
+  font-size: 0.68rem;
+}
+
+.imb-detail-grid dt {
+  color: #7b888a;
+  background: #f1f3ef;
+}
+
+.imb-detail-grid dd {
+  color: #45585c;
+}
+
+.imb-kpi {
+  min-width: 82px;
+  padding: 4px 10px;
+  border-left-color: var(--imb-line);
+}
+
+.imb-kpi strong {
+  color: #2e4145;
+  font-size: 0.83rem;
+}
+
+.imb-kpi span {
+  color: #7f8b8d;
+  font-size: 0.55rem;
+}
+
+.imb-atlas-legend,
+.imb-control-card,
+.imb-map-controls {
+  border-color: rgba(55, 77, 80, 0.16);
+  border-radius: 9px;
+  background: rgba(251, 252, 249, 0.94);
+  box-shadow: var(--imb-shadow-sm);
+  backdrop-filter: blur(8px);
+}
+
+.imb-legend-toggle,
+.imb-map-control-heading {
+  font-size: 0.69rem;
+  font-weight: 720;
+}
+
+.imb-legend-item,
+.imb-layer-option {
+  color: #56686b;
+  font-size: 0.64rem;
+}
+
+.imb-swatch {
+  width: 10px;
+  height: 10px;
+  border-color: rgba(37, 53, 58, 0.22);
+  border-radius: 3px;
+}
+
+.imb-toolbar {
+  padding: 11px 12px;
+  border-bottom-color: var(--imb-line);
+}
+
+.imb-field label,
+.imb-field-label {
+  color: #778588;
+  font-size: 0.66rem;
+  font-weight: 670;
+}
+
+.imb-type-button {
+  min-height: 37px;
+  padding: 7px 8px;
+  border-color: var(--imb-line);
+  border-radius: 7px;
+  background: #fafbf8;
+  font-size: 0.68rem;
+  font-weight: 680;
+}
+
+.imb-type-button:hover {
+  background: #f3f7f3;
+}
+
+.imb-type-button[aria-pressed="true"] {
+  color: #2d5559;
+  border-color: rgba(78, 133, 135, 0.33);
+  background: #e7f0ee;
+}
+
+.imb-status {
+  min-height: 31px;
+  padding: 6px 12px;
+  border-bottom-color: var(--imb-line);
+  font-size: 0.66rem;
+}
+
+.leaflet-control-zoom a,
+.imb-map-tool-button,
+.imb-map-tool-select {
+  border-color: var(--imb-line) !important;
+  background: rgba(251, 252, 249, 0.96) !important;
+  color: #40575b !important;
+  box-shadow: none !important;
+}
+
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background: rgba(251, 252, 249, 0.98);
+}
+
+.leaflet-popup-content-wrapper {
+  border: 1px solid var(--imb-line);
+  border-radius: 8px;
+  box-shadow: var(--imb-shadow-md);
+}
+
+.leaflet-tooltip {
+  border-color: var(--imb-line-strong);
+  border-radius: 6px;
+  background: rgba(251, 252, 249, 0.98);
+  box-shadow: var(--imb-shadow-sm);
+}
+
+.imb-map-attribution {
+  color: #718082;
+  background: rgba(251, 252, 249, 0.82);
+}
+
+@media (max-width: 700px) {
+  .imb-workspace {
+    padding: 7px;
+  }
+
+  .imb-map-wrap {
+    inset: 7px;
+  }
+
+  .imb-sidebar,
+  .imb-detail-panel {
+    border-radius: 11px;
+  }
+}
+
+.multilayer-app .imb-card-meta-item {
+  color: #7d898b;
+  font-size: 0.61rem;
+  font-weight: 610;
+}
