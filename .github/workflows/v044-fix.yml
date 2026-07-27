@@ -69,8 +69,8 @@ jobs:
           set +e
           (
             set -euo pipefail
-            python -m pip install --upgrade pip
-            python -m pip install -r requirements-dev.txt
+            python -m pip install --quiet --upgrade pip
+            python -m pip install --quiet -r requirements-dev.txt
             python scripts/evaluate_triggers.py validate
             python -m pytest -q -m "not browser"
             python -m build --wheel
@@ -79,9 +79,18 @@ jobs:
           ) > /tmp/v044-fix-validation.log 2>&1
           STATUS=$?
           echo "status=$STATUS" >> "$GITHUB_OUTPUT"
-          FAILURE=$(tail -180 /tmp/v044-fix-validation.log | base64 -w0)
+          FAILURE=$(tail -40 /tmp/v044-fix-validation.log | base64 -w0)
           echo "failure=$FAILURE" >> "$GITHUB_OUTPUT"
           exit 0
+
+      - name: Upload complete validation log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v044-fix-validation
+          path: /tmp/v044-fix-validation.log
+          if-no-files-found: error
+          retention-days: 7
 
       - name: Commit verified syntax repair
         id: commit
@@ -100,7 +109,7 @@ jobs:
           ) > /tmp/v044-fix-commit.log 2>&1
           STATUS=$?
           echo "status=$STATUS" >> "$GITHUB_OUTPUT"
-          FAILURE=$(tail -120 /tmp/v044-fix-commit.log | base64 -w0)
+          FAILURE=$(tail -40 /tmp/v044-fix-commit.log | base64 -w0)
           echo "failure=$FAILURE" >> "$GITHUB_OUTPUT"
           exit 0
 
