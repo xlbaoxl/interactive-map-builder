@@ -143,7 +143,7 @@ def _doctor_parser() -> argparse.ArgumentParser:
 
 
 def _print_root_help() -> None:
-    map_builder._parser().print_help()
+    map_builder._parser(prog="interactive-map-builder").print_help()
     print()
     print("package commands:")
     print("  doctor              Run an offline installation and build self-check.")
@@ -189,7 +189,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 file=sys.stderr,
             )
             return 2
-    return map_builder.main(arguments)
+    return map_builder.main(arguments, prog="interactive-map-builder")
 
 
 if __name__ == "__main__":

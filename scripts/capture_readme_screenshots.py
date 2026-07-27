@@ -7,6 +7,7 @@ import argparse
 import io
 import json
 import shutil
+import re
 import tempfile
 from pathlib import Path
 
@@ -19,35 +20,81 @@ MAX_SCREENSHOT_BYTES = 1_700_000
 MIN_LOADED_TILES = 8
 
 
-def _mock_tile_png() -> bytes:
-    """Return a quiet deterministic planning-context tile for README captures."""
+def _mock_tile_png(url: str) -> bytes:
+    """Return a coordinate-aware quiet context tile for deterministic captures."""
 
     try:
         from PIL import Image, ImageDraw
     except ImportError as exc:
         raise SystemExit("Install Pillow before capturing README screenshots.") from exc
 
+    match = re.search(r"/(\d+)/(\d+)/(\d+)\.png(?:\?.*)?$", url)
+    if match:
+        zoom, tile_x, tile_y = (int(value) for value in match.groups())
+    else:
+        zoom, tile_x, tile_y = 0, 0, 0
+    origin_x = tile_x * 256
+    origin_y = tile_y * 256
+    seed = (zoom * 73856093) ^ (tile_x * 19349663) ^ (tile_y * 83492791)
+
     image = Image.new("RGB", (256, 256), "#f7f9f6")
     draw = ImageDraw.Draw(image)
-    building_fill = "#f0f3ef"
-    building_edge = "#e1e7e2"
-    for x in range(10, 250, 44):
-        for y in range(8, 250, 48):
-            width = 25 + ((x + y) // 4) % 11
-            height = 16 + ((x * 3 + y) // 7) % 10
-            draw.rectangle(
-                (x, y, min(252, x + width), min(252, y + height)),
-                fill=building_fill,
-                outline=building_edge,
-                width=1,
-            )
-    road = "#dbe2e1"
-    road_edge = "#cfd8d7"
-    for offset in (-100, 30, 160):
-        draw.line((offset, 256, offset + 300, -44), fill=road_edge, width=8)
-        draw.line((offset, 256, offset + 300, -44), fill=road, width=5)
-    for y in (72, 196):
-        draw.line((0, y, 256, y), fill="#e6ebe8", width=3)
+    road_edge = "#dde4e2"
+    road_fill = "#fdfefd"
+    building_fill = "#eef2ed"
+    building_edge = "#e2e8e3"
+    park_fill = "#edf4eb"
+
+    # Draw one continuous, low-contrast orthogonal street fabric in world-pixel space.
+    vertical_spacing = 78
+    horizontal_spacing = 64
+    vertical_offset = 17 + (zoom % 5) * 3
+    horizontal_offset = 11 + (zoom % 7) * 2
+    first_x = ((origin_x - vertical_offset) // vertical_spacing) * vertical_spacing + vertical_offset
+    first_y = ((origin_y - horizontal_offset) // horizontal_spacing) * horizontal_spacing + horizontal_offset
+    for world_x in range(first_x, origin_x + 256 + vertical_spacing, vertical_spacing):
+        local_x = world_x - origin_x
+        draw.line((local_x, 0, local_x, 256), fill=road_edge, width=7)
+        draw.line((local_x, 0, local_x, 256), fill=road_fill, width=4)
+    for world_y in range(first_y, origin_y + 256 + horizontal_spacing, horizontal_spacing):
+        local_y = world_y - origin_y
+        draw.line((0, local_y, 256, local_y), fill=road_edge, width=7)
+        draw.line((0, local_y, 256, local_y), fill=road_fill, width=4)
+
+    # Add varied blocks and occasional green space without repeating an identical tile image.
+    block_x = first_x
+    while block_x < origin_x + 256:
+        block_y = first_y
+        while block_y < origin_y + 256:
+            cell_seed = seed ^ (block_x * 2654435761) ^ (block_y * 2246822519)
+            left = max(3, block_x - origin_x + 9 + (cell_seed % 7))
+            top = max(3, block_y - origin_y + 9 + ((cell_seed >> 3) % 7))
+            right = min(253, block_x - origin_x + vertical_spacing - 9 - ((cell_seed >> 6) % 7))
+            bottom = min(253, block_y - origin_y + horizontal_spacing - 9 - ((cell_seed >> 9) % 7))
+            if right > left + 8 and bottom > top + 8:
+                if cell_seed % 13 == 0:
+                    draw.rounded_rectangle(
+                        (left, top, right, bottom),
+                        radius=5,
+                        fill=park_fill,
+                        outline="#e3ece0",
+                    )
+                else:
+                    inset = 2 + (cell_seed % 5)
+                    inner_left = left + inset
+                    inner_top = top + inset
+                    inner_right = right - inset
+                    inner_bottom = bottom - inset
+                    if inner_right >= inner_left and inner_bottom >= inner_top:
+                        draw.rectangle(
+                            (inner_left, inner_top, inner_right, inner_bottom),
+                            fill=building_fill,
+                            outline=building_edge,
+                            width=1,
+                        )
+            block_y += horizontal_spacing
+        block_x += vertical_spacing
+
     payload = io.BytesIO()
     image.save(payload, format="PNG", optimize=True)
     return payload.getvalue()
@@ -119,8 +166,10 @@ def _capture(
         result.click()
         page.locator("#imb-detail:not([hidden])").wait_for(state="visible", timeout=10_000)
     elif example_name == "multilayer":
-        page.get_by_text("Jay St-MetroTech", exact=True).first.click()
-        page.locator(".leaflet-popup").wait_for(state="visible", timeout=10_000)
+        overview = page.evaluate("window.__interactiveMapBuilderQA.overview")
+        active_layer = page.evaluate("window.__interactiveMapBuilderQA.activeLayerId")
+        if overview is not True or active_layer:
+            raise RuntimeError("The multilayer README capture must use the neutral overview state.")
     else:
         raise ValueError(f"Unsupported README screenshot example: {example_name}")
 
@@ -178,15 +227,19 @@ def main() -> int:
                 viewport={"width": args.width, "height": args.height},
                 device_scale_factor=1,
             )
-            tile_png = _mock_tile_png()
-            page.route(
-                "https://tiles.invalid/**",
-                lambda route: route.fulfill(
+            tile_cache = {}
+
+            def fulfill_tile(route) -> None:
+                url = route.request.url
+                if url not in tile_cache:
+                    tile_cache[url] = _mock_tile_png(url)
+                route.fulfill(
                     status=200,
-                    body=tile_png,
+                    body=tile_cache[url],
                     content_type="image/png",
-                ),
-            )
+                )
+
+            page.route("https://tiles.invalid/**", fulfill_tile)
             for locale in ("en-US", "zh-CN"):
                 for example_name in ("map-list", "multilayer"):
                     _capture(

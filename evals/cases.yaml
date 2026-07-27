@@ -56,7 +56,7 @@ cases:
     and popups.
   expected:
     invocation: trigger
-    behavior: Fetch a complete local snapshot with provenance, inspect it, then build and verify a single-file map.
+    behavior: Fetch a complete local snapshot with provenance, inspect it, then build and verify a single-file map without unrequested static figures.
     ask_user: false
     direct_build: true
 - id: paper-vector-export
@@ -95,7 +95,7 @@ cases:
   expected:
     invocation: trigger
     behavior: Recognize the existing coordinates and browser-delivery goal, inspect the sheet, and build a shareable
-      map-list.
+      map-list without unrequested slide or paper figures.
     ask_user: true
     direct_build: false
 - id: parcel-screening-page

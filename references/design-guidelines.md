@@ -6,9 +6,9 @@
   Explicit MapSpec colors, sizes, weights, and opacities always override inferred defaults.
 - Resolve point, line, and polygon values separately. Use coarse density only to prevent obvious
   crowding; do not perform substantive spatial analysis or silently change the data representation.
-- Keep one clear visual focus. In `map-list`, the primary layer leads and context layers recede. In
-  `multilayer`, the active business layer receives focus while other visible layers remain readable
-  spatial context.
+- Keep one clear visual focus. In `map-list`, the primary layer leads and context layers recede. A
+  `multilayer` map opens in a neutral overview with every visible layer at its base style; after the
+  user chooses a business layer, that layer receives focus while the others remain readable context.
 - Preserve a stable polygon-line-point draw order across initial render, layer toggles, search, and
   selection. A selected feature must remain legible without turning every feature into a heavy halo.
 - Use the restrained eight-color Atlas categorical palette only when all categories are known and
@@ -49,9 +49,11 @@
 - Give every required layer a control, legend entry, tooltip policy, and deterministic style.
 - Label layers with business names such as `Subway stations`, `Bicycle routes`, and
   `Neighborhood areas`, not raw geometry terms such as point, line, or polygon.
-- Search one selected business layer at a time when layers represent different entities. Keep
-  the other layers visible as spatial context and update the field label, placeholder, result
-  noun, and count when the selected layer changes.
+- Start with a neutral Overview and one compact layer selector rather than a grid of business-layer
+  buttons. Search one selected business layer at a time, keep visibility switches independent, and
+  update the field label, placeholder, result noun, and count when the selected layer changes.
+- Selecting a hidden search layer should make it visible. Hiding the current search layer should
+  return to Overview without changing the visibility of unrelated layers.
 - Make categorical line colors visibly distinct on the map and identical to their legend
   colors; do not encode line classes only in the legend.
 - Fit the combined bounds of visible required layers.

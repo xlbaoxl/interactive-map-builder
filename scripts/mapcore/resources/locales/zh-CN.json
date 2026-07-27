@@ -86,7 +86,7 @@
     "legend": "图例",
     "collapse": "收起搜索",
     "expand": "展开搜索",
-    "search_layer": "按业务图层搜索",
+    "search_layer": "浏览地图",
     "search": "搜索字段",
     "search_placeholder": "输入关键词",
     "search_prefix": "搜索",
@@ -97,7 +97,11 @@
     "visible_layers": "可见图层",
     "features": "要素",
     "collapse_legend": "收起图例",
-    "expand_legend": "展开图例"
+    "expand_legend": "展开图例",
+    "overview": "总览",
+    "choose_layer": "选择要搜索的图层",
+    "layer_placeholder": "图层",
+    "overview_hint": "选择一个图层以搜索并高亮显示其中的要素。"
   },
   "style": {
     "missing_label": "未分类"

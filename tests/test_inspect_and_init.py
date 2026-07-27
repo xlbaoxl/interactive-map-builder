@@ -81,9 +81,13 @@ def test_init_spec_consumes_inspection_and_builds_csv_end_to_end(tmp_path: Path)
         "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
     )
     assert sum(bool(item.get("visible")) for item in spec["basemaps"]) == 1
+    assert "static" not in spec
     result = build_map(spec_path, tmp_path / "dist")
     assert result["report"]["checks"]["primary_count"] == 3
     assert (tmp_path / "dist" / "inspection.json").is_file()
+    assert not list((tmp_path / "dist").glob("*.png"))
+    assert not list((tmp_path / "dist").glob("*.svg"))
+    assert not list((tmp_path / "dist").glob("*.pdf"))
     usage = tmp_path / "dist" / "README_USAGE.md"
     assert usage.is_file()
     assert "打开交互地图" in usage.read_text(encoding="utf-8")
@@ -173,7 +177,11 @@ def test_cli_three_step_workflow_and_output_listing(tmp_path: Path, capsys) -> N
     assert '"outputs"' in output
     assert "map.html" in output
     assert "README_USAGE.md" in output
-    assert json.loads(spec_path.read_text(encoding="utf-8"))["locale"] == "zh-CN"
+    assert "map_slide_16x9.png" not in output
+    assert "map_paper.svg" not in output
+    resolved = json.loads(spec_path.read_text(encoding="utf-8"))
+    assert resolved["locale"] == "zh-CN"
+    assert "static" not in resolved
 
 
 def test_cli_rejects_unsupported_locale() -> None:

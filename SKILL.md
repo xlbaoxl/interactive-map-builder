@@ -60,10 +60,12 @@ once in the first response as an optional convenience, then continue with inspec
 not the user switches modes. Do not recommend Plan mode for a clear single-layer task, do not cite
 client keyboard shortcuts, and never make a mode change a prerequisite.
 
-A portable local `map.html` is the default delivery. Sending that file to colleagues is not the
-same as publishing it on the internet. Do not offer, promise, or ask about a public URL unless the
-user explicitly requests deployment. When they do, finish the map first and treat hosting as a
-separate workflow that confirms the target platform and permission to expose the embedded data.
+A portable local `map.html` is the default delivery. Generate slide or paper figures only when the
+user explicitly asks for them; “make a website,” “make a map,” or “send it to colleagues” does not
+enable static presets. Sending the HTML file is not the same as publishing it on the internet.
+Do not offer, promise, or ask about a public URL unless the user explicitly requests deployment.
+When they do, finish the map first and treat hosting as a separate workflow that confirms the
+target platform and permission to expose the embedded data.
 
 ## Visual guidance
 
@@ -161,8 +163,13 @@ python -m pip install .
 interactive-map-builder doctor
 ```
 
-A passing `doctor` result verifies package resources, local data loading, map construction, and
-output hashes without downloading data or basemap tiles.
+Use the installed `interactive-map-builder` command for package-level `doctor`, `update`, and
+`--version`. In a source checkout where that command is unavailable, use
+`python scripts/cli.py doctor`. `python scripts/map_builder.py` is the internal deterministic
+builder and intentionally lists only inspect/init-spec/fetch/build/verify/run; never infer from that
+help output that the package lacks `doctor`. Check the installed version and command path before
+falling back to build-plus-verify. A passing `doctor` result verifies package resources, local data
+loading, map construction, and output hashes without downloading data or basemap tiles.
 
 ## Template choice
 
@@ -195,10 +202,11 @@ output hashes without downloading data or basemap tiles.
 ## Output contract
 
 Always return `map.html`, resolved `map_spec.json`, `inspection.json`, `build_report.json`, and
-`README_USAGE.md` in the selected locale. Generate `map_slide_16x9.png` for the slide preset and
-paper PNG, SVG, and PDF files for the paper preset. Treat an unbundled `map_spec.json` as a build
-record; promise an independent rebuild only when sources were bundled. Public hosting is not part
-of this output contract.
+`README_USAGE.md` in the selected locale. Static output is opt-in: generate
+`map_slide_16x9.png` only when the user requests a slide figure and enable the paper preset only
+when the user requests paper PNG/SVG/PDF. Never expand an HTML-only request into static files.
+Treat an unbundled `map_spec.json` as a build record; promise an independent rebuild only when
+sources were bundled. Public hosting is not part of this output contract.
 
 ## Resources
 

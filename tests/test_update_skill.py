@@ -107,7 +107,7 @@ def test_parse_version_accepts_stable_tags_and_rejects_other_forms():
 
 def test_update_check_uses_network_then_24_hour_cache(tmp_path: Path):
     state = tmp_path / "state.json"
-    session = FakeSession(_release("0.4.1"))
+    session = FakeSession(_release("0.4.2"))
     first = check_for_update(
         force=False,
         session=session,
@@ -115,7 +115,7 @@ def test_update_check_uses_network_then_24_hour_cache(tmp_path: Path):
         state_path=state,
     )
     assert first["status"] == "update_available"
-    assert first["latest_version"] == "0.4.1"
+    assert first["latest_version"] == "0.4.2"
     assert first["source"] == "network"
     assert session.calls == 1
 
@@ -130,7 +130,7 @@ def test_update_check_uses_network_then_24_hour_cache(tmp_path: Path):
 
 
 def test_update_check_rejects_release_assets_from_an_unexpected_host(tmp_path: Path):
-    release = _release("0.4.1")
+    release = _release("0.4.2")
     release["assets"][0]["browser_download_url"] = "https://example.invalid/skill.zip"
     with pytest.raises(UpdateError, match="unexpected download host"):
         check_for_update(

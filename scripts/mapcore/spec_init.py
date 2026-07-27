@@ -228,7 +228,6 @@ def init_spec_from_inspection(
         "locale": selected_locale,
         "layers": spec_layers,
         "basemaps": default_basemaps(),
-        "static": {"enabled": True, "presets": ["slide-16x9", "paper"]},
     }
     if selected == "map-list":
         spec["primary_layer"] = str(primary_layer)

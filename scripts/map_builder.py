@@ -506,7 +506,7 @@ def build_map(
         "cjk_font_found": None,
         "warning": None,
     }
-    if spec.get("static", {}).get("enabled", True):
+    if spec.get("static", {}).get("enabled", False):
         static_result = render_static_figures(
             static_layers, spec, destination, visual_plans=visual_plans
         )
@@ -656,10 +656,15 @@ def verify_dist(out_dir: Path) -> Dict[str, Any]:
     }
 
 
-def _parser() -> argparse.ArgumentParser:
+def _parser(*, prog: str = "python scripts/map_builder.py") -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="interactive-map-builder",
-        description="Build lightweight interactive maps and report-ready figures.",
+        prog=prog,
+        description="Build lightweight interactive maps and optional report-ready figures.",
+        epilog=(
+            "This is the deterministic builder command set. For package-level "
+            "doctor, update, and version commands, use the installed "
+            "interactive-map-builder CLI or python scripts/cli.py."
+        ),
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -773,8 +778,12 @@ def _copy_run_inputs(inputs: Sequence[str], destination: Path) -> List[str]:
     return copied
 
 
-def main(argv: Optional[Sequence[str]] = None) -> int:
-    args = _parser().parse_args(argv)
+def main(
+    argv: Optional[Sequence[str]] = None,
+    *,
+    prog: str = "python scripts/map_builder.py",
+) -> int:
+    args = _parser(prog=prog).parse_args(argv)
     try:
         if args.command == "inspect":
             result = _inspection_from_args(args)

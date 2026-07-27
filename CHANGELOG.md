@@ -27,6 +27,37 @@ first release with an automated tag, distribution assets, and GitHub Release wor
 
 ## [Unreleased] / 未发布
 
+## [0.4.1] - 2026-07-27
+
+### Added / 新增
+
+- 多图层地图新增中性“总览”入口和紧凑图层下拉选择器；页面打开时所有可见图层保持基础
+  样式，只有用户选择搜索图层后才进入 `focus` / `dimmed` 状态。
+  Added a neutral Overview entry and compact layer selector to multilayer maps. All visible layers
+  now open at their base style, and focus/dimmed states begin only after the user chooses a layer.
+
+### Changed / 变更
+
+- 静态图改为严格按需生成：默认构建只交付 HTML 与构建记录，只有明确启用 `slide-16x9` 或
+  `paper` preset 时才生成 PNG、SVG 或 PDF。
+  Made static figures strictly opt-in: default builds deliver HTML and build records, while PNG,
+  SVG, and PDF are generated only when the slide or paper preset is explicitly enabled.
+- 包版本更新为 0.4.1；MapSpec 继续保持 1.1，不新增模板、运行依赖或制图分析能力。
+  Updated the package to 0.4.1 while retaining MapSpec 1.1, the existing templates, runtime
+  dependencies, and cartographic scope.
+
+### Fixed / 修复
+
+- 明确区分完整包级 CLI 与内部构建脚本：安装体检优先运行
+  `interactive-map-builder doctor`，源码回退使用 `python scripts/cli.py doctor`，内部
+  `map_builder.py` 的帮助信息不再冒充完整 CLI。
+  Clarified the package CLI versus the internal builder so installation checks use
+  `interactive-map-builder doctor` or the source `scripts/cli.py` fallback without mistaking
+  `map_builder.py` help for the full command set.
+- README 的离线截图底图改为按瓦片坐标生成的低干扰街区纹理，不再重复平铺同一张斜线瓦片。
+  Replaced the repeated diagonal README mock tile with a deterministic, coordinate-aware,
+  low-interference street and block backdrop.
+
 ## [0.4.0] - 2026-07-27
 
 ### Added / 新增
