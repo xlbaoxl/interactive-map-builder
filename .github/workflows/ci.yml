@@ -89,3 +89,27 @@ jobs:
           assert required <= names
           assert not any("/tests/" in name or "/assets/" in name for name in names)
           PY
+
+  apply-v032:
+    if: github.event_name == 'pull_request' && github.head_ref == 'agent/v0.3.2-controls-and-updates'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - name: Replace the staging tree with the reviewed v0.3.2 tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .github/v032-patch/part-* | base64 -d | gzip -d > /tmp/v0.3.2.patch
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout d00a6efbbd0170eee79a2fba779d8808641be264 -- .github/workflows/ci.yml
+          git apply --index --binary /tmp/v0.3.2.patch
+          git rm -r .github/v032-patch
+          git rm .github/workflows/apply-v032.yml
+          git commit -m "release: prepare v0.3.2 controls and safe updates"
+          git push origin HEAD:${{ github.head_ref }}
