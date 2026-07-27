@@ -9,6 +9,7 @@
   max-height: calc(100% - 24px);
   flex-direction: column;
   overflow: visible;
+  pointer-events: auto;
   border: 1px solid rgba(55, 77, 80, 0.18);
   border-radius: 10px;
   background: rgba(251, 252, 249, 0.96);
@@ -85,6 +86,7 @@
   font-size: 1.05rem;
   font-weight: 780;
   line-height: 1;
+  pointer-events: auto;
   cursor: pointer;
 }
 
