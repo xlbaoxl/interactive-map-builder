@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - agent/v0.4.1-contract-and-overview
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
