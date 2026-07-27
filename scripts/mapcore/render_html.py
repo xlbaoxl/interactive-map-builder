@@ -198,15 +198,30 @@ def _safe_json_script(value: Any) -> str:
 
 
 def _safe_script_source(source: str) -> str:
-    return re.sub(r"</script", r"<\\/script", source, flags=re.IGNORECASE)
+    return re.sub(r"</script", r"<\/script", source, flags=re.IGNORECASE)
 
 
 def _safe_style_source(source: str) -> str:
-    return re.sub(r"</style", r"<\\/style", source, flags=re.IGNORECASE)
+    return re.sub(r"</style", r"<\/style", source, flags=re.IGNORECASE)
 
 
 def _language(spec: Mapping[str, Any]) -> str:
     return require_locale(spec.get("locale", DEFAULT_LOCALE))
+
+
+def _template_assets(template_name: str) -> Dict[str, str]:
+    """Return shared assets plus narrowly scoped template enhancements."""
+
+    javascript = read_resource_text("templates", "shared.js")
+    css = read_resource_text("templates", "atlas-studio-light.css")
+    if template_name == "multilayer":
+        javascript += "\n" + read_resource_text(
+            "templates", "multilayer-enhancements.js"
+        )
+        css += "\n" + read_resource_text(
+            "templates", "multilayer-enhancements.css"
+        )
+    return {"javascript": javascript, "css": css}
 
 
 def render_html(
@@ -249,6 +264,7 @@ def render_html(
         "layers": layers,
         "catalog": catalog,
     }
+    assets = _template_assets(selected_template)
     rendered = template.render(
         language=locale,
         catalog=catalog,
@@ -256,15 +272,11 @@ def render_html(
         payload_json=_safe_json_script(payload),
         leaflet_js=_safe_script_source(_read_inline_asset(leaflet_js, "Leaflet JavaScript")),
         leaflet_css=_safe_style_source(_read_inline_asset(leaflet_css, "Leaflet CSS")),
-        shared_js=_safe_script_source(
-            read_resource_text("templates", "shared.js")
-        ),
+        shared_js=_safe_script_source(assets["javascript"]),
         shared_css=_safe_style_source(
             read_resource_text("templates", "shared.css")
         ),
-        theme_css=_safe_style_source(
-            read_resource_text("templates", "atlas-studio-light.css")
-        ),
+        theme_css=_safe_style_source(assets["css"]),
     )
 
     destination = Path(out_path)

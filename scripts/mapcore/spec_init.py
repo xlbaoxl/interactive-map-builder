@@ -9,8 +9,8 @@ from typing import Any, Dict, List, Mapping, Optional
 
 from .basemaps import default_basemaps
 from .locales import DEFAULT_LOCALE, require_locale
+from .semantic_styles import CATEGORICAL_PALETTE, auto_category_colors
 from .spec import current_schema_version, validate_spec
-from .visual_defaults import CATEGORICAL_PALETTE
 
 
 class SpecInitError(ValueError):
@@ -93,8 +93,9 @@ def _source_spec(
             source["geometry"] = {"type": "wkt", "wkt_field": str(wkts[0])}
         else:
             raise SpecInitError(
-                "Layer {!r} has ambiguous tabular geometry; confirm longitude/latitude or WKT."
-                .format(layer.get("name"))
+                "Layer {!r} has ambiguous tabular geometry; confirm longitude/latitude or WKT.".format(
+                    layer.get("name")
+                )
             )
     if source.get("crs") is None:
         if layer.get("crs") is None:
@@ -117,14 +118,15 @@ def _categorical_style(layer: Mapping[str, Any]) -> Dict[str, Any]:
         or len(values) > len(_PALETTE)
     ):
         return {}
-    categories = {
-        str(value): _PALETTE[index]
-        for index, value in enumerate(values)
+    semantic_layer = {
+        "id": str(layer.get("layer_id", "")),
+        "name": str(layer.get("name") or layer.get("layer_id", "")),
+        "style": {"color_field": field},
     }
     return {
         "mode": "categorical",
         "color_field": field,
-        "categories": categories,
+        "categories": auto_category_colors(semantic_layer, values),
     }
 
 
@@ -152,9 +154,7 @@ def _layer_spec(
         result["id_field"] = identifier
     if label:
         result["label_field"] = label
-        result["tooltip_fields"] = [label] + [
-            field for field in filters[:2] if field != label
-        ]
+        result["tooltip_fields"] = [label] + [field for field in filters[:2] if field != label]
         result["popup_fields"] = list(dict.fromkeys(result["tooltip_fields"] + numeric))
     if search:
         result["search_fields"] = search
@@ -205,8 +205,9 @@ def init_spec_from_inspection(
                 primary_layer = layer_ids[0]
             else:
                 raise SpecInitError(
-                    "map-list with multiple layers requires --primary-layer; choose one of: {}"
-                    .format(", ".join(layer_ids))
+                    "map-list with multiple layers requires --primary-layer; choose one of: {}".format(
+                        ", ".join(layer_ids)
+                    )
                 )
         if primary_layer not in layer_ids:
             raise SpecInitError(

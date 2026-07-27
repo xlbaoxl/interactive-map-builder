@@ -3,19 +3,19 @@
 from __future__ import annotations
 
 import math
-from typing import Any, Dict, Mapping, MutableMapping, Sequence, Tuple
+from typing import Any, Dict, Mapping, Sequence, Tuple
 
 import geopandas as gpd
 import numpy as np
 import pandas as pd
 from matplotlib.colors import LinearSegmentedColormap, to_hex
 
+from .semantic_styles import infer_semantic_role, semantic_categories
 from .visual_defaults import SEQUENTIAL_PALETTE
 
 
 class StyleError(ValueError):
     """Raised when a declared style cannot be applied deterministically."""
-
 
 
 def _format_number(value: float) -> str:
@@ -69,13 +69,23 @@ def resolve_layer_style(
     frame: gpd.GeoDataFrame,
     layer_spec: Mapping[str, Any],
 ) -> Tuple[gpd.GeoDataFrame, Dict[str, Any], Dict[str, Any]]:
-    """Resolve a layer style into the categorical contract shared by both renderers."""
+    """Resolve a layer style into the contract shared by HTML and static renderers."""
 
     resolved_layer = dict(layer_spec)
     style = dict(resolved_layer.get("style", {}))
     mode = str(style.get("mode") or ("categorical" if style.get("color_field") else "single"))
     if mode == "categorical":
         field = str(style.get("color_field") or "")
+        categories = style.get("categories")
+        semantic_role = infer_semantic_role({**resolved_layer, "style": style})
+        semantic_palette_applied = False
+        if isinstance(categories, Mapping):
+            resolved_categories, semantic_role, semantic_palette_applied = semantic_categories(
+                {**resolved_layer, "style": style},
+                categories,
+            )
+            style["categories"] = resolved_categories
+
         resolved_frame = frame
         missing_count = 0
         if field and field in frame.columns:
@@ -86,12 +96,12 @@ def resolve_layer_style(
                 resolved_frame[field] = resolved_frame[field].where(
                     resolved_frame[field].notna(), missing_label
                 )
-                categories = dict(style.get("categories", {}))
-                categories.setdefault(
+                categories_with_missing = dict(style.get("categories", {}))
+                categories_with_missing.setdefault(
                     missing_label,
                     str(style.get("missing_color", "#9ca3af")),
                 )
-                style["categories"] = categories
+                style["categories"] = categories_with_missing
         style["mode"] = mode
         resolved_layer["style"] = style
         return resolved_frame, resolved_layer, {
@@ -99,11 +109,16 @@ def resolve_layer_style(
             "field": field or None,
             "categories": dict(style.get("categories", {})),
             "missing_count": missing_count,
+            "semantic_role": semantic_role,
+            "semantic_palette_applied": semantic_palette_applied,
         }
     if mode != "graduated":
         style["mode"] = mode
         resolved_layer["style"] = style
-        return frame, resolved_layer, {"mode": mode}
+        return frame, resolved_layer, {
+            "mode": mode,
+            "semantic_role": infer_semantic_role({**resolved_layer, "style": style}),
+        }
 
     field = str(style.get("field") or style.get("color_field") or "")
     if not field or field not in frame.columns:
@@ -176,6 +191,7 @@ def resolve_layer_style(
         "breaks": [float(value) for value in breaks],
         "categories": categories,
         "missing_count": int(numeric.isna().sum()),
+        "semantic_role": infer_semantic_role({**resolved_layer, "style": style}),
     }
     return resolved_frame, resolved_layer, report
 
