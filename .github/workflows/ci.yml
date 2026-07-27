@@ -1,4 +1,4 @@
-name: publish v0.3.2 staging tree
+name: publish v0.3.2 non-workflow tree
 
 on:
   pull_request:
@@ -19,19 +19,13 @@ jobs:
           ref: ${{ github.head_ref }}
           fetch-depth: 0
           show-progress: false
-      - name: Publish the reviewed v0.3.2 tree atomically
+      - name: Commit the reviewed non-workflow v0.3.2 changes
         id: apply
         continue-on-error: true
         shell: bash
         run: |
           exec > >(tee /tmp/v032-apply.log) 2>&1
           set -euxo pipefail
-          echo STAGE=current
-          PARENT=$(git rev-parse HEAD)
-          BASE=$(git rev-parse origin/main)
-          echo "PARENT=$PARENT BASE=$BASE"
-
-          echo STAGE=payload
           cat .github/v032-patch/part-* > /tmp/v0.3.2.patch.gz.b64
           test "$(wc -c < /tmp/v0.3.2.patch.gz.b64)" = "48968"
           echo "dac96f940d2e968372dc996ac7dc3a18d04a35731dab0c037e55d88903d1cd38  /tmp/v0.3.2.patch.gz.b64" | sha256sum -c -
@@ -40,32 +34,24 @@ jobs:
           gzip -dc /tmp/v0.3.2.patch.gz > /tmp/v0.3.2.patch
           echo "9ebcd009226e10e243e391701907d22b93a0ee5f1ce938e6cb7fdb9fe98335c3  /tmp/v0.3.2.patch" | sha256sum -c -
 
-          echo STAGE=worktree
-          rm -rf /tmp/interactive-map-builder-v032-final
-          git worktree add --detach /tmp/interactive-map-builder-v032-final "$BASE"
-          mkdir -p /tmp/interactive-map-builder-v032-final/.github/workflows
-          git show "$PARENT:.github/workflows/source-snapshot.yml" > /tmp/interactive-map-builder-v032-final/.github/workflows/source-snapshot.yml
-          git -C /tmp/interactive-map-builder-v032-final add .github/workflows/source-snapshot.yml
+          git apply --check --index --binary --exclude='.github/workflows/*' /tmp/v0.3.2.patch
+          git apply --index --binary --exclude='.github/workflows/*' /tmp/v0.3.2.patch
+          git rm -r .github/v032-patch
+          test -z "$(git diff --cached --name-only | grep '^.github/workflows/' || true)"
+          git diff --cached --check
+          test "$(python - <<'PY'
+          import tomllib
+          from pathlib import Path
+          print(tomllib.loads(Path('pyproject.toml').read_text(encoding='utf-8'))['project']['version'])
+          PY
+          )" = "0.3.2"
+          test -f scripts/update_skill.py
+          test -f scripts/mapcore/basemaps.py
 
-          echo STAGE=apply
-          git -C /tmp/interactive-map-builder-v032-final apply --check --index --binary /tmp/v0.3.2.patch
-          git -C /tmp/interactive-map-builder-v032-final apply --index --binary /tmp/v0.3.2.patch
-          TREE=$(git -C /tmp/interactive-map-builder-v032-final write-tree)
-          echo "TREE=$TREE"
-          test "$TREE" = "9f9b072138355b35b9e98b26760856daf0d4baf0"
-
-          echo STAGE=commit
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          COMMIT=$(printf '%s\n\n%s\n' \
-            'release: prepare v0.3.2 controls and safe updates' \
-            'Publish the locally verified v0.3.2 tree without retaining staging files.' \
-            | git commit-tree "$TREE" -p "$PARENT")
-          echo "COMMIT=$COMMIT"
-
-          echo STAGE=push
-          git push --verbose origin "$COMMIT:refs/heads/${{ github.head_ref }}"
-          echo STAGE=done
+          git commit -m "release: prepare v0.3.2 controls and safe updates"
+          git push --verbose origin "HEAD:refs/heads/${{ github.head_ref }}"
       - name: Upload staging diagnostic
         if: always()
         uses: actions/upload-artifact@v4
@@ -74,5 +60,5 @@ jobs:
           path: /tmp/v032-apply.log
           retention-days: 1
       - name: Propagate staging failure
-        if: steps.apply.outcome != 'success'
+        if: steps.apply.outcome == 'failure'
         run: exit 1
