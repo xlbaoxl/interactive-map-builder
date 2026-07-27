@@ -122,7 +122,7 @@ jobs:
           git -C /tmp/interactive-map-builder-v032-final apply --check --index --binary /tmp/v0.3.2.patch
           git -C /tmp/interactive-map-builder-v032-final apply --index --binary /tmp/v0.3.2.patch
           TREE=$(git -C /tmp/interactive-map-builder-v032-final write-tree)
-          test "$TREE" = "cbea42ca70c84111ab458e5f4e1630334dcb1e55"
+          test "$TREE" = "9f9b072138355b35b9e98b26760856daf0d4baf0"
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
