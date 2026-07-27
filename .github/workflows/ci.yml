@@ -11,6 +11,7 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -24,10 +25,23 @@ jobs:
       - run: python -m pip install --upgrade pip
       - run: python -m pip install -r requirements-dev.txt
       - run: python scripts/evaluate_triggers.py validate
-      - run: python -m pytest -q -m "not browser"
+      - name: Run non-browser tests
+        shell: bash
+        run: |
+          set -o pipefail
+          python -m pytest -q -m "not browser" 2>&1 | tee "pytest-${{ matrix.python-version }}.log"
+      - name: Upload non-browser test log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-${{ matrix.python-version }}
+          path: pytest-${{ matrix.python-version }}.log
+          if-no-files-found: warn
+          retention-days: 7
 
   browser:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
@@ -37,10 +51,23 @@ jobs:
       - run: python -m pip install --upgrade pip
       - run: python -m pip install -r requirements-dev.txt
       - run: python -m playwright install --with-deps chromium
-      - run: python -m pytest -q -m browser
+      - name: Run browser tests
+        shell: bash
+        run: |
+          set -o pipefail
+          python -m pytest -q -m browser 2>&1 | tee pytest-browser.log
+      - name: Upload browser test log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-browser
+          path: pytest-browser.log
+          if-no-files-found: warn
+          retention-days: 7
 
   wheel:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
