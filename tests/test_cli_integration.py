@@ -43,6 +43,7 @@ def test_land_use_demo_build_and_verify_complete_bundle(tmp_path):
         "inspection.json",
         "build_report.json",
         "README_USAGE.md",
+        "DELIVERY_MANIFEST.json",
     }
     assert expected == {path.name for path in dist.iterdir()}
 

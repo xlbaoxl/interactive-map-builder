@@ -27,6 +27,45 @@ first release with an automated tag, distribution assets, and GitHub Release wor
 
 ## [Unreleased] / 未发布
 
+## [0.4.4] - 2026-07-28
+
+### Added / 新增
+
+- 新增事务性交付目录：构建先在同级 staging 目录完成、写入 `DELIVERY_MANIFEST.json` 并通过完整
+  验证，再原子替换正式输出；失败时保留上一份可用交付，重复构建会清除旧静态产物并保留非受管
+  用户文件。
+  Added transactional delivery staging with a managed-file manifest, pre-swap verification,
+  rollback-safe replacement, stale-output cleanup, and preservation of unmanaged user files.
+- `verify` 现在独立要求五项核心交付与 Delivery Manifest，拒绝路径逃逸和重复输出，并验证打包源
+  数据、静态 preset 与清单中的大小和 SHA-256。
+  Expanded verification to enforce core outputs, safe relative paths, unique entries, bundled-source
+  integrity, static-preset expectations, and manifest hashes.
+- Shapefile 与 Skill Release ZIP 共用解压资源限制，拒绝异常文件数、展开体积、重复大小写路径和
+  高压缩比成员；CI 新增 Python 3.11、Windows smoke 和并发取消。
+  Added shared ZIP extraction limits plus Python 3.11 coverage, Windows smoke tests, and CI
+  concurrency cancellation.
+
+### Changed / 变更
+
+- 普通 Skill 调用改用 `update --preflight`：最多复用 24 小时缓存、只检查版本、不修改正在运行的
+  安装；应用更新继续作为独立维护动作保留完整校验、接管、doctor 和回滚。
+  Changed ordinary Skill invocations to a cached, check-only, non-mutating preflight while keeping
+  verified update application as an explicit maintenance action.
+- 启用静态输出时必须显式声明 presets；静态图未设置总来源时会汇总各图层 `source_note`。
+  Required explicit static presets and added layer-source aggregation for static figure footnotes.
+- 手动 Release 工作流只能针对既有标签修复缺失 Release 或资产，不能从未验证分支创建新版本。
+  Restricted manual Release runs to repairing an existing immutable tag.
+- 包版本更新为 0.4.4；MapSpec 保持 1.1，地图模板、依赖范围与制图能力保持不变。
+  Updated the package to 0.4.4 without changing MapSpec, templates, dependency ranges, or
+  cartographic scope.
+
+### Fixed / 修复
+
+- 修复复用 `dist` 时旧 PNG/SVG/PDF 留存、构建中途失败留下新旧混合文件、正式 `verify` 弱于
+  Doctor、打包数据被篡改仍可能通过校验、运行时错误提示写死旧版本等问题。
+  Fixed stale output leakage, partial-delivery exposure, incomplete verification, unverified bundled
+  data, and a hard-coded updater version message.
+
 ## [0.4.3] - 2026-07-27
 
 ### Added / 新增

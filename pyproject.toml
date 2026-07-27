@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "interactive-map-builder"
-version = "0.4.3"
+version = "0.4.4"
 description = "Turn existing spatial data into verified interactive maps and report-ready figures with AI agents."
 requires-python = ">=3.9"
 license = "MIT"

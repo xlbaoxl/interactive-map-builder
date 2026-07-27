@@ -47,8 +47,8 @@ GeoPackage、Shapefile、CSV、Excel 或 ArcGIS 数据，只询问真正影响�
   PNG、SVG 和 PDF。
 - **完整构建记录**：自动保存数据检查、几何修复、生成 ID、性能提示、数据来源、文件哈希和
   可移植状态。
-- **每次调用均进行安全版本预检**：每个 Skill 任务都会确认当前官方 Release；普通复制安装
-  只有在 Release 校验和与文件清单全部匹配后才会被纳入自动更新，断网和本地修改不会阻塞制图。
+- **带缓存且不修改安装的版本预检**：每个 Skill 任务最多每 24 小时检查一次官方 Release，
+  正常制图过程不修改正在运行的 Skill，断网也不会阻塞任务。
 - **安装后自动体检**：`interactive-map-builder doctor` 会离线完成一次真实构建和哈希验证。
 - **可靠地图控件**：多图层地图默认从中性总览开始，使用紧凑的图层选择器决定搜索焦点，
   将“重点浏览哪个图层”和“哪些图层可见”分开，并提供 CARTO Positron、OpenStreetMap
@@ -92,7 +92,7 @@ GeoPackage、Shapefile、CSV、Excel 或 ArcGIS 数据，只询问真正影响�
 打开一个新的 Codex 任务，发送：
 
 ```text
-$skill-installer 请从 https://github.com/xlbaoxl/interactive-map-builder 安装这个 Skill，并安装它需要的 Python 依赖。安装后运行 interactive-map-builder doctor 和 interactive-map-builder update --auto --force。
+$skill-installer 请从 https://github.com/xlbaoxl/interactive-map-builder 安装这个 Skill，并安装它需要的 Python 依赖。安装后运行 interactive-map-builder doctor 和 interactive-map-builder update --preflight。
 ```
 
 安装完成后新建任务。如果新任务中没有出现该 Skill，再重启一次 Codex。从 v0.4.3 开始，
@@ -120,7 +120,7 @@ Skill 会先检查数据，并在仍有不确定项时维护一份简短需求�
 
 ```bash
 interactive-map-builder doctor
-interactive-map-builder update --auto --force
+interactive-map-builder update --preflight
 ```
 
 `doctor` 会在临时目录中生成一张坐标表，离线完成数据读取、地图构建、Leaflet 资源检查和输出
@@ -148,7 +148,7 @@ git clone https://github.com/xlbaoxl/interactive-map-builder.git `
 Set-Location "$CodexHome\skills\interactive-map-builder"
 py -m pip install .
 interactive-map-builder doctor
-interactive-map-builder update --auto --force
+interactive-map-builder update --preflight
 ```
 
 **macOS 或 Linux**
@@ -161,7 +161,7 @@ git clone https://github.com/xlbaoxl/interactive-map-builder.git \
 cd "$CODEX_ROOT/skills/interactive-map-builder"
 python3 -m pip install .
 interactive-map-builder doctor
-interactive-map-builder update --auto --force
+interactive-map-builder update --preflight
 ```
 
 </details>
@@ -200,14 +200,13 @@ interactive-map-builder doctor
 ## 版本更新、计划模式与公网发布
 
 每次 Skill 任务开始时，Agent 会从 Skill 根目录运行
-`interactive-map-builder update --auto --force` 并读取返回的 JSON。强制预检不会沿用普通
-24 小时缓存，而会确认当前公开 Release；随后用一行说明本地版本、可确认的官方版本、来源和状态。
+`interactive-map-builder update --preflight`。该命令只检查版本：有效结果最多缓存 24 小时，
+不会修改当前安装；版本已是最新时保持静默，只有发现新版本或检查失败时才提示。断网不会阻塞
+地图制作。设置 `IMB_DISABLE_AUTO_UPDATE=1` 可以关闭更新检查。
 
-自动修改范围仍然严格：官方仓库中干净的 `main` 分支、通过清单验证的正式 Release 安装，或从
-v0.4.3 开始先与当前版本官方 Release 逐文件一致性校验成功的普通复制安装。存在本地修改、分叉、
-只读目录或两个标准 Skill 目录同时存在时，返回 `manual_update_required`，不会猜测或覆盖。断网时
-返回 `update_check_failed`。两种情况都不会阻塞地图制作。设置 `IMB_DISABLE_AUTO_UPDATE=1`
-可以关闭更新检查。
+安装更新属于独立维护动作。`update --apply` 与兼容保留的 `update --auto --force` 继续执行 Release
+校验、Manifest 校验、精确复制安装接管、本地修改保护、重复目录拒绝、安装后 doctor 和失败回滚，
+普通地图任务不再修改正在运行的 Skill。
 
 v0.3.2—v0.4.2 本身尚未包含复制安装接管逻辑。已经安装的无 `.git`、无 Manifest 旧副本需要
 通过官方 v0.4.3 做一次重新安装；此后的兼容版本即可自动更新。
@@ -287,6 +286,7 @@ v0.4 引入的是轻量视觉默认值解析器，不是一套全包式自动设
 | `map_spec.json` | 解析后的可复用构建契约 |
 | `inspection.json` | 输入、CRS、字段候选和待确认项 |
 | `build_report.json` | 数量、修复、警告、性能、哈希和可移植状态 |
+| `DELIVERY_MANIFEST.json` | 事务性交付管理的文件归属、大小和 SHA-256 清单 |
 | `README_USAGE.md` | 面向地图接收者的本地化使用说明 |
 
 普通构建不会复制源数据，`map_spec.json` 只作为原项目中的构建记录。需要把整个结果移动到其他
@@ -373,10 +373,9 @@ Interactive Map Builder 专注于**已有空间数据 → 可交付地图成品*
 
 ## 项目状态
 
-当前稳定版本为 **v0.4.3**。本次热修复集中解决版本预检一致性：本地版本或活动 Skill 根目录
-变化后旧缓存立即失效；更新应用失败时保留已确认的官方版本信息；普通仓库复制安装可在逐文件验证
-后安全接管；存在重复标准安装时不再猜测路径；Release 工作流也可以修复中途失败、资产不完整的
-同版本发布。MapSpec 1.1、现有两个地图模板、运行依赖和 Atlas Studio Light 视觉行为保持不变。
+当前稳定版本为 **v0.4.4**。本次稳定化更新引入事务性交付、受管文件清单和严格验证；普通任务
+改为带缓存、只检查不修改的版本预检；ZIP 解压加入资源上限；手动 Release 只允许修复既有标签。
+MapSpec 继续保持 1.1，制图范围与 Atlas Studio Light 视觉行为不变。
 
 已经完成的变化见[更新日志](CHANGELOG.md)。
 

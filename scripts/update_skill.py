@@ -24,6 +24,7 @@ from typing import Any, Dict, Iterable, Mapping, Optional, Sequence, Tuple
 
 import requests
 
+from mapcore.safe_zip import SafeZipError, extract_members, validate_archive_resources
 from mapcore.version import __version__
 
 
@@ -728,6 +729,16 @@ def _download_release_package(
     extract_root.mkdir()
     with zipfile.ZipFile(archive_path) as archive:
         members = archive.infolist()
+        try:
+            validate_archive_resources(
+                members,
+                max_members=4096,
+                max_member_bytes=MAX_SKILL_ARCHIVE_BYTES,
+                max_total_bytes=MAX_SKILL_ARCHIVE_BYTES * 2,
+                max_compression_ratio=200.0,
+            )
+        except SafeZipError as exc:
+            raise UpdateError(str(exc)) from exc
         member_names = set()
         for member in members:
             safe = _safe_member_path(member)
@@ -737,7 +748,10 @@ def _download_release_package(
             if folded in member_names:
                 raise UpdateError("Skill archive contains duplicate member paths.")
             member_names.add(folded)
-        archive.extractall(extract_root)
+        try:
+            extract_members(archive, extract_root, members)
+        except SafeZipError as exc:
+            raise UpdateError(str(exc)) from exc
     package_root = extract_root / "interactive-map-builder"
     validated = _validate_extracted_package(package_root, version)
     return package_root, validated, actual
@@ -908,8 +922,8 @@ def apply_update(
         )
     else:
         raise UpdateError(
-            "The Skill is an unmanaged copy. Run the v0.4.3 updater from the Skill root "
-            "so it can verify and adopt the copy, or reinstall from an official Release."
+            "The Skill is an unmanaged copy. Run the updater from the Skill root so it can "
+            "verify and adopt the copy, or reinstall from an official Release."
         )
 
     return {
@@ -1095,11 +1109,19 @@ def _parser() -> argparse.ArgumentParser:
         help="Apply an available update and report failures with a non-zero exit code.",
     )
     mode.add_argument(
+        "--preflight",
+        action="store_true",
+        help=(
+            "Agent preflight: use the validated cache when possible, check only, "
+            "and never modify the current installation."
+        ),
+    )
+    mode.add_argument(
         "--auto",
         action="store_true",
         help=(
-            "Agent preflight: verify/adopt an exact copied install, apply when safe, "
-            "and never block the map task on failure."
+            "Explicit maintenance mode: verify/adopt an exact copied install, apply when safe, "
+            "and never fail the calling task."
         ),
     )
     parser.add_argument("--force", action="store_true", help="Ignore the 24-hour check cache.")
@@ -1121,7 +1143,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(payload + "\n", encoding="utf-8")
-    if args.auto:
+    if args.auto or args.preflight:
         return 0
     if result["status"] in {
         "update_check_failed",

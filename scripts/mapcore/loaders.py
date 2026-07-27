@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import stat
 import tempfile
 import zipfile
 from pathlib import Path, PurePosixPath
@@ -12,6 +11,8 @@ import geopandas as gpd
 import pandas as pd
 from shapely import wkt
 
+from .safe_zip import SafeZipError, extract_members, safe_member_path, validate_archive_resources
+
 PathLike = Union[str, Path]
 
 
@@ -20,22 +21,12 @@ class DataLoadError(ValueError):
 
 
 def _validate_zip_member(info: zipfile.ZipInfo) -> None:
-    """Reject path traversal, absolute paths, drives, and symbolic links."""
+    """Retain the historical loader error while using the shared ZIP guard."""
 
-    raw_name = info.filename.replace("\\", "/")
-    member = PurePosixPath(raw_name)
-    if (
-        not raw_name
-        or raw_name.startswith("/")
-        or member.is_absolute()
-        or ".." in member.parts
-        or (member.parts and ":" in member.parts[0])
-    ):
-        raise DataLoadError("Unsafe ZIP member path: {!r}".format(info.filename))
-
-    unix_mode = (info.external_attr >> 16) & 0xFFFF
-    if unix_mode and stat.S_ISLNK(unix_mode):
-        raise DataLoadError("Symbolic links are not allowed in ZIP inputs: {!r}".format(info.filename))
+    try:
+        safe_member_path(info)
+    except SafeZipError as exc:
+        raise DataLoadError(str(exc)) from exc
 
 
 def _read_shapefile_zip(
@@ -50,6 +41,10 @@ def _read_shapefile_zip(
 
     with archive:
         members = archive.infolist()
+        try:
+            validate_archive_resources(members)
+        except SafeZipError as exc:
+            raise DataLoadError(str(exc)) from exc
         for member in members:
             _validate_zip_member(member)
         shapefiles = sorted(
@@ -65,8 +60,23 @@ def _read_shapefile_zip(
             )
 
         with tempfile.TemporaryDirectory(prefix="interactive-map-shp-") as temp_dir:
-            archive.extractall(temp_dir)
-            shp_path = Path(temp_dir).joinpath(*PurePosixPath(shapefiles[0].filename).parts)
+            shp_member = shapefiles[0]
+            shp_path_parts = PurePosixPath(shp_member.filename)
+            stem = shp_path_parts.stem.casefold()
+            parent = shp_path_parts.parent
+            selected = []
+            for member in members:
+                safe = safe_member_path(member)
+                if safe.parent == parent and (
+                    safe.stem.casefold() == stem
+                    or safe.name.casefold().startswith(stem + ".")
+                ):
+                    selected.append(member)
+            try:
+                extract_members(archive, Path(temp_dir), selected)
+            except SafeZipError as exc:
+                raise DataLoadError(str(exc)) from exc
+            shp_path = Path(temp_dir).joinpath(*shp_path_parts.parts)
             kwargs: Dict[str, Any] = {}
             if encoding:
                 kwargs["encoding"] = encoding
