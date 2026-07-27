@@ -31,22 +31,28 @@ jobs:
           echo "9f81364ead57cb9c8f2b21ff1efa0916e5ab344a2e183478593af362ed2f0f7e  /tmp/v0.4.0.patch" | sha256sum -c -
           git apply --check --index --binary /tmp/v0.4.0.patch
           git apply --index --binary /tmp/v0.4.0.patch
-      - name: Validate, clean patch chunks, and publish branch commit
+      - name: Check staged patch
+        run: git diff --cached --check
+      - name: Check release version
         shell: bash
         run: |
-          set -euxo pipefail
-          git diff --cached --check
           test "$(python - <<'PY'
           import tomllib
           from pathlib import Path
           print(tomllib.loads(Path('pyproject.toml').read_text(encoding='utf-8'))['project']['version'])
           PY
           )" = "0.4.0"
+      - name: Check visual-system files
+        run: |
           test -f scripts/mapcore/visual_defaults.py
           test -f scripts/mapcore/resources/templates/atlas-studio-light.css
           test -f tests/test_visual_defaults.py
-          git rm -r .github/v040-patch
+      - name: Remove patch chunks
+        run: git rm -r .github/v040-patch
+      - name: Commit product tree
+        run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "release: prepare Atlas Studio Light v0.4.0"
-          git push origin HEAD:agent/v0.4.0-atlas-visual-upgrade
+      - name: Push product tree
+        run: git push origin HEAD:agent/v0.4.0-atlas-visual-upgrade
