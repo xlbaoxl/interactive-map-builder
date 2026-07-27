@@ -47,8 +47,8 @@ GeoPackage、Shapefile、CSV、Excel 或 ArcGIS 数据，只询问真正影响�
   PNG、SVG 和 PDF。
 - **完整构建记录**：自动保存数据检查、几何修复、生成 ID、性能提示、数据来源、文件哈希和
   可移植状态。
-- **安全版本预检**：每次调用可按 24 小时缓存检查官方 Release，只更新干净且校验通过的安装，
-  断网或本地修改不会阻塞制图任务。
+- **每次调用均进行安全版本预检**：每个 Skill 任务都会确认当前官方 Release；普通复制安装
+  只有在 Release 校验和与文件清单全部匹配后才会被纳入自动更新，断网和本地修改不会阻塞制图。
 - **安装后自动体检**：`interactive-map-builder doctor` 会离线完成一次真实构建和哈希验证。
 - **可靠地图控件**：多图层地图默认从中性总览开始，使用紧凑的图层选择器决定搜索焦点，
   将“重点浏览哪个图层”和“哪些图层可见”分开，并提供 CARTO Positron、OpenStreetMap
@@ -92,10 +92,12 @@ GeoPackage、Shapefile、CSV、Excel 或 ArcGIS 数据，只询问真正影响�
 打开一个新的 Codex 任务，发送：
 
 ```text
-$skill-installer 请从 https://github.com/xlbaoxl/interactive-map-builder 安装这个 Skill，并安装它需要的 Python 依赖。安装后运行 interactive-map-builder doctor 和 interactive-map-builder update --check。
+$skill-installer 请从 https://github.com/xlbaoxl/interactive-map-builder 安装这个 Skill，并安装它需要的 Python 依赖。安装后运行 interactive-map-builder doctor 和 interactive-map-builder update --auto --force。
 ```
 
-安装完成后新建任务。如果新任务中没有出现该 Skill，再重启一次 Codex。
+安装完成后新建任务。如果新任务中没有出现该 Skill，再重启一次 Codex。从 v0.4.3 开始，
+`$skill-installer` 产生的仓库复制件只有在所有 Release 管理文件与官方校验包完全一致时，才会
+自动转为可更新安装。
 
 ### 2. 上传数据并描述目标
 
@@ -118,41 +120,46 @@ Skill 会先检查数据，并在仍有不确定项时维护一份简短需求�
 
 ```bash
 interactive-map-builder doctor
+interactive-map-builder update --auto --force
 ```
 
 `doctor` 会在临时目录中生成一张坐标表，离线完成数据读取、地图构建、Leaflet 资源检查和输出
-哈希验证，返回 JSON 结果后删除临时文件。该命令不会下载底图，也不会发送使用统计。可使用
-`interactive-map-builder update --check` 单独检查版本状态。
+哈希验证，返回 JSON 结果后删除临时文件。该命令不会下载底图，也不会发送使用统计。更新命令
+返回结构化 JSON，明确给出本地版本、可确认的官方版本、结果来源、安装类型和状态。
 
 安装后优先运行 `interactive-map-builder doctor`。若在源码目录中尚未生成该命令，可使用
 `python scripts/cli.py doctor`；`python scripts/map_builder.py --help` 只列出内部构建命令，
 不能据此判断正式安装包缺少 `doctor`。
 
 <details>
-<summary><strong>手动安装</strong></summary>
+<summary><strong>适合持续自动更新的 Git 手动安装</strong></summary>
+
+Codex 只保留一个活动 Skill 目录，避免 `.codex` 与 `.agents` 同时存在重复副本。
 
 **Windows PowerShell**
 
 ```powershell
-New-Item -ItemType Directory -Force "$HOME\.agents\skills" | Out-Null
+$CodexHome = if ($env:CODEX_HOME) { $env:CODEX_HOME } else { "$HOME\.codex" }
+New-Item -ItemType Directory -Force "$CodexHome\skills" | Out-Null
 git clone https://github.com/xlbaoxl/interactive-map-builder.git `
-  "$HOME\.agents\skills\interactive-map-builder"
-Set-Location "$HOME\.agents\skills\interactive-map-builder"
+  "$CodexHome\skills\interactive-map-builder"
+Set-Location "$CodexHome\skills\interactive-map-builder"
 py -m pip install .
 interactive-map-builder doctor
-interactive-map-builder update --check
+interactive-map-builder update --auto --force
 ```
 
 **macOS 或 Linux**
 
 ```bash
-mkdir -p "$HOME/.agents/skills"
+CODEX_ROOT="${CODEX_HOME:-$HOME/.codex}"
+mkdir -p "$CODEX_ROOT/skills"
 git clone https://github.com/xlbaoxl/interactive-map-builder.git \
-  "$HOME/.agents/skills/interactive-map-builder"
-cd "$HOME/.agents/skills/interactive-map-builder"
+  "$CODEX_ROOT/skills/interactive-map-builder"
+cd "$CODEX_ROOT/skills/interactive-map-builder"
 python3 -m pip install .
 interactive-map-builder doctor
-interactive-map-builder update --check
+interactive-map-builder update --auto --force
 ```
 
 </details>
@@ -190,17 +197,23 @@ interactive-map-builder doctor
 
 ## 版本更新、计划模式与公网发布
 
-每次 Skill 任务开始时，Agent 会运行 `interactive-map-builder update --auto`。更新检查按 24 小时
-缓存，只会修改官方仓库中干净的 `main` 分支，或文件未被改动且通过 Release 校验和与清单验证的
-正式 Skill ZIP。断网、本地修改、只读目录或非标准安装只会返回提示，不会阻塞地图制作。设置
-`IMB_DISABLE_AUTO_UPDATE=1` 可以关闭更新检查。
+每次 Skill 任务开始时，Agent 会从 Skill 根目录运行
+`interactive-map-builder update --auto --force` 并读取返回的 JSON。强制预检不会沿用普通
+24 小时缓存，而会确认当前公开 Release；随后用一行说明本地版本、可确认的官方版本、来源和状态。
+
+自动修改范围仍然严格：官方仓库中干净的 `main` 分支、通过清单验证的正式 Release 安装，或从
+v0.4.3 开始先与当前版本官方 Release 逐文件一致性校验成功的普通复制安装。存在本地修改、分叉、
+只读目录或两个标准 Skill 目录同时存在时，返回 `manual_update_required`，不会猜测或覆盖。断网时
+返回 `update_check_failed`。两种情况都不会阻塞地图制作。设置 `IMB_DISABLE_AUTO_UPDATE=1`
+可以关闭更新检查。
+
+v0.3.2—v0.4.2 本身尚未包含复制安装接管逻辑。已经安装的无 `.git`、无 Manifest 旧副本需要
+通过官方 v0.4.3 做一次重新安装；此后的兼容版本即可自动更新。
 
 更新采用事务式处理：替换经过校验的版本后会重新安装引擎并运行离线 `doctor`；安装或体检失败
-时，自动恢复此前的 Git 提交或原清单管理的全部文件。完整规则见
-[安全更新策略](references/update-policy.md)。
-
-v0.3.2 是自动更新机制的起始版本。用户需要先通过仓库或 Release 安装一次 v0.3.2，此后的兼容
-版本即可由 Skill 预检发现并安全应用。
+时，自动恢复此前的 Git 提交或原清单管理的全部文件。应用失败时仍保留已经确认的官方版本、
+Release 地址和 `update_available=true`，不会再把“存在新版本”静默改写为“没有更新”。完整规则
+见[安全更新策略](references/update-policy.md)。
 
 当 Codex 任务确实复杂，例如包含多个独立图层、多个待确认设计选项，或需要协调 HTML、汇报图和
 论文图时，Agent 可以在第一轮用一句话将 Plan mode 作为可选建议。用户不切换也会立即继续检查
@@ -358,10 +371,10 @@ Interactive Map Builder 专注于**已有空间数据 → 可交付地图成品*
 
 ## 项目状态
 
-项目当前处于 **v0.4.1 Beta**。这一补丁让多图层地图默认进入中性总览，以紧凑图层选择器
-进入搜索焦点；静态图改为严格按需生成；安装体检明确区分完整 CLI 与内部构建脚本；README
-离线底图也不再出现重复斜杠。MapSpec 1.1、现有两个模板、依赖规模和 Atlas Studio Light
-视觉解析器均保持不变。
+项目当前处于 **v0.4.3 Beta**。本次热修复集中解决版本预检一致性：本地版本或活动 Skill 根目录
+变化后旧缓存立即失效；更新应用失败时保留已确认的官方版本信息；普通仓库复制安装可在逐文件验证
+后安全接管；存在重复标准安装时不再猜测路径；Release 工作流也可以修复中途失败、资产不完整的
+同版本发布。MapSpec 1.1、现有两个地图模板、运行依赖和 Atlas Studio Light 视觉行为保持不变。
 
 已经完成的变化见[更新日志](CHANGELOG.md)。
 
@@ -383,8 +396,8 @@ python scripts/build_skill_package.py
 ```
 
 CI 覆盖 Python 3.9、3.10、3.12、触发评估集验证、Chromium 交互测试、wheel 构建、离线安装体检、
-仓库外构建验证和 Skill ZIP。`main` 中出现新的包版本且 CI 全部通过后，会自动创建对应的 GitHub
-Release。
+仓库外构建验证和 Skill ZIP。新包版本通过 `main` CI 后，Release 工作流会创建版本与资产；若同一
+版本的 Release 已存在但资产不完整，则补齐资产而不会移动已有标签。
 
 ## 许可证
 

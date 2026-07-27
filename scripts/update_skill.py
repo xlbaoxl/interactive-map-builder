@@ -29,6 +29,7 @@ from mapcore.version import __version__
 
 REPOSITORY = "xlbaoxl/interactive-map-builder"
 RELEASE_API = f"https://api.github.com/repos/{REPOSITORY}/releases/latest"
+RELEASE_TAG_API = f"https://api.github.com/repos/{REPOSITORY}/releases/tags/v{{version}}"
 CHECKSUM_ASSET = "SHA256SUMS.txt"
 CHECK_INTERVAL_SECONDS = 24 * 60 * 60
 MAX_SKILL_ARCHIVE_BYTES = 200 * 1024 * 1024
@@ -99,19 +100,51 @@ def _write_state(path: Path, data: Mapping[str, Any]) -> None:
         return
 
 
-def _cached_result(state: Mapping[str, Any], now: float) -> Optional[Dict[str, Any]]:
+def _root_identity(skill_root: Optional[Path]) -> Optional[str]:
+    if skill_root is None:
+        return None
+    try:
+        value = str(Path(skill_root).expanduser().resolve())
+    except OSError:
+        return None
+    return value.casefold() if os.name == "nt" else value
+
+
+def _cached_result(
+    state: Mapping[str, Any],
+    now: float,
+    *,
+    skill_root: Optional[Path] = None,
+) -> Optional[Dict[str, Any]]:
+    """Return a cache hit only when it belongs to this version and installation."""
+
     checked_at = state.get("checked_at")
     if not isinstance(checked_at, (int, float)):
         return None
     if now - float(checked_at) >= CHECK_INTERVAL_SECONDS:
         return None
+    if state.get("current_version") != __version__:
+        return None
+
     latest = state.get("latest_version")
     if not isinstance(latest, str):
         return None
     try:
-        update_available = parse_version(latest) > parse_version(__version__)
+        current_parsed = parse_version(__version__)
+        latest_parsed = parse_version(latest)
     except UpdateError:
         return None
+    # A cached official version older than the running package is stale by definition.
+    if latest_parsed < current_parsed:
+        return None
+
+    expected_root = _root_identity(skill_root)
+    cached_root = state.get("skill_root")
+    if expected_root is not None:
+        if not isinstance(cached_root, str) or _root_identity(Path(cached_root)) != expected_root:
+            return None
+
+    update_available = latest_parsed > current_parsed
     return {
         "status": "update_available" if update_available else "current",
         "current_version": __version__,
@@ -121,6 +154,7 @@ def _cached_result(state: Mapping[str, Any], now: float) -> Optional[Dict[str, A
         "checked_at": checked_at,
         "update_available": update_available,
         "assets": state.get("assets", {}),
+        **({"skill_root": str(skill_root.resolve())} if skill_root is not None else {}),
     }
 
 
@@ -144,14 +178,51 @@ def _release_assets(release: Mapping[str, Any], version: str) -> Dict[str, str]:
     return {"skill_zip": assets[expected_zip], "checksums": assets[CHECKSUM_ASSET]}
 
 
+def _fetch_release(
+    client: requests.Session,
+    *,
+    version: Optional[str] = None,
+) -> Dict[str, Any]:
+    url = RELEASE_API if version is None else RELEASE_TAG_API.format(version=version)
+    response = client.get(
+        url,
+        headers={
+            "Accept": "application/vnd.github+json",
+            "User-Agent": USER_AGENT,
+            "X-GitHub-Api-Version": "2022-11-28",
+        },
+        timeout=CHECK_TIMEOUT,
+    )
+    response.raise_for_status()
+    release = response.json()
+    if not isinstance(release, Mapping):
+        raise UpdateError("Release response is not an object.")
+    if release.get("draft") or release.get("prerelease"):
+        raise UpdateError("Requested release is not a stable public release.")
+
+    tag = str(release.get("tag_name") or "")
+    actual_version = tag[1:] if tag.startswith("v") else tag
+    parse_version(actual_version)
+    if version is not None and actual_version != version:
+        raise UpdateError(
+            f"Release tag mismatch: expected v{version}, received {tag or '<empty>'}."
+        )
+    return {
+        "version": actual_version,
+        "release_url": str(release.get("html_url") or ""),
+        "assets": _release_assets(release, actual_version),
+    }
+
+
 def check_for_update(
     *,
     force: bool = False,
     session: Optional[requests.Session] = None,
     now: Optional[float] = None,
     state_path: Optional[Path] = None,
+    skill_root: Optional[Path] = None,
 ) -> Dict[str, Any]:
-    """Check the official latest stable release, using a 24-hour local cache."""
+    """Check the official latest stable release, using a validated local cache."""
 
     if _disabled():
         return {
@@ -164,61 +235,74 @@ def check_for_update(
     timestamp = time.time() if now is None else float(now)
     state_file = state_path or _state_path()
     if not force:
-        cached = _cached_result(_read_state(state_file), timestamp)
+        cached = _cached_result(
+            _read_state(state_file), timestamp, skill_root=skill_root
+        )
         if cached is not None:
             return cached
 
     client = session or requests.Session()
-    response = client.get(
-        RELEASE_API,
-        headers={
-            "Accept": "application/vnd.github+json",
-            "User-Agent": USER_AGENT,
-            "X-GitHub-Api-Version": "2022-11-28",
-        },
-        timeout=CHECK_TIMEOUT,
+    release = _fetch_release(client)
+    latest = str(release["version"])
+    current_parsed = parse_version(__version__)
+    latest_parsed = parse_version(latest)
+    update_available = latest_parsed > current_parsed
+    status = (
+        "update_available"
+        if update_available
+        else ("local_newer" if latest_parsed < current_parsed else "current")
     )
-    response.raise_for_status()
-    release = response.json()
-    if not isinstance(release, Mapping):
-        raise UpdateError("Latest release response is not an object.")
-    if release.get("draft") or release.get("prerelease"):
-        raise UpdateError("Latest release is not a stable public release.")
-
-    tag = str(release.get("tag_name") or "")
-    latest = tag[1:] if tag.startswith("v") else tag
-    parse_version(latest)
-    assets = _release_assets(release, latest)
-    update_available = parse_version(latest) > parse_version(__version__)
     result = {
-        "status": "update_available" if update_available else "current",
+        "status": status,
         "current_version": __version__,
         "latest_version": latest,
-        "release_url": str(release.get("html_url") or ""),
+        "release_url": release["release_url"],
         "source": "network",
         "checked_at": timestamp,
         "update_available": update_available,
-        "assets": assets,
+        "assets": release["assets"],
     }
+    if skill_root is not None:
+        result["skill_root"] = str(skill_root.resolve())
     _write_state(state_file, result)
     return result
 
 
-def resolve_skill_root(value: Optional[Path] = None) -> Optional[Path]:
-    """Find the Skill root without guessing unrelated project directories."""
+def _is_skill_root(candidate: Path) -> bool:
+    skill = candidate / "SKILL.md"
+    if not skill.is_file():
+        return False
+    try:
+        text = skill.read_text(encoding="utf-8")
+    except OSError:
+        return False
+    return "name: interactive-map-builder" in text
 
-    candidates = []
+
+def resolve_skill_root(value: Optional[Path] = None) -> Optional[Path]:
+    """Find the active Skill root without silently choosing between duplicate installs."""
+
     if value is not None:
-        candidates.append(Path(value).expanduser())
+        try:
+            explicit = Path(value).expanduser().resolve()
+        except OSError:
+            return None
+        return explicit if _is_skill_root(explicit) else None
+
     configured = os.environ.get(SKILL_DIR_ENV)
     if configured:
-        candidates.append(Path(configured).expanduser())
-    candidates.append(Path(__file__).resolve().parents[1])
-    current = Path.cwd().resolve()
-    candidates.extend([current, *current.parents])
+        try:
+            explicit = Path(configured).expanduser().resolve()
+        except OSError:
+            return None
+        return explicit if _is_skill_root(explicit) else None
 
+    high_confidence = []
+    current = Path.cwd().resolve()
+    high_confidence.extend([current, *current.parents])
+    high_confidence.append(Path(__file__).resolve().parents[1])
     seen = set()
-    for candidate in candidates:
+    for candidate in high_confidence:
         try:
             resolved = candidate.resolve()
         except OSError:
@@ -226,16 +310,23 @@ def resolve_skill_root(value: Optional[Path] = None) -> Optional[Path]:
         if resolved in seen:
             continue
         seen.add(resolved)
-        skill = resolved / "SKILL.md"
-        if not skill.is_file():
-            continue
+        if _is_skill_root(resolved):
+            return resolved
+
+    codex_home = Path(os.environ.get("CODEX_HOME") or Path.home() / ".codex")
+    standard_candidates = [
+        codex_home / "skills" / "interactive-map-builder",
+        Path.home() / ".agents" / "skills" / "interactive-map-builder",
+    ]
+    matches = []
+    for candidate in standard_candidates:
         try:
-            text = skill.read_text(encoding="utf-8")
+            resolved = candidate.expanduser().resolve()
         except OSError:
             continue
-        if "name: interactive-map-builder" in text:
-            return resolved
-    return None
+        if resolved not in matches and _is_skill_root(resolved):
+            matches.append(resolved)
+    return matches[0] if len(matches) == 1 else None
 
 
 def _run(
@@ -487,7 +578,9 @@ def _validate_extracted_package(package_root: Path, version: str) -> Dict[str, A
             details.append("unexpected: " + ", ".join(extras[:5]))
         if missing:
             details.append("missing: " + ", ".join(missing[:5]))
-        raise UpdateError("Skill archive contents do not match its manifest (" + "; ".join(details) + ").")
+        raise UpdateError(
+            "Skill archive contents do not match its manifest (" + "; ".join(details) + ")."
+        )
     return {"manifest": manifest, "files": normalized}
 
 
@@ -510,6 +603,7 @@ def _managed_files_are_clean(skill_root: Path) -> Iterable[str]:
         if (
             path.is_symlink()
             or not path.is_file()
+            or path.stat().st_size != int(entry.get("bytes", -1))
             or _sha256(path) != str(entry.get("sha256") or "").casefold()
         ):
             changed.append(relative)
@@ -597,6 +691,58 @@ def _replace_managed_install(
     return old_files, new_files
 
 
+def _download_release_package(
+    *,
+    version: str,
+    assets: Mapping[str, str],
+    session: requests.Session,
+    temp: Path,
+) -> Tuple[Path, Dict[str, Any], str]:
+    archive_name = f"interactive-map-builder-skill-v{version}.zip"
+    archive_path = temp / archive_name
+    checksums_path = temp / CHECKSUM_ASSET
+    skill_zip_url = str(assets.get("skill_zip") or "")
+    checksums_url = str(assets.get("checksums") or "")
+    if not skill_zip_url or not checksums_url:
+        raise UpdateError("Update metadata does not include required release asset URLs.")
+    _download(
+        skill_zip_url,
+        archive_path,
+        session,
+        maximum_bytes=MAX_SKILL_ARCHIVE_BYTES,
+    )
+    _download(
+        checksums_url,
+        checksums_path,
+        session,
+        maximum_bytes=MAX_CHECKSUM_BYTES,
+    )
+    expected = _expected_checksum(
+        checksums_path.read_text(encoding="utf-8"), archive_name
+    )
+    actual = _sha256(archive_path)
+    if actual != expected:
+        raise UpdateError("Downloaded Skill ZIP failed SHA-256 verification.")
+
+    extract_root = temp / "extract"
+    extract_root.mkdir()
+    with zipfile.ZipFile(archive_path) as archive:
+        members = archive.infolist()
+        member_names = set()
+        for member in members:
+            safe = _safe_member_path(member)
+            if safe.parts[0] != "interactive-map-builder":
+                raise UpdateError("Skill archive contains files outside its package root.")
+            folded = safe.as_posix().casefold()
+            if folded in member_names:
+                raise UpdateError("Skill archive contains duplicate member paths.")
+            member_names.add(folded)
+        archive.extractall(extract_root)
+    package_root = extract_root / "interactive-map-builder"
+    validated = _validate_extracted_package(package_root, version)
+    return package_root, validated, actual
+
+
 def _update_managed_install(
     skill_root: Path,
     version: str,
@@ -607,54 +753,16 @@ def _update_managed_install(
     if changed:
         preview = ", ".join(changed[:5])
         suffix = "…" if len(changed) > 5 else ""
-        raise UpdateError(
-            "Managed Skill files were modified locally: " + preview + suffix
-        )
+        raise UpdateError("Managed Skill files were modified locally: " + preview + suffix)
 
     with tempfile.TemporaryDirectory(prefix="interactive-map-builder-update-") as temp_dir:
         temp = Path(temp_dir)
-        archive_name = f"interactive-map-builder-skill-v{version}.zip"
-        archive_path = temp / archive_name
-        checksums_path = temp / CHECKSUM_ASSET
-        skill_zip_url = str(assets.get("skill_zip") or "")
-        checksums_url = str(assets.get("checksums") or "")
-        if not skill_zip_url or not checksums_url:
-            raise UpdateError("Update metadata does not include required release asset URLs.")
-        _download(
-            skill_zip_url,
-            archive_path,
-            session,
-            maximum_bytes=MAX_SKILL_ARCHIVE_BYTES,
+        package_root, validated, actual = _download_release_package(
+            version=version,
+            assets=assets,
+            session=session,
+            temp=temp,
         )
-        _download(
-            checksums_url,
-            checksums_path,
-            session,
-            maximum_bytes=MAX_CHECKSUM_BYTES,
-        )
-        expected = _expected_checksum(
-            checksums_path.read_text(encoding="utf-8"), archive_name
-        )
-        actual = _sha256(archive_path)
-        if actual != expected:
-            raise UpdateError("Downloaded Skill ZIP failed SHA-256 verification.")
-
-        extract_root = temp / "extract"
-        extract_root.mkdir()
-        with zipfile.ZipFile(archive_path) as archive:
-            members = archive.infolist()
-            member_names = set()
-            for member in members:
-                safe = _safe_member_path(member)
-                if safe.parts[0] != "interactive-map-builder":
-                    raise UpdateError("Skill archive contains files outside its package root.")
-                folded = safe.as_posix().casefold()
-                if folded in member_names:
-                    raise UpdateError("Skill archive contains duplicate member paths.")
-                member_names.add(folded)
-            archive.extractall(extract_root)
-        package_root = extract_root / "interactive-map-builder"
-        validated = _validate_extracted_package(package_root, version)
         backup_root = temp / "backup"
         old_files = _backup_managed_install(skill_root, backup_root)
         new_files = set(validated["files"])
@@ -680,6 +788,94 @@ def _update_managed_install(
         "sha256": actual,
         "doctor": doctor,
     }
+
+
+def _adopt_unmanaged_install(
+    skill_root: Path,
+    version: str,
+    assets: Mapping[str, str],
+    session: requests.Session,
+) -> Dict[str, Any]:
+    """Turn an exact official copied Skill into a manifest-managed installation."""
+
+    manifest_path = skill_root / "PACKAGE_MANIFEST.json"
+    if manifest_path.exists() or (skill_root / ".git").exists():
+        raise UpdateError("Only an unmanaged copied Skill can be adopted.")
+    if not os.access(skill_root, os.W_OK):
+        raise UpdateError(f"Skill directory is not writable: {skill_root}")
+
+    with tempfile.TemporaryDirectory(prefix="interactive-map-builder-adopt-") as temp_dir:
+        temp = Path(temp_dir)
+        package_root, validated, actual = _download_release_package(
+            version=version,
+            assets=assets,
+            session=session,
+            temp=temp,
+        )
+        manifest = validated["manifest"]
+        entries = {
+            _safe_manifest_path(entry.get("path")).as_posix(): entry
+            for entry in manifest.get("files", [])
+            if isinstance(entry, Mapping)
+        }
+        mismatches = []
+        for relative in sorted(entries):
+            entry = entries[relative]
+            local = _manifest_target(skill_root, relative)
+            if (
+                local.is_symlink()
+                or not local.is_file()
+                or local.stat().st_size != int(entry.get("bytes", -1))
+                or _sha256(local) != str(entry.get("sha256") or "").casefold()
+            ):
+                mismatches.append(relative)
+        if mismatches:
+            preview = ", ".join(mismatches[:5])
+            suffix = "…" if len(mismatches) > 5 else ""
+            raise UpdateError(
+                f"Unmanaged Skill copy does not exactly match official v{version}: "
+                + preview
+                + suffix
+            )
+
+        temporary = manifest_path.with_suffix(".json.adopt-tmp")
+        shutil.copy2(package_root / "PACKAGE_MANIFEST.json", temporary)
+        temporary.replace(manifest_path)
+
+    return {
+        "method": "verified-release-adoption",
+        "version": version,
+        "sha256": actual,
+        "managed_file_count": len(validated["files"]),
+        "preserved_unmanaged_extras": True,
+    }
+
+
+def _installation_type(root: Optional[Path]) -> str:
+    if root is None:
+        return "not_found"
+    if (root / ".git").exists():
+        return "git-checkout"
+    if (root / "PACKAGE_MANIFEST.json").is_file():
+        return "managed-release"
+    return "unmanaged-copy"
+
+
+def _release_assets_for_version(
+    version: str,
+    session: requests.Session,
+) -> Dict[str, str]:
+    return dict(_fetch_release(session, version=version)["assets"])
+
+
+def _assets_for_current_release(
+    result: Mapping[str, Any],
+    session: requests.Session,
+) -> Dict[str, str]:
+    assets = result.get("assets")
+    if str(result.get("latest_version") or "") == __version__ and isinstance(assets, Mapping):
+        return dict(assets)
+    return _release_assets_for_version(__version__, session)
 
 
 def apply_update(
@@ -712,8 +908,8 @@ def apply_update(
         )
     else:
         raise UpdateError(
-            "Automatic update is supported for the official clean Git checkout or a "
-            "versioned Skill ZIP install. Reinstall this copy from an official Release."
+            "The Skill is an unmanaged copy. Run the v0.4.3 updater from the Skill root "
+            "so it can verify and adopt the copy, or reinstall from an official Release."
         )
 
     return {
@@ -723,8 +919,63 @@ def apply_update(
         "installed_version": version,
         "update_available": False,
         "skill_root": str(root),
+        "install_type": _installation_type(root),
         "update": details,
     }
+
+
+_HANDLED_FAILURES = (
+    UpdateError,
+    requests.RequestException,
+    OSError,
+    subprocess.SubprocessError,
+    ValueError,
+    KeyError,
+    zipfile.BadZipFile,
+)
+
+
+def _failure_result(
+    base: Mapping[str, Any],
+    *,
+    status: str,
+    phase: str,
+    reason: str,
+    update_available: Optional[bool] = None,
+) -> Dict[str, Any]:
+    result = {
+        **dict(base),
+        "status": status,
+        "phase": phase,
+        "reason": reason,
+        "non_blocking": True,
+    }
+    if update_available is not None:
+        result["update_available"] = update_available
+    return result
+
+
+def _write_post_update_state(
+    result: Mapping[str, Any],
+    *,
+    skill_root: Path,
+    state_path: Optional[Path],
+) -> None:
+    installed = str(result.get("installed_version") or result.get("latest_version") or "")
+    if not installed:
+        return
+    state = {
+        "status": "current",
+        "current_version": installed,
+        "latest_version": installed,
+        "release_url": result.get("release_url"),
+        "source": "network",
+        "checked_at": result.get("checked_at", time.time()),
+        "update_available": False,
+        "assets": result.get("assets", {}),
+        "skill_root": str(skill_root.resolve()),
+    }
+    _write_state(state_path or _state_path(), state)
 
 
 def auto_update(
@@ -733,39 +984,99 @@ def auto_update(
     force: bool = False,
     apply: bool = True,
     session: Optional[requests.Session] = None,
+    state_path: Optional[Path] = None,
 ) -> Dict[str, Any]:
     """Check and optionally apply an update without blocking a map task on failure."""
 
+    root = resolve_skill_root(skill_dir)
     try:
-        result = check_for_update(force=force, session=session)
-        root = resolve_skill_root(skill_dir)
-        if root is not None:
-            result["skill_root"] = str(root)
-        if apply and result.get("update_available"):
-            if root is None:
-                return {
-                    **result,
-                    "status": "manual_update_required",
-                    "reason": "Skill root could not be located safely.",
-                }
-            return apply_update(result, skill_root=root, session=session)
-        return result
-    except (
-        UpdateError,
-        requests.RequestException,
-        OSError,
-        subprocess.SubprocessError,
-        ValueError,
-        KeyError,
-        zipfile.BadZipFile,
-    ) as exc:
-        return {
-            "status": "update_check_failed",
+        result = check_for_update(
+            force=force,
+            session=session,
+            state_path=state_path,
+            skill_root=root,
+        )
+    except _HANDLED_FAILURES as exc:
+        base = {
             "current_version": __version__,
             "update_available": False,
-            "reason": str(exc),
-            "non_blocking": True,
+            "install_type": _installation_type(root),
         }
+        if root is not None:
+            base["skill_root"] = str(root)
+        return _failure_result(
+            base,
+            status="update_check_failed",
+            phase="check",
+            reason=str(exc),
+            update_available=False,
+        )
+
+    if root is not None:
+        result["skill_root"] = str(root)
+    result["install_type"] = _installation_type(root)
+
+    if not apply or result.get("status") == "disabled":
+        return result
+
+    client = session or requests.Session()
+    if root is not None and result["install_type"] == "unmanaged-copy":
+        try:
+            current_assets = _assets_for_current_release(result, client)
+            adoption = _adopt_unmanaged_install(
+                root,
+                __version__,
+                current_assets,
+                client,
+            )
+            result["adoption"] = adoption
+            result["install_type"] = _installation_type(root)
+        except _HANDLED_FAILURES as exc:
+            return _failure_result(
+                result,
+                status="manual_update_required",
+                phase="adoption",
+                reason=str(exc),
+                update_available=bool(result.get("update_available")),
+            )
+
+    if not result.get("update_available"):
+        return result
+    if root is None:
+        return _failure_result(
+            result,
+            status="manual_update_required",
+            phase="apply",
+            reason=(
+                "Skill root could not be located safely. Run the command from the Skill root "
+                "or pass --skill-dir explicitly; duplicate standard installs are not guessed."
+            ),
+            update_available=True,
+        )
+
+    try:
+        updated = apply_update(result, skill_root=root, session=client)
+    except UpdateError as exc:
+        return _failure_result(
+            result,
+            status="manual_update_required",
+            phase="apply",
+            reason=str(exc),
+            update_available=True,
+        )
+    except _HANDLED_FAILURES as exc:
+        return _failure_result(
+            result,
+            status="update_apply_failed",
+            phase="apply",
+            reason=str(exc),
+            update_available=True,
+        )
+
+    if result.get("adoption") is not None:
+        updated["adoption"] = result["adoption"]
+    _write_post_update_state(updated, skill_root=root, state_path=state_path)
+    return updated
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -786,7 +1097,10 @@ def _parser() -> argparse.ArgumentParser:
     mode.add_argument(
         "--auto",
         action="store_true",
-        help="Apply when safe, but never block the calling Agent when offline or modified.",
+        help=(
+            "Agent preflight: verify/adopt an exact copied install, apply when safe, "
+            "and never block the map task on failure."
+        ),
     )
     parser.add_argument("--force", action="store_true", help="Ignore the 24-hour check cache.")
     parser.add_argument("--skill-dir", type=Path, help="Explicit Skill root directory.")
@@ -809,7 +1123,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         args.output.write_text(payload + "\n", encoding="utf-8")
     if args.auto:
         return 0
-    if result["status"] in {"update_check_failed", "manual_update_required"}:
+    if result["status"] in {
+        "update_check_failed",
+        "manual_update_required",
+        "update_apply_failed",
+    }:
         return 2
     return 0
 
