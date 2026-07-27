@@ -1,9 +1,9 @@
 name: apply v0.4.1 contracts
 
 on:
-  push:
+  pull_request:
     branches:
-      - agent/v0.4.1-contract-and-overview
+      - main
     paths:
       - ".github/workflows/apply-v041.yml"
   workflow_dispatch:
@@ -13,11 +13,12 @@ permissions:
 
 jobs:
   apply-v041:
+    if: github.head_ref == 'agent/v0.4.1-contract-and-overview'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: agent/v0.4.1-contract-and-overview
+          ref: ${{ github.head_ref }}
           fetch-depth: 0
       - name: Apply reviewed v0.4.1 product patch
         shell: bash
