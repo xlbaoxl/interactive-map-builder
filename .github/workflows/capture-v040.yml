@@ -1,0 +1,62 @@
+name: capture v0.4 README screenshots
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  capture:
+    if: github.head_ref == 'agent/v0.4.0-atlas-visual-upgrade'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -r requirements-dev.txt Pillow
+      - run: python -m playwright install --with-deps chromium
+      - name: Capture screenshots
+        id: capture
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          python scripts/capture_readme_screenshots.py 2>&1 | tee /tmp/capture-v040.log
+      - name: Upload capture diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: capture-v040-diagnostic
+          path: |
+            /tmp/capture-v040.log
+            assets/screenshots/en-US/*.png
+            assets/screenshots/zh-CN/*.png
+          retention-days: 1
+      - name: Commit refreshed screenshots
+        if: steps.capture.outcome == 'success'
+        shell: bash
+        run: |
+          git add assets/screenshots/en-US/map-list.png \
+            assets/screenshots/en-US/multilayer.png \
+            assets/screenshots/zh-CN/map-list.png \
+            assets/screenshots/zh-CN/multilayer.png
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "docs: refresh Atlas Studio Light screenshots"
+          git push origin HEAD:agent/v0.4.0-atlas-visual-upgrade
+      - name: Propagate capture failure
+        if: steps.capture.outcome == 'failure'
+        run: exit 1
