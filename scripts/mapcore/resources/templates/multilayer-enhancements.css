@@ -1,0 +1,153 @@
+/* v0.4.2 multilayer control stack and collapsible side panels. */
+.multilayer-app .imb-map-controls {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 560;
+  display: flex;
+  width: min(278px, calc(100% - 58px));
+  max-height: calc(100% - 24px);
+  flex-direction: column;
+  overflow: visible;
+  border: 1px solid rgba(55, 77, 80, 0.18);
+  border-radius: 10px;
+  background: rgba(251, 252, 249, 0.96);
+  box-shadow: var(--imb-shadow-sm);
+  backdrop-filter: blur(10px);
+  transition: transform 180ms ease, opacity 160ms ease;
+}
+
+.multilayer-app .imb-map-controls[hidden] {
+  display: none !important;
+}
+
+.multilayer-app .imb-map-controls > .imb-control-card {
+  position: static;
+  width: auto;
+  max-height: none;
+  flex: 0 0 auto;
+  padding: 10px;
+  overflow: visible;
+  border: 0;
+  border-bottom: 1px solid var(--imb-line);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.multilayer-app .imb-map-controls > .imb-control-card:first-of-type {
+  border-radius: 9px 9px 0 0;
+}
+
+.multilayer-app .imb-map-controls > .imb-control-card:last-child {
+  border-bottom: 0;
+  border-radius: 0 0 9px 9px;
+}
+
+.multilayer-app .imb-map-controls > .imb-legend {
+  min-height: 0;
+  flex: 1 1 auto;
+  padding: 0;
+}
+
+.multilayer-app .imb-map-controls .imb-control-toggle {
+  min-height: 38px;
+  padding: 9px 10px;
+}
+
+.multilayer-app #imb-legend-groups {
+  max-height: min(45vh, 390px);
+  padding: 0 10px 10px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.multilayer-app.is-controls-collapsed .imb-map-controls {
+  transform: translateX(calc(100% + 12px));
+}
+
+.imb-controls-collapse {
+  position: absolute;
+  top: 10px;
+  left: -34px;
+  display: grid;
+  width: 34px;
+  height: 40px;
+  place-items: center;
+  padding: 0;
+  color: #40575b;
+  border: 1px solid rgba(55, 77, 80, 0.20);
+  border-right: 0;
+  border-radius: 9px 0 0 9px;
+  background: rgba(251, 252, 249, 0.97);
+  box-shadow: -4px 5px 14px rgba(36, 53, 56, 0.07);
+  font-size: 1.05rem;
+  font-weight: 780;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.imb-controls-collapse:hover {
+  color: var(--imb-accent-dark);
+  background: #f3f7f3;
+}
+
+.multilayer-app .imb-sidebar-edge-toggle {
+  width: 38px;
+  min-width: 38px;
+  padding: 0;
+  overflow: hidden;
+  font-size: 0;
+}
+
+.multilayer-app .imb-sidebar-edge-toggle::before {
+  color: #40575b;
+  font-size: 1.05rem;
+  font-weight: 780;
+  line-height: 1;
+}
+
+.multilayer-app .imb-sidebar-edge-toggle[aria-expanded="true"]::before {
+  content: "‹";
+}
+
+.multilayer-app .imb-sidebar-edge-toggle[aria-expanded="false"]::before {
+  content: "›";
+}
+
+@media (max-width: 900px) {
+  .multilayer-app .imb-map-controls {
+    top: 10px;
+    right: 10px;
+    max-height: calc(100% - 20px);
+  }
+
+  .multilayer-app.is-controls-collapsed .imb-map-controls {
+    transform: translateX(calc(100% + 10px));
+  }
+}
+
+@media (max-width: 700px) {
+  .multilayer-app .imb-map-controls {
+    top: 8px;
+    right: 8px;
+    width: min(330px, calc(100% - 50px));
+    max-height: calc(100% - 16px);
+  }
+
+  .multilayer-app.is-controls-collapsed .imb-map-controls {
+    transform: translateX(calc(100% + 8px));
+  }
+
+  .imb-controls-collapse {
+    top: 8px;
+    left: -32px;
+    width: 32px;
+    height: 38px;
+  }
+
+  .multilayer-app #imb-legend-groups {
+    max-height: min(42vh, 310px);
+  }
+}
