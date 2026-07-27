@@ -185,8 +185,8 @@
       function syncSidebarTitle() {
         var expanded = sidebarToggle.getAttribute("aria-expanded") !== "false";
         sidebarToggle.title = expanded
-          ? (zh ? "收起搜索面板" : "Collapse search panel")
-          : (zh ? "展开搜索面板" : "Expand search panel");
+          ? (zh ? "\u6536\u8d77\u641c\u7d22\u9762\u677f" : "Collapse search panel")
+          : (zh ? "\u5c55\u5f00\u641c\u7d22\u9762\u677f" : "Expand search panel");
         sidebarToggle.setAttribute("aria-label", sidebarToggle.title);
       }
       syncSidebarTitle();
@@ -211,10 +211,10 @@
       var next = Boolean(collapsed);
       app.classList.toggle("is-controls-collapsed", next);
       toggle.setAttribute("aria-expanded", next ? "false" : "true");
-      toggle.textContent = next ? "‹" : "›";
+      toggle.textContent = next ? "\u2039" : "\u203a";
       toggle.title = next
-        ? (zh ? "展开地图控制" : "Expand map controls")
-        : (zh ? "收起地图控制" : "Collapse map controls");
+        ? (zh ? "\u5c55\u5f00\u5730\u56fe\u63a7\u5236" : "Expand map controls")
+        : (zh ? "\u6536\u8d77\u5730\u56fe\u63a7\u5236" : "Collapse map controls");
       toggle.setAttribute("aria-label", toggle.title);
       IMB.qa.controlsCollapsed = next;
       return true;
