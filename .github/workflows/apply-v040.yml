@@ -1,11 +1,9 @@
 name: apply v0.4.0 Atlas visual tree
 
 on:
-  push:
+  pull_request:
     branches:
-      - agent/v0.4.0-atlas-visual-upgrade
-    paths:
-      - ".github/workflows/apply-v040.yml"
+      - main
   workflow_dispatch:
 
 permissions:
@@ -13,11 +11,12 @@ permissions:
 
 jobs:
   apply-v040:
+    if: github.head_ref == 'agent/v0.4.0-atlas-visual-upgrade'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: agent/v0.4.0-atlas-visual-upgrade
+          ref: ${{ github.head_ref }}
           fetch-depth: 0
       - name: Apply reviewed visual-system patch
         shell: bash
