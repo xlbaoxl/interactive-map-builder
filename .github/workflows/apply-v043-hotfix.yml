@@ -7,6 +7,13 @@ on:
     paths:
       - ".hotfix-payload/**"
       - ".github/workflows/apply-v043-hotfix.yml"
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
+    paths:
+      - ".hotfix-payload/**"
+      - ".github/workflows/apply-v043-hotfix.yml"
 
 permissions:
   contents: write
