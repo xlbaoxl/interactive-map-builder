@@ -399,7 +399,7 @@ but does not silently switch rendering engines.
 
 ## Project status
 
-The project is in **v0.4.3 beta**. This hotfix repairs release preflight consistency: stale caches
+The current stable release is **v0.4.3**. This hotfix repairs release preflight consistency: stale caches
 are invalidated when the running version or active Skill root changes; confirmed update metadata is
 preserved when application fails; exact repository-copy installs can be safely adopted into
 manifest management; duplicate standard installs are not guessed; and interrupted Releases can be
