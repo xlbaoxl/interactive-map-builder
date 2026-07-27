@@ -20,11 +20,15 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
           fetch-depth: 0
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
       - name: Apply reviewed v0.4.1 product patch
         shell: bash
         run: |
           set -euxo pipefail
-          cat .github/v041-patch/part-* > /tmp/v041.b64
+          cat .github/v041-patch-small/seg-* > /tmp/v041.b64
           test "$(wc -c < /tmp/v041.b64)" = "44780"
           echo "45ca79100f7c88390798e270b52a8e7bf2614f6f8751630c068068dc6efa76e7  /tmp/v041.b64" | sha256sum -c -
           base64 -d /tmp/v041.b64 > /tmp/v041.gz
@@ -33,6 +37,18 @@ jobs:
           echo "73d9a575e738b2a58b188ed1ff66cc706f0f42d23136b1e36ba8a53faa861c63  /tmp/v041.patch" | sha256sum -c -
           git apply --check --index --binary /tmp/v041.patch
           git apply --index --binary /tmp/v041.patch
+      - name: Regenerate deterministic README screenshots
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt Pillow
+          python -m playwright install --with-deps chromium
+          python scripts/capture_readme_screenshots.py
+          git add assets/screenshots/en-US/map-list.png \
+            assets/screenshots/en-US/multilayer.png \
+            assets/screenshots/zh-CN/map-list.png \
+            assets/screenshots/zh-CN/multilayer.png
       - name: Validate staged product tree
         shell: bash
         run: |
@@ -46,11 +62,13 @@ jobs:
           )" = "0.4.1"
           test -f tests/test_readme_screenshots.py
           test ! -e .github/workflows/source-snapshot-v041.yml
-      - name: Remove patch staging files and publish product commit
+      - name: Remove staging files and publish product commit
         shell: bash
         run: |
           set -euxo pipefail
-          git rm -r .github/v041-patch
+          git rm -r .github/v041-patch .github/v041-patch-small
+          git rm .github/workflows/apply-v041.yml
+          git rm -f .github/workflows/source-snapshot-v041.yml || true
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "release: prepare v0.4.1 overview and delivery contracts"
