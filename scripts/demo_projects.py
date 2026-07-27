@@ -25,9 +25,9 @@ LAND_USE_FILES: Sequence[str] = (
 )
 
 LAND_USE_COLORS: Mapping[str, str] = {
-    "residential": "#2f7f83",
-    "mixed_commercial": "#e39a3b",
-    "civic_other": "#8b68a6",
+    "residential": "#4E8587",
+    "mixed_commercial": "#C99348",
+    "civic_other": "#8C739B",
 }
 
 
@@ -164,9 +164,6 @@ def atlas_map_list_spec(
                 "style": {
                     "mode": "categorical",
                     "color_field": "category_code",
-                    "weight": 0.75,
-                    "opacity": 0.92,
-                    "fill_opacity": 0.72,
                     "categories": categories,
                 },
             }

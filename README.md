@@ -20,8 +20,9 @@
 Interactive Map Builder is a **Codex-first Agent Skill** for turning GeoJSON, GeoPackage,
 Shapefile, CSV, Excel, and ArcGIS data into portable map products. The Agent recognizes the goal
 from ordinary language—even when the user never says GIS, Leaflet, web map, or the Skill name—then
-inspects the data, closes only blocking requirements gaps, writes an auditable MapSpec, builds a
-self-contained Leaflet app, verifies the result, and exports figures for slides and papers.
+inspects the data, closes only blocking requirements gaps, writes an auditable MapSpec, resolves
+a restrained geometry-aware visual starting point, builds a self-contained Leaflet app, verifies
+the result, and exports figures for slides and papers.
 
 ```text
 User intent + spatial data → inspect → confirm → MapSpec → build → verify → HTML + PNG/SVG/PDF
@@ -36,13 +37,16 @@ No frontend build system, no hand-written Folium page, and no hidden cleanup.
 - **Agent-guided setup** — works from the user's question and inspected data instead of requiring
   GIS terminology up front.
 - **Deterministic builds** — the Agent writes MapSpec 1.1; the Python engine owns loading,
-  normalization, styling, rendering, and validation.
+  normalization, visual resolution, rendering, and validation.
+- **Atlas Studio Light defaults** — omitted visual values are resolved from geometry, coarse
+  density, and layer role so the first result is coordinated without pretending to finish the
+  designer's work.
 - **Two polished map products** — a searchable map-and-list explorer and a toggleable multilayer
   explorer for points, lines, and polygons.
 - **Portable local delivery** — Leaflet, interface code, and business geometry are embedded in one
   `map.html`; only online basemap tiles require a network connection.
 - **Report-ready exports** — generate 16:9 PNG plus publication PNG, SVG, and PDF from the same
-  specification.
+  specification and resolved visual plan.
 - **Auditable handoff** — every build records inspection results, repairs, generated IDs,
   performance warnings, source notes, hashes, and portability.
 - **Safe release preflight** — each Skill invocation can check the official GitHub Release once per
@@ -214,6 +218,25 @@ file, not publishing embedded data on the internet. A public URL is discussed on
 requested, after confirming a hosting target and permission to expose the data. Hosting remains a
 separate workflow from map construction.
 
+## Atlas Studio Light
+
+Version 0.4 introduces a lightweight visual-default resolver rather than a full automatic design
+system. When MapSpec omits low-level visual values, the engine uses geometry family, coarse
+feature/coordinate density, template role, and stable draw order to choose a restrained first
+render:
+
+- dense point layers use smaller symbols and lower fill intensity;
+- lines and polygons receive separate weights, fills, and outlines;
+- `map-list` primary layers stay prominent while context layers recede;
+- multilayer maps keep polygons below lines and points, then focus the selected business layer;
+- HTML, legends, cards, PNG, SVG, and PDF consume the same resolved visual plan;
+- automatic categorical colors stop at eight distinct classes instead of cycling into a rainbow.
+
+Explicit MapSpec values always win. The goal is a credible, presentation-ready starting point—not
+a replacement for a planner or designer. Users can keep refining color, size, opacity, fields, and
+hierarchy through natural-language instructions or direct MapSpec edits. Every inferred decision
+is recorded in `build_report.json` under `visual` and `visual_system`.
+
 ## Choose the right map product
 
 | User goal | Template | Best for | Main interactions |
@@ -284,8 +307,12 @@ User request + spatial files
         MapSpec 1.1
            │
            ▼
+ Atlas Studio Light resolver
+ geometry · density · role · order
+           │
+           ▼
  deterministic Python engine
- load · normalize · style · render
+ load · normalize · render
            │
            ▼
  verify counts, files, QA hooks,
@@ -348,11 +375,12 @@ but does not silently switch rendering engines.
 
 ## Project status
 
-The project is in **v0.3.2 beta**. This release stabilizes model behavior around local versus public
-delivery, restores optional Codex planning guidance for complex tasks, makes multilayer controls
-reliably accessible, adds two public basemaps plus a no-basemap fallback, and introduces verified non-blocking
-release updates. New rendering features remain driven by real user cases rather than by adding
-templates without evidence.
+The project is in **v0.4.0 beta**. This release adds the Atlas Studio Light visual system: one
+small renderer-neutral resolver for geometry-aware defaults, coarse density, stable hierarchy, and
+consistent HTML/static output, plus an editorial UI refresh. It deliberately does not add a new
+template, a theme marketplace, clustering, heatmaps, or a larger MapSpec contract. The engine
+provides a better first result; the user and Agent remain responsible for project-specific design
+refinement.
 
 See the [changelog](CHANGELOG.md) for completed work.
 

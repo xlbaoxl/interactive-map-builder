@@ -40,6 +40,7 @@ from mapcore.spec import SpecError, load_spec, write_resolved_spec
 from mapcore.spec_init import SpecInitError, init_spec_from_inspection
 from mapcore.style import StyleError, resolve_layer_style
 from mapcore.validate import ValidationError, ensure_count_consistency, validate_geodata
+from mapcore.visual_defaults import resolve_visual_plan
 from mapcore.version import __version__
 
 
@@ -156,6 +157,11 @@ def _prepare_layer(
     layer_spec: Mapping[str, Any],
     linked_view: Optional[Mapping[str, Any]],
     list_config: Optional[Mapping[str, Any]],
+    *,
+    template: str,
+    primary_layer: Optional[str],
+    layer_count: int,
+    layer_index: int,
 ) -> Tuple[gpd.GeoDataFrame, Dict[str, Any], Dict[str, Any]]:
     source_crs = layer_spec["source"].get("crs")
     if raw.crs is None and source_crs is not None:
@@ -170,10 +176,30 @@ def _prepare_layer(
         target_crs="EPSG:4326",
         id_prefix=str(layer_spec["id"]),
     )
+    raw_style = layer_spec.get("style", {})
+    explicit_style = (
+        {
+            key: value
+            for key, value in raw_style.items()
+            if key in {"color", "fill_color", "weight", "opacity", "fill_opacity", "radius"}
+        }
+        if isinstance(raw_style, Mapping)
+        else {}
+    )
     normalized, resolved_layer_spec, style_report = resolve_layer_style(normalized, layer_spec)
     if isinstance(layer_spec, dict):
         layer_spec.clear()
         layer_spec.update(resolved_layer_spec)
+
+    visual_plan = resolve_visual_plan(
+        normalized,
+        layer_spec,
+        template=template,
+        primary_layer=primary_layer,
+        layer_count=layer_count,
+        layer_index=layer_index,
+        explicit_style=explicit_style,
+    )
 
     render_data = normalized
     simplify_preset = str(layer_spec.get("simplify", "none"))
@@ -246,6 +272,7 @@ def _prepare_layer(
         "records": properties,
         "count": len(features),
         "bounds": bounds,
+        "visual": visual_plan,
     }
     layer_report = {
         "id": layer_spec["id"],
@@ -262,6 +289,7 @@ def _prepare_layer(
             "simplification_recommendation": recommendation,
         },
         "style": style_report,
+        "visual": visual_plan,
         "normalization": normalization.to_dict(),
         "validation": validation.to_dict(),
         "warnings": [],
@@ -381,8 +409,9 @@ def build_map(
     static_layers: Dict[str, gpd.GeoDataFrame] = {}
     layer_reports: List[Dict[str, Any]] = []
     inspection_layers: List[Dict[str, Any]] = []
+    visual_plans: Dict[str, Dict[str, Any]] = {}
 
-    for layer_spec in spec["layers"]:
+    for layer_index, layer_spec in enumerate(spec["layers"]):
         source_path = Path(layer_spec["source"]["path"])
         resolved_source = source_path if source_path.is_absolute() else base_dir / source_path
         try:
@@ -413,6 +442,12 @@ def build_map(
                 if layer_spec["id"] == spec.get("primary_layer")
                 else None
             ),
+            template=str(spec["template"]),
+            primary_layer=(
+                str(spec.get("primary_layer")) if spec.get("primary_layer") else None
+            ),
+            layer_count=len(spec["layers"]),
+            layer_index=layer_index,
         )
         if resolved_source.is_file():
             layer_report["source"] = {
@@ -422,6 +457,7 @@ def build_map(
             }
         prepared_layers.append(prepared)
         static_layers[str(layer_spec["id"])] = normalized
+        visual_plans[str(layer_spec["id"])] = dict(prepared["visual"])
         layer_reports.append(layer_report)
         warnings.extend(layer_report.get("warnings", []))
 
@@ -471,7 +507,9 @@ def build_map(
         "warning": None,
     }
     if spec.get("static", {}).get("enabled", True):
-        static_result = render_static_figures(static_layers, spec, destination)
+        static_result = render_static_figures(
+            static_layers, spec, destination, visual_plans=visual_plans
+        )
         static_font = dict(static_result.font_report)
         generated_paths.extend(static_result.values())
         if static_font.get("warning"):
@@ -535,6 +573,7 @@ def build_map(
         "status": "pass",
         "template": spec["template"],
         "title": spec["title"],
+        "visual_system": "atlas-studio-light",
         "environment": environment_report(),
         "layers": layer_reports,
         "checks": {

@@ -12,16 +12,16 @@ from cli import package_version, run_doctor
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_package_version_and_cli_version_are_v032(capsys):
-    assert package_version() == "0.3.2"
+def test_package_version_and_cli_version_are_v040(capsys):
+    assert package_version() == "0.4.0"
     assert cli_main(["--version"]) == 0
-    assert capsys.readouterr().out.strip() == "0.3.2"
+    assert capsys.readouterr().out.strip() == "0.4.0"
 
 
 def test_doctor_runs_an_offline_build_and_verification():
     result = run_doctor()
     assert result["status"] == "pass"
-    assert result["package_version"] == "0.3.2"
+    assert result["package_version"] == "0.4.0"
     assert result["feature_count"] == 2
     assert result["network_used"] is False
     assert result["checks"]["leaflet_embedded"] is True
@@ -41,7 +41,7 @@ def test_skill_package_is_lean_complete_and_deterministic(tmp_path: Path):
     second = tmp_path / "second.zip"
     first_result = build_skill_package(first)
     second_result = build_skill_package(second)
-    assert first_result["version"] == "0.3.2"
+    assert first_result["version"] == "0.4.0"
     assert first_result["sha256"] == second_result["sha256"]
 
     with zipfile.ZipFile(first) as archive:
@@ -61,11 +61,13 @@ def test_skill_package_is_lean_complete_and_deterministic(tmp_path: Path):
         "interactive-map-builder/scripts/mapcore/basemaps.py",
         "interactive-map-builder/scripts/mapcore/version.py",
         "interactive-map-builder/scripts/mapcore/resources/map-spec.schema.json",
+        "interactive-map-builder/scripts/mapcore/resources/templates/atlas-studio-light.css",
+        "interactive-map-builder/scripts/mapcore/visual_defaults.py",
         "interactive-map-builder/scripts/mapcore/resources/vendor/leaflet-1.9.4/leaflet.js",
         "interactive-map-builder/PACKAGE_MANIFEST.json",
     }
     assert required <= names
-    assert manifest["version"] == "0.3.2"
+    assert manifest["version"] == "0.4.0"
     assert not any("/tests/" in name for name in names)
     assert not any("/assets/" in name for name in names)
     assert not any("/.github/" in name for name in names)

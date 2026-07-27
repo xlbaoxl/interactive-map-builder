@@ -66,7 +66,6 @@ value is `1.1`; unsupported values fail normal Schema validation. Set `locale` t
       "id_field": "site_id",
       "label_field": "name",
       "source_note": "Synthetic example",
-      "style": {"color": "#7c3aed", "radius": 7},
       "tooltip_fields": ["name"],
       "search_fields": ["name"]
     }
@@ -93,6 +92,28 @@ value is `1.1`; unsupported values fail normal Schema validation. Set `locale` t
 - Use `layers[].simplify` with `none`, `light`, or `medium`; static figures retain
   unsimplified normalized geometry.
 - Define HTTPS basemaps with attribution. An empty list keeps the business geometry usable.
+
+## Atlas Studio Light visual defaults
+
+MapSpec 1.1 remains the public contract. Version 0.4 does not add required visual keys. When a
+layer omits `color`, `fill_color`, `weight`, `opacity`, `fill_opacity`, or `radius`, the builder
+resolves a lightweight visual plan from:
+
+- point, line, polygon, or mixed geometry;
+- coarse feature and coordinate density;
+- `map-list` primary/context role or `multilayer` layer role;
+- stable polygon-line-point draw order;
+- the existing categorical or graduated style, when present.
+
+Explicit MapSpec values always win. The resolver does not infer planning meaning from a field name,
+does not perform clustering or heatmapping, and does not replace later user/Agent refinement. The
+same plan drives HTML, legends, list accents, PNG, SVG, and PDF. Each layer's resolved plan and
+reasons are written to `build_report.json` under `layers[].visual`; the root report identifies
+`visual_system: "atlas-studio-light"`.
+
+`init-spec` automatically colors a categorical field only when all observed values are known and
+there are at most eight classes. Larger or incomplete classifications remain searchable/filterable
+without cycling colors; ask the user which classes should be grouped or emphasized.
 
 ## Basemap defaults and provider credentials
 

@@ -6,7 +6,8 @@ description: Turn existing spatial or coordinate data into portable, browser-ope
 # Interactive Map Builder
 
 Create configuration-driven Leaflet map products without a frontend build system. Keep acquisition
-separate from rendering, preserve provenance, and expose every cleanup in the build report.
+separate from rendering, preserve provenance, and use Atlas Studio Light for a coordinated first
+render while exposing every cleanup and inferred visual decision in the build report.
 
 ## Invocation guidance
 
@@ -63,6 +64,21 @@ A portable local `map.html` is the default delivery. Sending that file to collea
 same as publishing it on the internet. Do not offer, promise, or ask about a public URL unless the
 user explicitly requests deployment. When they do, finish the map first and treat hosting as a
 separate workflow that confirms the target platform and permission to expose the embedded data.
+
+## Visual guidance
+
+Use Atlas Studio Light as a starting point, not as an automatic design service. Leave low-level
+visual values omitted when the user has not expressed a preference: the packaged resolver will use
+geometry family, coarse density, template role, and stable draw order. Explicit user or Agent
+MapSpec values always win. Do not invent planning semantics from field names, do not assign more
+than eight automatic categorical colors, and do not add themes, clustering, heatmaps, or other
+representations merely to make the page look busy.
+
+After the first verified build, inspect the actual page. If the visual hierarchy still conflicts
+with the user's purpose, propose a small concrete refinement—such as reducing one point layer,
+muting a context layer, or changing an explicitly understood category palette—then rebuild. The
+engine should provide an overall coordinated result; project-specific polish remains a conversation
+between the user and Agent. Read [design-guidelines.md](references/design-guidelines.md).
 
 ## Workflow
 
@@ -121,7 +137,8 @@ separate workflow that confirms the target platform and permission to expose the
 
 8. Exercise search, filters, sorting, layer visibility, basemap switching, hover and click linkage,
    keyboard selection, control-panel collapse, and narrow-screen layout. Confirm that every visible
-   control produces an observable result. Read [design-guidelines.md](references/design-guidelines.md).
+   control produces an observable result, the focal layer reads first, dense symbols remain legible,
+   and HTML/static colors agree. Read [design-guidelines.md](references/design-guidelines.md).
 
 9. Deliver the whole `dist` directory. Summarize repairs, generated IDs, null display values,
    simplification, performance warnings, online basemaps, font fallback, portability, and source
@@ -170,6 +187,10 @@ output hashes without downloading data or basemap tiles.
 - Preserve user geometry. Repair invalid geometry or simplify for an explicit performance need,
   report the operation, and never reshape or discard features merely to improve appearance.
 - Escape all user-provided text before embedding it in HTML.
+- Preserve explicit MapSpec visual values. Let Atlas Studio Light fill only omitted values, and keep
+  its geometry, density, role, order, and state plan visible in `build_report.json`.
+- Never cycle an automatic categorical palette beyond eight classes; retain filtering and ask the
+  user how to group or emphasize a larger classification.
 
 ## Output contract
 

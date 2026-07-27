@@ -79,12 +79,12 @@
       "additionalProperties": false,
       "properties": {
         "mode": {"enum": ["single", "categorical", "graduated"]},
-        "color": {"type": "string", "default": "#2563eb"},
+        "color": {"type": "string"},
         "fill_color": {"type": "string"},
-        "weight": {"type": "number", "minimum": 0, "default": 1.5},
-        "opacity": {"type": "number", "minimum": 0, "maximum": 1, "default": 1},
-        "fill_opacity": {"type": "number", "minimum": 0, "maximum": 1, "default": 0.55},
-        "radius": {"type": "number", "exclusiveMinimum": 0, "default": 6},
+        "weight": {"type": "number", "minimum": 0},
+        "opacity": {"type": "number", "minimum": 0, "maximum": 1},
+        "fill_opacity": {"type": "number", "minimum": 0, "maximum": 1},
+        "radius": {"type": "number", "exclusiveMinimum": 0},
         "color_field": {"type": "string"},
         "field": {"type": "string"},
         "method": {

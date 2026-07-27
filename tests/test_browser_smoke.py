@@ -60,6 +60,8 @@ def test_searchable_land_use_browser_smoke(tmp_path: Path) -> None:
         assert initial["recordCount"] == 1699
         assert initial["mapFeatureCount"] == 1699
         assert initial["rangeFilterCount"] >= 3
+        assert initial["visualSystem"] == "atlas-studio-light"
+        assert initial["visualPlans"]["parcels"]["role"] == "primary"
 
         page.evaluate("window.__interactiveMapBuilderQA.actions.setSearch('BROADWAY')")
         assert page.evaluate("window.__interactiveMapBuilderQA.visibleRecordCount") == 184
@@ -125,7 +127,7 @@ def test_multilayer_business_search_and_line_colors(tmp_path: Path) -> None:
         line_colors = page.evaluate(
             "window.__interactiveMapBuilderQA.layerStyleColors.bike_routes"
         )
-        for expected in ("#087f8c", "#3a8d5d", "#c47a2c"):
+        for expected in ("#287D7C", "#5A8A70", "#B98245"):
             assert expected in line_colors
 
         assert page.evaluate(
@@ -244,6 +246,9 @@ def test_multilayer_browser_smoke_and_link_isolation(tmp_path: Path) -> None:
         page.goto((plain_dist / "map.html").resolve().as_uri())
         plain = _wait_ready(page)
         assert plain["linkGroupSizes"] == {"a::1": 1, "b::1": 1}
+        assert plain["visualSystem"] == "atlas-studio-light"
+        assert plain["layerDrawOrder"] == ["a", "b"]
+        assert plain["layerVisualStates"] == {"a": "focus", "b": "dimmed"}
         assert page.locator("#imb-feature-type-label").inner_text() == "Search by layer"
         assert page.locator("#imb-search-label").inner_text() == "Name"
         assert page.locator(".imb-type-button").count() == 2
@@ -267,6 +272,9 @@ def test_multilayer_browser_smoke_and_link_isolation(tmp_path: Path) -> None:
         assert page.evaluate(
             "window.__interactiveMapBuilderQA.actions.setFeatureType('b')"
         )
+        assert page.evaluate(
+            "window.__interactiveMapBuilderQA.layerVisualStates"
+        ) == {"a": "dimmed", "b": "focus"}
         page.evaluate("window.__interactiveMapBuilderQA.actions.setSearch('Alpha')")
         assert page.evaluate("window.__interactiveMapBuilderQA.visibleRecordCount") == 0
         page.evaluate("window.__interactiveMapBuilderQA.actions.setSearch('Beta')")

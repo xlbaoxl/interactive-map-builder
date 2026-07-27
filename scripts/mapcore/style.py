@@ -10,12 +10,12 @@ import numpy as np
 import pandas as pd
 from matplotlib.colors import LinearSegmentedColormap, to_hex
 
+from .visual_defaults import SEQUENTIAL_PALETTE
+
 
 class StyleError(ValueError):
     """Raised when a declared style cannot be applied deterministically."""
 
-
-_DEFAULT_GRADUATED_COLORS = ("#eff3ff", "#6baed6", "#08519c")
 
 
 def _format_number(value: float) -> str:
@@ -56,7 +56,7 @@ def _computed_breaks(values: pd.Series, method: str, classes: int) -> np.ndarray
 
 
 def _colors(values: Sequence[str], count: int) -> Sequence[str]:
-    configured = [str(value) for value in values] if values else list(_DEFAULT_GRADUATED_COLORS)
+    configured = [str(value) for value in values] if values else list(SEQUENTIAL_PALETTE)
     if len(configured) == count:
         return configured
     cmap = LinearSegmentedColormap.from_list("interactive-map-builder", configured)

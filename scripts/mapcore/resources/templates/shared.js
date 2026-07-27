@@ -2,14 +2,14 @@
   "use strict";
 
   var palette = [
-    "#1668dc",
-    "#dc5a2a",
-    "#16856b",
-    "#8957c7",
-    "#c43d70",
-    "#99721d",
-    "#337a9e",
-    "#6b7280"
+    "#4E8587",
+    "#D39A4A",
+    "#8C739B",
+    "#C56E79",
+    "#718F61",
+    "#607F9D",
+    "#A67D62",
+    "#7C8588"
   ];
 
   var qa = {
@@ -238,7 +238,59 @@
     return Math.abs(result);
   }
 
-  function colorFor(spec, properties) {
+  function layerVisual(layer) {
+    return layer && layer.visual && typeof layer.visual === "object" ? layer.visual : {};
+  }
+
+  function geometryFamily(feature) {
+    var geometryType = feature && feature.geometry
+      ? text(feature.geometry.type).toLocaleLowerCase()
+      : "";
+    if (geometryType.indexOf("point") !== -1) {
+      return "point";
+    }
+    if (geometryType.indexOf("line") !== -1) {
+      return "line";
+    }
+    if (geometryType.indexOf("polygon") !== -1) {
+      return "polygon";
+    }
+    return "polygon";
+  }
+
+  function clamp(value, minimum, maximum) {
+    return Math.max(minimum, Math.min(maximum, Number(value)));
+  }
+
+  function adjustColor(value, amount) {
+    var source = text(value).trim();
+    var match = /^#([0-9a-f]{6})$/i.exec(source);
+    if (!match) {
+      return source;
+    }
+    var channels = [0, 2, 4].map(function (offset) {
+      return parseInt(match[1].slice(offset, offset + 2), 16);
+    });
+    var adjusted = channels.map(function (channel) {
+      var resolved = amount >= 0
+        ? channel + (255 - channel) * amount
+        : channel * (1 + amount);
+      return Math.max(0, Math.min(255, Math.round(resolved)));
+    });
+    return "#" + adjusted.map(function (channel) {
+      return channel.toString(16).padStart(2, "0");
+    }).join("").toUpperCase();
+  }
+
+  function familyVisual(visual, family) {
+    var families = visual && visual.families && typeof visual.families === "object"
+      ? visual.families
+      : {};
+    var resolved = families[family];
+    return resolved && typeof resolved === "object" ? resolved : {};
+  }
+
+  function colorFor(spec, properties, visual, family) {
     var style = spec.style && typeof spec.style === "object" ? spec.style : {};
     var field = categoryField(spec);
     var category = field ? text(properties[field]) : "";
@@ -248,26 +300,147 @@
         return entries[index].color;
       }
     }
+    var base = familyVisual(visual || {}, family || "polygon");
     return text(firstDefined(
+      base.fill_color,
+      base.color,
       style.fill_color,
       style.color,
       palette[hash(category || layerTitle({ spec: spec }, 0)) % palette.length]
     ));
   }
 
-  function geometryStyle(spec, feature) {
+  function geometryStyle(spec, feature, visual) {
     var properties = feature && feature.properties ? feature.properties : {};
-    var style = spec.style && typeof spec.style === "object" ? spec.style : {};
-    var color = colorFor(spec, properties);
-    var categoryColor = categoryField(spec) ? color : undefined;
+    var family = geometryFamily(feature);
+    var base = familyVisual(visual || {}, family);
+    var categoryColor = categoryField(spec)
+      ? colorFor(spec, properties, visual, family)
+      : "";
+    var fillColor;
+    var strokeColor;
+    if (family === "line") {
+      strokeColor = categoryColor || text(firstDefined(
+        base.color,
+        colorFor(spec, properties, visual, family)
+      ));
+      fillColor = strokeColor;
+    } else {
+      fillColor = categoryColor || text(firstDefined(
+        base.fill_color,
+        base.color,
+        colorFor(spec, properties, visual, family)
+      ));
+      var strategy = text(firstDefined(base.category_stroke, "same"));
+      if (categoryColor && strategy === "darken") {
+        strokeColor = adjustColor(categoryColor, -0.24);
+      } else if (categoryColor && strategy === "same") {
+        strokeColor = categoryColor;
+      } else {
+        strokeColor = text(firstDefined(
+          base.stroke_color,
+          family === "point" ? "#FFFFFF" : adjustColor(fillColor, -0.24)
+        ));
+      }
+    }
     return {
-      color: text(firstDefined(categoryColor, style.color, color)),
-      weight: Number(firstDefined(style.weight, 2)),
-      opacity: Number(firstDefined(style.opacity, 0.9)),
-      fillColor: text(firstDefined(style.fill_color, color)),
-      fillOpacity: Number(firstDefined(style.fill_opacity, 0.55)),
-      radius: Number(firstDefined(style.radius, 7))
+      color: strokeColor,
+      weight: Number(firstDefined(base.weight, family === "line" ? 1.5 : 0.8)),
+      opacity: clamp(firstDefined(base.opacity, 0.85), 0, 1),
+      fillColor: fillColor,
+      fillOpacity: clamp(
+        firstDefined(base.fill_opacity, family === "polygon" ? 0.25 : 0.72),
+        0,
+        1
+      ),
+      radius: Number(firstDefined(base.radius, 4)),
+      pane: text(firstDefined(base.pane, "overlayPane"))
     };
+  }
+
+  function stateStyle(baseStyle, visual, stateName) {
+    var result = Object.assign({}, baseStyle || {});
+    if (!stateName || stateName === "base") {
+      return result;
+    }
+    var states = visual && visual.states && typeof visual.states === "object"
+      ? visual.states
+      : {};
+    var state = states[stateName] && typeof states[stateName] === "object"
+      ? states[stateName]
+      : {};
+    if (state.opacity_multiplier !== undefined) {
+      result.opacity = clamp(
+        Number(result.opacity || 0) * Number(state.opacity_multiplier),
+        0,
+        1
+      );
+    }
+    if (state.fill_opacity_multiplier !== undefined) {
+      result.fillOpacity = clamp(
+        Number(result.fillOpacity || 0) * Number(state.fill_opacity_multiplier),
+        0,
+        1
+      );
+    }
+    if (state.weight_multiplier !== undefined) {
+      result.weight = Math.max(
+        0,
+        Number(result.weight || 0) * Number(state.weight_multiplier)
+      );
+    }
+    if (state.weight_add !== undefined) {
+      result.weight = Math.max(
+        0,
+        Number(result.weight || 0) + Number(state.weight_add)
+      );
+    }
+    if (state.radius_multiplier !== undefined) {
+      result.radius = Math.max(
+        1.5,
+        Number(result.radius || 4) * Number(state.radius_multiplier)
+      );
+    }
+    if (state.stroke_color) {
+      result.color = text(state.stroke_color);
+    }
+    return result;
+  }
+
+  function applyEntryState(entry, stateName) {
+    if (!entry || !entry.leaflet || !entry.leaflet.setStyle) {
+      return;
+    }
+    var visual = entry.visual || (entry.runtime && entry.runtime.visual) || {};
+    var resolved = stateStyle(entry.baseStyle, visual, stateName);
+    entry.leaflet.setStyle(resolved);
+    if (entry.leaflet.setRadius && resolved.radius !== undefined) {
+      entry.leaflet.setRadius(Number(resolved.radius));
+    }
+    entry.visualState = stateName || "base";
+    if (
+      (stateName === "hover" || stateName === "selected")
+      && entry.leaflet.bringToFront
+    ) {
+      entry.leaflet.bringToFront();
+    }
+  }
+
+  function orderGroups(runtimes) {
+    (runtimes || []).slice().sort(function (left, right) {
+      var leftOrder = Number(left.visual && left.visual.draw_order || 0);
+      var rightOrder = Number(right.visual && right.visual.draw_order || 0);
+      return leftOrder - rightOrder || Number(left.order || 0) - Number(right.order || 0);
+    }).forEach(function (runtime) {
+      if (!runtime.group || !runtime.group.eachLayer) {
+        return;
+      }
+      runtime.group.eachLayer(function (leafletLayer) {
+        if (leafletLayer && leafletLayer.bringToFront) {
+          leafletLayer.bringToFront();
+        }
+      });
+    });
   }
 
   function attachFeatureContent(leafletLayer, feature, spec) {
@@ -521,24 +694,11 @@
     }
   }
 
-  function markFeature(registry, identifier, active) {
+  function markFeature(registry, identifier, state) {
+    var stateName = state === true ? "selected" : state === false ? "base" : text(state || "base");
     var entries = registry.get(text(identifier)) || [];
     entries.forEach(function (entry) {
-      if (!entry.leaflet || !entry.leaflet.setStyle) {
-        return;
-      }
-      if (active) {
-        entry.leaflet.setStyle({
-          color: "#0b3a75",
-          weight: Math.max(4, Number(entry.baseStyle.weight || 2) + 2),
-          fillOpacity: Math.max(0.78, Number(entry.baseStyle.fillOpacity || 0))
-        });
-        if (entry.leaflet.bringToFront) {
-          entry.leaflet.bringToFront();
-        }
-      } else {
-        entry.leaflet.setStyle(entry.baseStyle);
-      }
+      applyEntryState(entry, stateName);
     });
   }
 
@@ -625,11 +785,38 @@
     if (!window.L || typeof window.L.map !== "function") {
       throw new Error("Leaflet runtime was not loaded.");
     }
-    return L.map("imb-map", {
+    var map = L.map("imb-map", {
       attributionControl: false,
       preferCanvas: true,
       zoomControl: true
     });
+    [
+      ["imb-context-polygon", 330],
+      ["imb-supporting-polygon", 340],
+      ["imb-primary-polygon", 350],
+      ["imb-context-line", 410],
+      ["imb-supporting-line", 420],
+      ["imb-primary-line", 430],
+      ["imb-context-point", 490],
+      ["imb-supporting-point", 500],
+      ["imb-primary-point", 510]
+    ].forEach(function (definition) {
+      var pane = map.createPane(definition[0]);
+      pane.style.zIndex = String(definition[1]);
+      pane.style.pointerEvents = "auto";
+    });
+    qa.visualPanes = [
+      "imb-context-polygon",
+      "imb-supporting-polygon",
+      "imb-primary-polygon",
+      "imb-context-line",
+      "imb-supporting-line",
+      "imb-primary-line",
+      "imb-context-point",
+      "imb-supporting-point",
+      "imb-primary-point"
+    ];
+    return map;
   }
 
   function finish(template, details) {
@@ -658,6 +845,8 @@
 
   window.InteractiveMapBuilder = {
     addBasemap: addBasemap,
+    adjustColor: adjustColor,
+    applyEntryState: applyEntryState,
     applyLinkedDomState: applyLinkedDomState,
     attachFeatureContent: attachFeatureContent,
     bindLinkedElements: bindLinkedElements,
@@ -674,21 +863,25 @@
     finish: finish,
     firstDefined: firstDefined,
     fitToGroups: fitToGroups,
+    geometryFamily: geometryFamily,
     geometryStyle: geometryStyle,
     idField: idField,
     labelField: labelField,
     layerId: layerId,
     layerSpec: layerSpec,
+    layerVisual: layerVisual,
     layerTitle: layerTitle,
     link_by_id: linkById,
     markFeature: markFeature,
     normalizedRecords: normalizedRecords,
     onReady: onReady,
+    orderGroups: orderGroups,
     palette: palette.slice(),
     parsePayload: parsePayload,
     qa: qa,
     recordError: recordError,
     setupMap: setupMap,
+    stateStyle: stateStyle,
     text: text
   };
 }());

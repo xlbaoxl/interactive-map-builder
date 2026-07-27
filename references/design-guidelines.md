@@ -1,5 +1,24 @@
 # Visual and interaction acceptance
 
+## Atlas Studio Light defaults
+
+- Treat the resolved visual plan as a coordinated starting point, not a complete design service.
+  Explicit MapSpec colors, sizes, weights, and opacities always override inferred defaults.
+- Resolve point, line, and polygon values separately. Use coarse density only to prevent obvious
+  crowding; do not perform substantive spatial analysis or silently change the data representation.
+- Keep one clear visual focus. In `map-list`, the primary layer leads and context layers recede. In
+  `multilayer`, the active business layer receives focus while other visible layers remain readable
+  spatial context.
+- Preserve a stable polygon-line-point draw order across initial render, layer toggles, search, and
+  selection. A selected feature must remain legible without turning every feature into a heavy halo.
+- Use the restrained eight-color Atlas categorical palette only when all categories are known and
+  the class count fits. Do not cycle colors beyond eight classes; keep filters available and ask the
+  user how to group or emphasize a larger classification.
+- Keep HTML, legends, list accents, PNG, SVG, and PDF on the same resolved visual plan. Record the
+  geometry, density, role, order, explicit overrides, and reasons in `build_report.json`.
+- The first build should be broadly balanced and presentation-ready. Refine remaining project-
+  specific issues with one or two concrete changes after visually inspecting the actual output.
+
 ## Shared
 
 - Make the map, title, legend, source note, and current selection immediately legible.

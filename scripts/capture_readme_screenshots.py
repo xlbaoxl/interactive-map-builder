@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import io
 import json
 import shutil
 import tempfile
@@ -16,6 +17,40 @@ ROOT = Path(__file__).resolve().parents[1]
 EXAMPLES = ROOT / "assets" / "examples"
 MAX_SCREENSHOT_BYTES = 1_700_000
 MIN_LOADED_TILES = 8
+
+
+def _mock_tile_png() -> bytes:
+    """Return a quiet deterministic planning-context tile for README captures."""
+
+    try:
+        from PIL import Image, ImageDraw
+    except ImportError as exc:
+        raise SystemExit("Install Pillow before capturing README screenshots.") from exc
+
+    image = Image.new("RGB", (256, 256), "#f7f9f6")
+    draw = ImageDraw.Draw(image)
+    building_fill = "#f0f3ef"
+    building_edge = "#e1e7e2"
+    for x in range(10, 250, 44):
+        for y in range(8, 250, 48):
+            width = 25 + ((x + y) // 4) % 11
+            height = 16 + ((x * 3 + y) // 7) % 10
+            draw.rectangle(
+                (x, y, min(252, x + width), min(252, y + height)),
+                fill=building_fill,
+                outline=building_edge,
+                width=1,
+            )
+    road = "#dbe2e1"
+    road_edge = "#cfd8d7"
+    for offset in (-100, 30, 160):
+        draw.line((offset, 256, offset + 300, -44), fill=road_edge, width=8)
+        draw.line((offset, 256, offset + 300, -44), fill=road, width=5)
+    for y in (72, 196):
+        draw.line((0, y, 256, y), fill="#e6ebe8", width=3)
+    payload = io.BytesIO()
+    image.save(payload, format="PNG", optimize=True)
+    return payload.getvalue()
 
 
 def _wait_for_map(page) -> None:
@@ -50,6 +85,14 @@ def _capture(
     )
     spec = json.loads(spec_path.read_text(encoding="utf-8"))
     spec["static"] = {"enabled": False}
+    spec["basemaps"] = [
+        {
+            "name": "CARTO Positron",
+            "url": "https://tiles.invalid/atlas/{z}/{x}/{y}.png",
+            "attribution": "© OpenStreetMap contributors © CARTO",
+            "visible": True,
+        }
+    ]
     spec_path.write_text(
         json.dumps(spec, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
@@ -134,6 +177,15 @@ def main() -> int:
             page = browser.new_page(
                 viewport={"width": args.width, "height": args.height},
                 device_scale_factor=1,
+            )
+            tile_png = _mock_tile_png()
+            page.route(
+                "https://tiles.invalid/**",
+                lambda route: route.fulfill(
+                    status=200,
+                    body=tile_png,
+                    content_type="image/png",
+                ),
             )
             for locale in ("en-US", "zh-CN"):
                 for example_name in ("map-list", "multilayer"):

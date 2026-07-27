@@ -7,6 +7,7 @@
   <title>{{ page_title }}</title>
   <style>{{ leaflet_css | safe }}</style>
   <style>{{ shared_css | safe }}</style>
+  <style>{{ theme_css | safe }}</style>
 </head>
 <body>
   <main id="imb-app" class="imb-app imb-atlas-app map-list-app">
@@ -126,6 +127,7 @@
         return false;
       });
       var primarySpec = IMB.layerSpec(primary);
+      var primaryVisual = IMB.layerVisual(primary);
       var records = IMB.normalizedRecords(primary);
       var recordById = new Map(records.map(function (record) { return [record.id, record]; }));
       var featureCollection = primary.feature_collection || { type: "FeatureCollection", features: [] };
@@ -175,14 +177,14 @@
         legendEntries = [{
           value: IMB.layerId(primary, primaryIndex),
           label: IMB.layerTitle(primary, primaryIndex),
-          color: IMB.colorFor(primarySpec, {})
+          color: IMB.colorFor(primarySpec, {}, primaryVisual, primaryVisual.geometry_family || "polygon")
         }];
       }
       var legendItems = document.getElementById("imb-legend-items");
       legendEntries.forEach(function (entry) {
         var row = IMB.element("div", undefined, "imb-legend-item");
         var swatch = IMB.element("span", undefined, "imb-swatch");
-        swatch.style.backgroundColor = entry.color || IMB.colorFor(primarySpec, {});
+        swatch.style.backgroundColor = entry.color || IMB.colorFor(primarySpec, {}, primaryVisual, primaryVisual.geometry_family || "polygon");
         row.appendChild(swatch);
         row.appendChild(IMB.element("span", entry.label));
         legendItems.appendChild(row);
@@ -205,17 +207,24 @@
         fullscreenButton.setAttribute("aria-label", t("fullscreen"));
       }
       var allMapGroups = [];
+      var mapRuntimes = [];
       layers.forEach(function (candidate, candidateIndex) {
         if (candidate === primary) {
           return;
         }
         var candidateSpec = IMB.layerSpec(candidate);
+        var candidateVisual = IMB.layerVisual(candidate);
         var contextGroup = L.geoJSON(candidate.feature_collection || {
           type: "FeatureCollection", features: []
         }, {
-          style: function (feature) { return IMB.geometryStyle(candidateSpec, feature); },
+          style: function (feature) {
+            return IMB.geometryStyle(candidateSpec, feature, candidateVisual);
+          },
           pointToLayer: function (feature, latlng) {
-            return L.circleMarker(latlng, IMB.geometryStyle(candidateSpec, feature));
+            return L.circleMarker(
+              latlng,
+              IMB.geometryStyle(candidateSpec, feature, candidateVisual)
+            );
           },
           onEachFeature: function (feature, leafletLayer) {
             IMB.attachFeatureContent(leafletLayer, feature, candidateSpec);
@@ -224,20 +233,39 @@
         if (candidateSpec.visible !== false) {
           contextGroup.addTo(map);
           allMapGroups.push(contextGroup);
+          mapRuntimes.push({
+            group: contextGroup,
+            visual: candidateVisual,
+            order: candidateIndex
+          });
         }
       });
 
       var featureRegistry = new Map();
       var matchedIds = new Set(records.map(function (record) { return record.id; }));
       var featureGroup = L.geoJSON(featureCollection, {
-        style: function (feature) { return IMB.geometryStyle(primarySpec, feature); },
+        style: function (feature) {
+          return IMB.geometryStyle(primarySpec, feature, primaryVisual);
+        },
         pointToLayer: function (feature, latlng) {
-          return L.circleMarker(latlng, IMB.geometryStyle(primarySpec, feature));
+          return L.circleMarker(
+            latlng,
+            IMB.geometryStyle(primarySpec, feature, primaryVisual)
+          );
         },
         onEachFeature: function (feature, leafletLayer) {
-          var identifier = IMB.featureId(feature, primarySpec, "feature-" + (featureRegistry.size + 1));
-          var baseStyle = IMB.geometryStyle(primarySpec, feature);
-          var entry = { leaflet: leafletLayer, baseStyle: baseStyle, visible: true };
+          var identifier = IMB.featureId(
+            feature,
+            primarySpec,
+            "feature-" + (featureRegistry.size + 1)
+          );
+          var baseStyle = IMB.geometryStyle(primarySpec, feature, primaryVisual);
+          var entry = {
+            leaflet: leafletLayer,
+            baseStyle: baseStyle,
+            visible: true,
+            visual: primaryVisual
+          };
           if (!featureRegistry.has(identifier)) {
             featureRegistry.set(identifier, []);
           }
@@ -245,7 +273,11 @@
           var tooltipFields = IMB.contentFields(primarySpec, "tooltip");
           if (tooltipFields.length && leafletLayer.bindTooltip) {
             leafletLayer.bindTooltip(
-              IMB.buildDetailsNode(feature.properties || {}, tooltipFields, "imb-tooltip"),
+              IMB.buildDetailsNode(
+                feature.properties || {},
+                tooltipFields,
+                "imb-tooltip"
+              ),
               { sticky: true, direction: "top" }
             );
           }
@@ -261,6 +293,8 @@
         }
       }).addTo(map);
       allMapGroups.push(featureGroup);
+      mapRuntimes.push({ group: featureGroup, visual: primaryVisual, order: primaryIndex });
+      IMB.orderGroups(mapRuntimes);
       IMB.fitToGroups(map, allMapGroups);
 
       var searchFields = IMB.fieldDefinitions(
@@ -643,17 +677,10 @@
         var entries = featureRegistry.get(identifier) || [];
         var matched = matchedIds.has(identifier);
         entries.forEach(function (entry) {
-          if (!entry.leaflet || !entry.leaflet.setStyle) {
-            return;
-          }
-          if (searchBehavior === "highlight" && !matched) {
-            entry.leaflet.setStyle(Object.assign({}, entry.baseStyle, {
-              opacity: 0.22,
-              fillOpacity: Math.min(0.1, Number(entry.baseStyle.fillOpacity || 0.1))
-            }));
-          } else {
-            entry.leaflet.setStyle(entry.baseStyle);
-          }
+          IMB.applyEntryState(
+            entry,
+            searchBehavior === "highlight" && !matched ? "dimmed" : "base"
+          );
         });
       }
 
@@ -688,7 +715,7 @@
         var value = IMB.text(record.properties[categoryField]);
         var entry = legendEntries.find(function (candidate) { return candidate.value === value; });
         return {
-          color: entry && entry.color ? entry.color : IMB.colorFor(primarySpec, record.properties),
+          color: entry && entry.color ? entry.color : IMB.colorFor(primarySpec, record.properties, primaryVisual, primaryVisual.geometry_family || "polygon"),
           label: entry ? entry.label : IMB.displayValue(value)
         };
       }
@@ -947,7 +974,7 @@
         }
         state.selectedId = identifier;
         IMB.qa.selectedId = identifier;
-        IMB.markFeature(featureRegistry, identifier, true);
+        IMB.markFeature(featureRegistry, identifier, "selected");
         IMB.applyLinkedDomState(identifier, true, true);
         openDetail(record);
         var card = ensureRendered(identifier);
@@ -1034,7 +1061,7 @@
             cx: left + ((point.x - minX) / (maxX - minX)) * (right - left),
             cy: bottom - ((point.y - minY) / (maxY - minY)) * (bottom - top),
             r: 5,
-            fill: IMB.colorFor(primarySpec, point.record.properties),
+            fill: IMB.colorFor(primarySpec, point.record.properties, primaryVisual, "point"),
             tabindex: 0,
             role: "button"
           }, "imb-linked-point");
@@ -1051,7 +1078,7 @@
           IMB.applyLinkedDomState(state.hoveredId, false, false);
         }
         state.hoveredId = event.id;
-        IMB.markFeature(featureRegistry, event.id, true);
+        IMB.markFeature(featureRegistry, event.id, "hover");
         IMB.applyLinkedDomState(event.id, true, false);
       });
       IMB.link_by_id.on("clear", function (event) {
@@ -1198,6 +1225,11 @@
         detailOpen: false,
         activeFilterCount: 0,
         rangeFilterCount: filterModels.filter(function (model) { return model.type === "range"; }).length,
+        visualSystem: primaryVisual.system || "atlas-studio-light",
+        visualPlans: layers.reduce(function (plans, layer, index) {
+          plans[IMB.layerId(layer, index)] = IMB.layerVisual(layer);
+          return plans;
+        }, {}),
         layerCounts: layers.reduce(function (counts, layer, index) {
           var featureCount = layer.feature_collection && Array.isArray(layer.feature_collection.features)
             ? layer.feature_collection.features.length : 0;
