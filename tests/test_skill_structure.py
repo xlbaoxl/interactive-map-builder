@@ -27,6 +27,10 @@ def test_skill_metadata_is_concise_complete_and_intent_driven():
         assert expected in metadata["description"]
     assert "The user does not need to say GIS" in body
     assert "one-off Folium" in body
+    assert "local HTML file, not a public URL" in metadata["description"]
+    assert "interactive-map-builder update --auto" in body
+    assert "Plan mode" in body
+    assert "Do not offer, promise, or ask about a public URL" in body
 
 
 def test_openai_interface_mentions_skill_and_user_intent():
@@ -37,13 +41,15 @@ def test_openai_interface_mentions_skill_and_user_intent():
     assert "$interactive-map-builder" in interface["default_prompt"]
     assert "even if they do not mention GIS" in interface["default_prompt"]
     assert "ad hoc Folium or Leaflet" in interface["default_prompt"]
+    assert "public URL only when explicitly requested" in interface["default_prompt"]
+    assert "Plan mode" in interface["default_prompt"]
     assert len(interface["short_description"]) <= 80
 
 
 def test_behavior_evals_and_localized_readmes_are_present():
     evals = yaml.safe_load((ROOT / "evals" / "cases.yaml").read_text(encoding="utf-8"))
     assert evals["version"] == 2
-    assert len(evals["cases"]) == 36
+    assert len(evals["cases"]) == 40
     invocations = {case["expected"]["invocation"] for case in evals["cases"]}
     assert invocations == {"trigger", "do_not_use"}
     categories = {case["category"] for case in evals["cases"]}
@@ -69,7 +75,9 @@ def test_behavior_evals_and_localized_readmes_are_present():
         assert "$HOME\\.agents\\skills" in readme
         assert "interactive-map-builder doctor" in readme
         assert "interactive-map-builder-skill-vX.Y.Z.zip" in readme
-        assert "Plan mode" not in readme
+        assert "Plan mode" in readme
+        assert "interactive-map-builder update --check" in readme
+        assert "public" in readme.casefold() or "公网" in readme
         assert "/plan" not in readme
         assert "Shift+Tab" not in readme
 
@@ -111,5 +119,23 @@ def test_skill_uses_cross_agent_requirements_checklist():
         assert expected in skill
         assert expected in wizard
     assert "no blocking `[ ]` item remains." in skill
+    assert "Plan mode" in skill
+    assert "Plan mode" in wizard
+    assert "public URL" in skill
+    assert "public URL" in wizard
     assert "/plan" not in skill
     assert "Shift+Tab" not in skill
+    assert "Shift+Tab" not in wizard
+
+
+def test_verified_update_policy_is_packaged_and_linked():
+    skill = (ROOT / "SKILL.md").read_text(encoding="utf-8")
+    policy = (ROOT / "references" / "update-policy.md").read_text(encoding="utf-8")
+    assert "references/update-policy.md" in skill
+    for expected in (
+        "SHA256SUMS.txt",
+        "PACKAGE_MANIFEST.json",
+        "Transaction and rollback",
+        "IMB_DISABLE_AUTO_UPDATE=1",
+    ):
+        assert expected in policy

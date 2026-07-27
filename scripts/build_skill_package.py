@@ -30,6 +30,7 @@ DIRECTORIES = (
 SCRIPT_FILES = (
     "scripts/cli.py",
     "scripts/map_builder.py",
+    "scripts/update_skill.py",
 )
 
 

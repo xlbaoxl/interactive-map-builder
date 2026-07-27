@@ -43,14 +43,29 @@
       </aside>
       <section class="imb-map-wrap" aria-label="{{ catalog.shared.interactive_multilayer_map }}">
         <div id="imb-map" class="imb-map"></div>
-        <section id="imb-layer-control" class="imb-control-card imb-layer-control" aria-label="{{ catalog.shared.layer_control }}">
-          <h2 id="imb-layer-title" class="imb-control-title"></h2>
-          <div id="imb-layer-options" class="imb-control-list"></div>
-        </section>
-        <section id="imb-legend" class="imb-control-card imb-legend" aria-label="{{ catalog.shared.legend }}">
-          <h2 id="imb-legend-title" class="imb-control-title"></h2>
-          <div id="imb-legend-groups"></div>
-        </section>
+        <div id="imb-map-controls" class="imb-map-controls">
+          <section id="imb-basemap-control" class="imb-control-card imb-basemap-control" aria-label="{{ catalog.shared.basemap }}">
+            <h2 class="imb-control-title">{{ catalog.shared.basemap }}</h2>
+            <div id="imb-basemap-options"></div>
+          </section>
+          <section id="imb-layer-control" class="imb-control-card imb-layer-control" aria-label="{{ catalog.shared.layer_control }}">
+            <h2 id="imb-layer-title" class="imb-control-title"></h2>
+            <div id="imb-layer-options" class="imb-control-list"></div>
+          </section>
+          <section id="imb-legend" class="imb-control-card imb-legend" aria-label="{{ catalog.shared.legend }}">
+            <button
+              id="imb-legend-toggle"
+              class="imb-control-toggle"
+              type="button"
+              aria-controls="imb-legend-groups"
+              aria-expanded="true"
+            >
+              <span id="imb-legend-title"></span>
+              <span class="imb-control-chevron" aria-hidden="true">⌃</span>
+            </button>
+            <div id="imb-legend-groups" class="imb-legend-body"></div>
+          </section>
+        </div>
         <div id="imb-map-message" class="imb-map-message" role="alert"></div>
         <div id="imb-map-attribution" class="imb-map-attribution"></div>
       </section>
@@ -85,6 +100,24 @@
       document.getElementById("imb-subtitle").textContent = subtitle;
       document.getElementById("imb-layer-title").textContent = label("layers");
       document.getElementById("imb-legend-title").textContent = label("legend");
+      var legendPanel = document.getElementById("imb-legend");
+      var legendToggle = document.getElementById("imb-legend-toggle");
+      function setLegendCollapsed(collapsed) {
+        var next = Boolean(collapsed);
+        legendPanel.classList.toggle("is-collapsed", next);
+        legendToggle.setAttribute("aria-expanded", next ? "false" : "true");
+        legendToggle.setAttribute(
+          "aria-label",
+          next ? label("expand_legend") : label("collapse_legend")
+        );
+        IMB.qa.legendCollapsed = next;
+      }
+      legendToggle.addEventListener("click", function () {
+        setLegendCollapsed(!legendPanel.classList.contains("is-collapsed"));
+      });
+      setLegendCollapsed(
+        Boolean(window.matchMedia && window.matchMedia("(max-width: 700px)").matches)
+      );
       var collapse = document.getElementById("imb-collapse");
       collapse.textContent = label("collapse");
       var search = document.getElementById("imb-search");
@@ -101,12 +134,17 @@
           ? spec.map.search_behavior
           : "filter"
       ).toLocaleLowerCase();
+      var basemapControlPanel = document.getElementById("imb-basemap-control");
+      var layerControlPanel = document.getElementById("imb-layer-control");
+      var mapControlsHost = document.getElementById("imb-map-controls");
       if (mapControls.layer_control === false) {
-        document.getElementById("imb-layer-control").hidden = true;
+        layerControlPanel.hidden = true;
       }
       if (mapControls.legend === false) {
-        document.getElementById("imb-legend").hidden = true;
+        legendPanel.hidden = true;
       }
+      mapControlsHost.hidden =
+        basemapControlPanel.hidden && layerControlPanel.hidden && legendPanel.hidden;
 
       var globalRegistry = new Map();
       var runtimeLayers = [];
@@ -585,6 +623,10 @@
           return false;
         }
         selectFeature(IMB.text(identifier), "qa");
+        return true;
+      };
+      IMB.qa.actions.toggleLegend = function (collapsed) {
+        setLegendCollapsed(Boolean(collapsed));
         return true;
       };
       IMB.finish("multilayer", {

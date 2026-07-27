@@ -22,7 +22,9 @@
     "search_map_layers": "搜索地图图层",
     "search_results": "搜索结果",
     "interactive_multilayer_map": "交互式多图层地图",
-    "layer_control": "图层控制"
+    "layer_control": "图层控制",
+    "no_basemap": "无底图",
+    "basemap_unavailable": "在线底图加载失败，已切换为无底图。"
   },
   "map_list": {
     "eyebrow": "ATLAS 数据浏览器",
@@ -67,7 +69,9 @@
     "empty": "没有符合条件的要素",
     "limited": "仅显示前",
     "visible_layers": "可见图层",
-    "features": "要素"
+    "features": "要素",
+    "collapse_legend": "收起图例",
+    "expand_legend": "展开图例"
   },
   "style": {
     "missing_label": "未分类"

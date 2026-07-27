@@ -150,7 +150,12 @@ def _write_multilayer_project(project: Path, *, linked: bool) -> Path:
         ("b", "Beta", 118.2),
     ):
         gpd.GeoDataFrame(
-            {"id": ["1"], "name": [name], "shared": ["project-1"]},
+            {
+                "id": ["1"],
+                "name": [name],
+                "shared": ["project-1"],
+                "category": ["Category 0"],
+            },
             geometry=[Point(longitude, 39.6)],
             crs="EPSG:4326",
         ).to_file(project / f"{layer_id}.geojson", driver="GeoJSON")
@@ -164,9 +169,15 @@ def _write_multilayer_project(project: Path, *, linked: bool) -> Path:
             "id_field": "id",
             "label_field": "name",
             "search_fields": ["name"],
-            "field_labels": {"name": "Name"},
+            "field_labels": {"name": "Name", "category": "Category"},
             "source_note": "Synthetic browser test",
-            "style": {"color": "#2563eb"},
+            "style": {
+                "color_field": "category",
+                "categories": {
+                    f"Category {index}": f"#{(index * 2654435761) & 0xFFFFFF:06x}"
+                    for index in range(30)
+                },
+            },
         }
         if linked:
             layer["link_key"] = "shared"
@@ -187,6 +198,18 @@ def _write_multilayer_project(project: Path, *, linked: bool) -> Path:
             {
                 "name": "Two",
                 "url": "https://tiles.invalid/two/{z}/{x}/{y}.png",
+                "attribution": "Synthetic",
+                "visible": False,
+            },
+            {
+                "name": "Three",
+                "url": "https://tiles.invalid/three/{z}/{x}/{y}.png",
+                "attribution": "Synthetic",
+                "visible": False,
+            },
+            {
+                "name": "Broken",
+                "url": "https://tiles.invalid/broken/{z}/{x}/{y}.png",
                 "attribution": "Synthetic",
                 "visible": False,
             },
@@ -213,8 +236,8 @@ def test_multilayer_browser_smoke_and_link_isolation(tmp_path: Path) -> None:
         page.route(
             "https://tiles.invalid/**",
             lambda route: route.fulfill(
-                status=200,
-                body=TRANSPARENT_PNG,
+                status=500 if "/broken/" in route.request.url else 200,
+                body=b"" if "/broken/" in route.request.url else TRANSPARENT_PNG,
                 content_type="image/png",
             ),
         )
@@ -228,7 +251,15 @@ def test_multilayer_browser_smoke_and_link_isolation(tmp_path: Path) -> None:
             "aria-pressed"
         ) == "true"
         assert page.locator("#imb-layer-title").inner_text() == "Layers"
-        assert page.locator(".imb-map-tool-select").get_attribute("aria-label") == "Basemap"
+        basemap_select = page.locator("#imb-basemap-control .imb-basemap-select")
+        assert basemap_select.get_attribute("aria-label") == "Basemap"
+        assert basemap_select.locator("option").all_inner_texts() == [
+            "One",
+            "Two",
+            "Three",
+            "Broken",
+            "No basemap",
+        ]
         assert page.locator(".imb-map-tool-button").get_attribute("title") == "Fullscreen map"
 
         page.evaluate("window.__interactiveMapBuilderQA.actions.setSearch('Alpha')")
@@ -245,18 +276,50 @@ def test_multilayer_browser_smoke_and_link_isolation(tmp_path: Path) -> None:
             "window.__interactiveMapBuilderQA.actions.toggleLayer('a', false)"
         )
         assert not page.locator("input[data-layer-id='a']").is_checked()
-        assert page.evaluate("window.__interactiveMapBuilderQA.actions.setBasemap('Two')")
+        assert page.evaluate("window.__interactiveMapBuilderQA.actions.setBasemap('Three')")
+        assert page.evaluate("window.__interactiveMapBuilderQA.activeBasemap") == "Three"
+        assert page.evaluate("window.__interactiveMapBuilderQA.actions.setBasemap('Broken')")
+        page.wait_for_function(
+            "window.__interactiveMapBuilderQA.basemapFallback === true",
+            timeout=10_000,
+        )
+        assert page.evaluate("window.__interactiveMapBuilderQA.activeBasemap") == "No basemap"
+        assert page.locator("#imb-map-message").is_visible()
+        assert page.evaluate("window.__interactiveMapBuilderQA.actions.setBasemap('Three')")
+        assert page.evaluate("window.__interactiveMapBuilderQA.basemapFallback") is False
+        assert not page.locator("#imb-map-message").is_visible()
+        assert page.evaluate("window.__interactiveMapBuilderQA.actions.setBasemap('No basemap')")
+        assert page.evaluate("window.__interactiveMapBuilderQA.activeBasemap") == "No basemap"
         assert page.evaluate(
             "window.__interactiveMapBuilderQA.actions.selectFeature('a::1')"
         )
         assert page.evaluate("window.__interactiveMapBuilderQA.selectedLinkId") == "a::1"
 
+        page.set_viewport_size({"width": 390, "height": 844})
         page.goto((linked_dist / "map.html").resolve().as_uri())
         linked = _wait_ready(page)
         assert linked["linkGroupSizes"] == {"link::project-1": 2}
-
-        page.set_viewport_size({"width": 390, "height": 844})
         assert page.locator("#imb-app").evaluate(
             "node => node.scrollWidth <= node.clientWidth"
+        )
+
+        legend_toggle = page.locator("#imb-legend-toggle")
+        layer_control = page.locator("#imb-layer-control")
+        legend = page.locator("#imb-legend")
+        layer_checkbox = page.locator("input[data-layer-id='a']")
+        assert legend_toggle.get_attribute("aria-expanded") == "false"
+        assert layer_checkbox.is_visible()
+        layer_box = layer_control.bounding_box()
+        legend_box = legend.bounding_box()
+        assert layer_box is not None and legend_box is not None
+        assert layer_box["y"] + layer_box["height"] <= legend_box["y"] + 1
+
+        layer_checkbox.click()
+        assert not layer_checkbox.is_checked()
+        legend_toggle.click()
+        assert legend_toggle.get_attribute("aria-expanded") == "true"
+        assert layer_checkbox.is_visible()
+        assert page.locator("#imb-legend-groups").evaluate(
+            "node => node.scrollHeight > node.clientHeight"
         )
         browser.close()

@@ -1,4 +1,4 @@
 interface:
   display_name: "Interactive Map Builder"
-  short_description: "Turn existing spatial data into verified shareable maps"
-  default_prompt: "Use $interactive-map-builder whenever the user wants existing spatial or coordinate data turned into a browser-openable, searchable, filterable, sortable, or multilayer map, even if they do not mention GIS. Inspect first, ask only blocking questions, build and verify with the packaged engine, and do not replace it with an ad hoc Folium or Leaflet page."
+  short_description: "Turn spatial data into verified portable map files"
+  default_prompt: "Use $interactive-map-builder whenever the user wants existing spatial or coordinate data turned into a browser-openable, searchable, filterable, sortable, or multilayer map, even if they do not mention GIS. Start with the non-blocking official update preflight, inspect first, ask only blocking questions, build and verify with the packaged engine, and do not replace it with an ad hoc Folium or Leaflet page. Treat local HTML as the default delivery and discuss a public URL only when explicitly requested. In Codex, suggest Plan mode once only for genuinely complex tasks and never require it."

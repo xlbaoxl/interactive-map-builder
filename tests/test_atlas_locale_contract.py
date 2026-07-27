@@ -14,6 +14,7 @@ HAN = re.compile(r"[\u3400-\u9fff\uf900-\ufaff]")
 def test_shared_map_controls_use_locale_catalog_messages() -> None:
     text = (TEMPLATES / "shared.js").read_text(encoding="utf-8")
     assert 'firstDefined(labels.basemap, "Basemap")' in text
+    assert 'firstDefined(labels.no_basemap, "No basemap")' in text
     assert 'firstDefined(labels.fullscreen, "Fullscreen map")' in text
     assert 'select.setAttribute("aria-label", basemapLabel);' in text
     assert 'button.title = fullscreenLabel;' in text
@@ -41,3 +42,7 @@ def test_locale_catalogs_define_distinct_complete_interface_copy() -> None:
     assert english["multilayer"].keys() == chinese["multilayer"].keys()
     assert english["shared"]["basemap"] == "Basemap"
     assert chinese["shared"]["basemap"] == "底图"
+    assert english["shared"]["no_basemap"] == "No basemap"
+    assert chinese["shared"]["no_basemap"] == "无底图"
+    assert english["multilayer"]["collapse_legend"] == "Collapse legend"
+    assert chinese["multilayer"]["collapse_legend"] == "收起图例"

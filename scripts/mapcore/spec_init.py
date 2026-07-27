@@ -7,6 +7,7 @@ import re
 from pathlib import Path
 from typing import Any, Dict, List, Mapping, Optional
 
+from .basemaps import default_basemaps
 from .locales import DEFAULT_LOCALE, require_locale
 from .spec import current_schema_version, validate_spec
 
@@ -235,14 +236,7 @@ def init_spec_from_inspection(
         "title": inferred_title,
         "locale": selected_locale,
         "layers": spec_layers,
-        "basemaps": [
-            {
-                "name": "OpenStreetMap",
-                "url": "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-                "attribution": "© OpenStreetMap contributors",
-                "visible": True,
-            }
-        ],
+        "basemaps": default_basemaps(),
         "static": {"enabled": True, "presets": ["slide-16x9", "paper"]},
     }
     if selected == "map-list":

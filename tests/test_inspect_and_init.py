@@ -72,6 +72,15 @@ def test_init_spec_consumes_inspection_and_builds_csv_end_to_end(tmp_path: Path)
         "x_field": "经度",
         "y_field": "纬度",
     }
+    assert [item["name"] for item in spec["basemaps"]] == [
+        "CARTO Positron",
+        "OpenStreetMap Standard",
+    ]
+    assert spec["basemaps"][0]["visible"] is True
+    assert spec["basemaps"][1]["url"] == (
+        "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+    )
+    assert sum(bool(item.get("visible")) for item in spec["basemaps"]) == 1
     result = build_map(spec_path, tmp_path / "dist")
     assert result["report"]["checks"]["primary_count"] == 3
     assert (tmp_path / "dist" / "inspection.json").is_file()

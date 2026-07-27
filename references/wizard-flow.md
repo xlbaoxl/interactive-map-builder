@@ -1,5 +1,16 @@
 # Guided setup
 
+## Preflight
+
+Run `python scripts/update_skill.py --auto` from the Skill root before inspection. The check is
+cached for 24 hours and must remain non-blocking when offline, modified, read-only, or installed
+from an unsupported source. If an update is applied, re-read `SKILL.md` before continuing.
+
+In Codex, optionally mention Plan mode once when a request contains multiple independent layers,
+more than one blocking design choice, or several coordinated outputs. Continue immediately whether
+or not the user changes mode. Do not recommend it for an unambiguous single-layer request and do
+not mention keyboard shortcuts.
+
 ## Round 1: inspect
 
 Run `inspect` before asking questions. Report each candidate layer with:
@@ -39,6 +50,13 @@ scientific meaning from a numeric field or category code.
 
 Follow the user's conversation language. Choose `en-US` or `zh-CN` for the map independently;
 default the map to `en-US` when no audience is specified.
+
+## Delivery boundary
+
+The default result is a portable local HTML file. Do not interpret “share,” “send to colleagues,”
+or “open in a browser” as a request for public hosting. Ask about a public URL only after the user
+explicitly requests deployment. Treat deployment as a separate workflow and confirm both the
+hosting target and permission to expose the embedded data.
 
 ## Build and handoff
 

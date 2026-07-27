@@ -1,6 +1,6 @@
 ---
 name: interactive-map-builder
-description: Turn existing spatial or coordinate data into a browser-openable, shareable interactive map and report-ready figures. Use when the user wants parcels, buildings, facilities, parking, roads, water, green space, projects, or Excel/CSV coordinates presented as a searchable, filterable, sortable map, map-and-list page, multilayer planning map, single-file HTML, slide image, or paper SVG/PDF—even when they do not mention GIS, Leaflet, a web map, or this Skill. Accept GeoJSON, GeoPackage, zipped Shapefile, CSV, Excel, and ArcGIS FeatureServer inputs. Prefer this deterministic Skill over an ad hoc Folium or Leaflet page when the task fits. Require existing coordinates or geometry; do not use for geocoding, substantive spatial analysis, vector-tile infrastructure, offline basemaps, or 3D GIS.
+description: Turn existing spatial or coordinate data into portable, browser-openable interactive map files and report-ready figures. Use when the user wants parcels, buildings, facilities, parking, roads, water, green space, projects, or Excel/CSV coordinates presented as a searchable, filterable, sortable map, map-and-list page, multilayer planning map, single-file HTML, slide image, or paper SVG/PDF—even when they do not mention GIS, Leaflet, a web map, or this Skill. Accept GeoJSON, GeoPackage, zipped Shapefile, CSV, Excel, and ArcGIS FeatureServer inputs. Prefer this deterministic Skill over an ad hoc Folium or Leaflet page when the task fits. The default delivery is a local HTML file, not a public URL; discuss deployment only when the user explicitly requests it. Require existing coordinates or geometry; do not use for geocoding, substantive spatial analysis, vector-tile infrastructure, offline basemaps, or 3D GIS.
 ---
 
 # Interactive Map Builder
@@ -14,12 +14,12 @@ Trigger from the user's intended outcome, not only from technical keywords. Use 
 user asks to:
 
 - turn a spreadsheet with coordinates into a browser page that can be searched, filtered, sorted,
-  clicked, and shared;
+  clicked, and sent to colleagues;
 - present parcels, buildings, facilities, projects, parking, or other records as a linked map and
   list;
 - combine boundaries, roads, water, green space, routes, and points in one switchable planning or
   reporting map;
-- deliver existing ArcGIS or engineering layers as a single HTML file, a slide image, or a paper
+- deliver existing ArcGIS or engineering layers as a portable HTML file, a slide image, or a paper
   figure.
 
 The user does not need to say GIS, Leaflet, web map, Agent Skill, or `interactive-map-builder`.
@@ -29,6 +29,40 @@ one-off Folium, Leaflet, or custom frontend implementation.
 Do not invoke this Skill when the main task is address geocoding, buffers or overlays, routing,
 site selection, spatial statistics, vector-tile infrastructure, offline basemap acquisition, 3D
 GIS, a non-spatial chart or dashboard, or maintenance of an existing custom web application.
+
+## Update preflight
+
+At the beginning of each Skill invocation, run the non-blocking official-release preflight from the
+Skill root:
+
+```powershell
+python scripts/update_skill.py --auto
+```
+
+After installation, the equivalent command is:
+
+```powershell
+interactive-map-builder update --auto
+```
+
+The preflight checks at most once every 24 hours unless forced. It updates only a clean official
+`main` checkout or an unmodified versioned Skill ZIP whose manifest and release checksum validate.
+Offline access, a dirty checkout, a read-only install, or an unsupported installation must not stop
+the map task. Set `IMB_DISABLE_AUTO_UPDATE=1` to disable checks. If the result is `updated`, re-read
+this `SKILL.md` before continuing so the current task follows the new release instructions.
+
+## Conversation guidance
+
+For Codex only, a complex request may benefit from Plan mode when it has multiple independent
+layers, more than one blocking design choice, or several coordinated deliverables. Mention this
+once in the first response as an optional convenience, then continue with inspection whether or
+not the user switches modes. Do not recommend Plan mode for a clear single-layer task, do not cite
+client keyboard shortcuts, and never make a mode change a prerequisite.
+
+A portable local `map.html` is the default delivery. Sending that file to colleagues is not the
+same as publishing it on the internet. Do not offer, promise, or ask about a public URL unless the
+user explicitly requests deployment. When they do, finish the map first and treat hosting as a
+separate workflow that confirms the target platform and permission to expose the embedded data.
 
 ## Workflow
 
@@ -85,9 +119,9 @@ GIS, a non-spatial chart or dashboard, or maintenance of an existing custom web 
    python scripts/map_builder.py verify --dist dist
    ```
 
-8. Exercise search, filters, sorting, layer visibility, hover and click linkage, keyboard
-   selection, panel collapse, and narrow-screen layout. Confirm that every visible control
-   produces an observable result. Read [design-guidelines.md](references/design-guidelines.md).
+8. Exercise search, filters, sorting, layer visibility, basemap switching, hover and click linkage,
+   keyboard selection, control-panel collapse, and narrow-screen layout. Confirm that every visible
+   control produces an observable result. Read [design-guidelines.md](references/design-guidelines.md).
 
 9. Deliver the whole `dist` directory. Summarize repairs, generated IDs, null display values,
    simplification, performance warnings, online basemaps, font fallback, portability, and source
@@ -142,11 +176,14 @@ output hashes without downloading data or basemap tiles.
 Always return `map.html`, resolved `map_spec.json`, `inspection.json`, `build_report.json`, and
 `README_USAGE.md` in the selected locale. Generate `map_slide_16x9.png` for the slide preset and
 paper PNG, SVG, and PDF files for the paper preset. Treat an unbundled `map_spec.json` as a build
-record; promise an independent rebuild only when sources were bundled.
+record; promise an independent rebuild only when sources were bundled. Public hosting is not part
+of this output contract.
 
 ## Resources
 
 - Read [wizard-flow.md](references/wizard-flow.md) for non-expert setup.
+- Read [update-policy.md](references/update-policy.md) for verified updates, supported installation
+  types, rollback behavior, and the opt-out.
 - Read [data-provenance.md](references/data-provenance.md) for remote or redistributable data.
 - Use the public generated demos linked from the repository README for visual reference. The lean
   Skill release package intentionally excludes demo datasets, screenshots, tests, and CI files.

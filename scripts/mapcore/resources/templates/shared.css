@@ -1480,3 +1480,105 @@ summary:focus-visible,
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Stacked multilayer controls prevent long legends from covering layer switches. */
+.multilayer-app .imb-map-controls {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 550;
+  display: flex;
+  width: min(280px, calc(100% - 24px));
+  max-height: calc(100% - 48px);
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.multilayer-app .imb-map-controls > .imb-control-card {
+  position: static;
+  width: 100%;
+  max-height: none;
+  overflow: hidden;
+  pointer-events: auto;
+}
+
+.multilayer-app .imb-map-controls .imb-layer-control,
+.multilayer-app .imb-map-controls .imb-legend {
+  top: auto;
+  right: auto;
+  bottom: auto;
+}
+
+.multilayer-app .imb-layer-control {
+  flex: 0 0 auto;
+}
+
+.multilayer-app #imb-layer-options {
+  max-height: min(220px, 34vh);
+  padding-right: 2px;
+  overflow: auto;
+}
+
+.multilayer-app .imb-legend {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+}
+
+.imb-control-toggle {
+  display: flex;
+  width: 100%;
+  min-height: 32px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0;
+  gap: 8px;
+  border: 0;
+  background: transparent;
+  font-size: 0.75rem;
+  font-weight: 760;
+  text-align: left;
+}
+
+.imb-control-chevron {
+  flex: 0 0 auto;
+  transition: transform 140ms ease;
+}
+
+.imb-legend.is-collapsed .imb-control-chevron {
+  transform: rotate(180deg);
+}
+
+.multilayer-app .imb-legend-body {
+  min-height: 0;
+  padding-right: 2px;
+  overflow: auto;
+}
+
+.multilayer-app .imb-legend.is-collapsed {
+  flex: 0 0 auto;
+}
+
+.multilayer-app .imb-legend.is-collapsed .imb-legend-body {
+  display: none;
+}
+
+@media (max-width: 700px) {
+  .multilayer-app .imb-map-controls {
+    top: 11px;
+    right: 11px;
+    width: min(230px, calc(100% - 22px));
+    max-height: calc(100% - 62px);
+  }
+
+  .multilayer-app #imb-layer-options {
+    max-height: min(180px, 28vh);
+  }
+}
+
+.multilayer-app .imb-basemap-select {
+  width: 100%;
+  min-height: 36px;
+}

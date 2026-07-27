@@ -344,3 +344,44 @@ cases:
       not build from spatial data with this Skill.
     ask_user: false
     direct_build: false
+- id: codex-complex-optional-plan-mode
+  category: ambiguous
+  locale: zh-CN
+  prompt: 我有道路、水系、绿地、停车位和地块五组数据，还要同时输出交互页面、汇报图和论文图，先帮我设计一下怎么做。
+  expected:
+    invocation: trigger
+    behavior: In Codex, suggest Plan mode once as an optional convenience, then inspect all inputs and continue
+      regardless of whether the user switches modes; consolidate only blocking design questions.
+    ask_user: true
+    direct_build: false
+- id: portable-html-not-public-url
+  category: implicit
+  locale: en-US
+  prompt: Turn these existing layers into one HTML file that I can email to colleagues and open locally.
+  expected:
+    invocation: trigger
+    behavior: Build a portable local HTML deliverable and do not offer, promise, or ask about public hosting because
+      the user requested file-based sharing.
+    ask_user: true
+    direct_build: false
+- id: explicit-public-map-url
+  category: explicit
+  locale: zh-CN
+  prompt: 把这些地块和设施数据做成交互地图，并部署成任何人都能访问的公开网址。
+  expected:
+    invocation: trigger
+    behavior: Build and verify the map product, but treat hosting as a separate workflow; before deployment confirm
+      the hosting target and explicit permission to expose the embedded spatial data.
+    ask_user: true
+    direct_build: false
+- id: clear-single-layer-no-plan-mode
+  category: explicit
+  locale: en-US
+  prompt: This EPSG:4326 GeoJSON has one point layer. Use name for labels and type for filtering, then build the
+    English map.
+  expected:
+    invocation: trigger
+    behavior: Inspect and build the unambiguous single-layer map without recommending Plan mode or adding an unnecessary
+      planning turn.
+    ask_user: false
+    direct_build: true

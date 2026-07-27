@@ -296,77 +296,145 @@
       : [];
     var labels = messages && typeof messages === "object" ? messages : {};
     var basemapLabel = text(firstDefined(labels.basemap, "Basemap"));
+    var noBasemapLabel = text(firstDefined(labels.no_basemap, "No basemap"));
+    var unavailableLabel = text(firstDefined(
+      labels.basemap_unavailable,
+      "Basemap tiles could not be loaded. Showing no basemap."
+    ));
     var fullscreenLabel = text(firstDefined(labels.fullscreen, "Fullscreen map"));
     var activeLayer = null;
     var activeIndex = -1;
+    var selectNode = null;
+    var tileErrorCount = 0;
+    var basemapWarningVisible = false;
     var attribution = document.getElementById("imb-map-attribution");
+    var messageNode = document.getElementById("imb-map-message");
+    var customMount = document.getElementById("imb-basemap-options");
+    var customSection = document.getElementById("imb-basemap-control");
+    var mapOptions = spec && spec.map && typeof spec.map === "object" ? spec.map : {};
+    var controls = mapOptions.controls && typeof mapOptions.controls === "object"
+      ? mapOptions.controls
+      : {};
 
-    function activate(index) {
-      var basemap = basemaps[index];
-      if (!basemap) {
+    function setAttribution(value) {
+      if (!attribution) {
+        return;
+      }
+      attribution.textContent = text(value);
+      attribution.hidden = !attribution.textContent;
+    }
+
+    function activate(index, options) {
+      var requestedIndex = Number(index);
+      var basemap = requestedIndex >= 0 ? basemaps[requestedIndex] : null;
+      if (requestedIndex >= 0 && !basemap) {
         return false;
       }
       if (activeLayer && map.hasLayer(activeLayer)) {
         map.removeLayer(activeLayer);
       }
-      activeLayer = L.tileLayer(
-        text(basemap.url),
-        {
-          minZoom: 0,
-          maxZoom: Number(firstDefined(basemap.max_zoom, 19)),
-          attribution: ""
+      activeLayer = null;
+      activeIndex = basemap ? requestedIndex : -1;
+      tileErrorCount = 0;
+      if (!(options && options.fallback)) {
+        qa.basemapFallback = false;
+        if (basemapWarningVisible && messageNode) {
+          messageNode.textContent = "";
+          messageNode.classList.remove("is-visible");
         }
-      ).addTo(map);
-      if (activeLayer.bringToBack) {
-        activeLayer.bringToBack();
+        basemapWarningVisible = false;
       }
-      activeIndex = index;
-      if (attribution) {
-        attribution.textContent = text(firstDefined(
+      if (basemap) {
+        var requestedLayer = L.tileLayer(
+          text(basemap.url),
+          {
+            minZoom: 0,
+            maxZoom: Number(firstDefined(basemap.max_zoom, 19)),
+            attribution: ""
+          }
+        );
+        requestedLayer.on("tileerror", function () {
+          if (activeLayer !== requestedLayer) {
+            return;
+          }
+          tileErrorCount += 1;
+          if (tileErrorCount < 3 || activeIndex < 0) {
+            return;
+          }
+          activate(-1, { fallback: true });
+        });
+        activeLayer = requestedLayer;
+        activeLayer.addTo(map);
+        if (activeLayer.bringToBack) {
+          activeLayer.bringToBack();
+        }
+        setAttribution(firstDefined(
           basemap.attribution,
           spec.static && spec.static.source_note,
           ""
         ));
-        attribution.hidden = !attribution.textContent;
+      } else {
+        setAttribution(firstDefined(spec.static && spec.static.source_note, ""));
+      }
+      if (selectNode) {
+        selectNode.value = String(activeIndex);
+      }
+      qa.activeBasemap = basemap ? text(firstDefined(basemap.name, activeIndex)) : noBasemapLabel;
+      if (options && options.fallback) {
+        qa.basemapFallback = true;
+        basemapWarningVisible = true;
+        if (messageNode) {
+          messageNode.textContent = unavailableLabel;
+          messageNode.classList.add("is-visible");
+        }
       }
       return true;
     }
 
+    var requested = basemaps.findIndex(function (candidate) {
+      return candidate.visible === true;
+    });
     if (basemaps.length) {
-      var requested = basemaps.findIndex(function (candidate) {
-        return candidate.visible === true;
-      });
       activate(requested >= 0 ? requested : 0);
-    } else if (attribution) {
-      attribution.textContent = text(firstDefined(
-        spec && spec.static && spec.static.source_note,
-        ""
-      ));
-      attribution.hidden = !attribution.textContent;
+    } else {
+      activate(-1);
     }
 
-    var mapOptions = spec && spec.map && typeof spec.map === "object" ? spec.map : {};
-    var controls = mapOptions.controls && typeof mapOptions.controls === "object"
-      ? mapOptions.controls
-      : {};
-    if (basemaps.length > 1 && controls.basemap_switcher !== false) {
+    function buildSelect() {
+      var select = document.createElement("select");
+      select.className = customMount
+        ? "imb-select imb-basemap-select"
+        : "imb-map-tool-select";
+      select.setAttribute("aria-label", basemapLabel);
+      basemaps.forEach(function (candidate, index) {
+        var option = document.createElement("option");
+        option.value = String(index);
+        option.textContent = text(firstDefined(candidate.name, "Basemap " + (index + 1)));
+        select.appendChild(option);
+      });
+      var none = document.createElement("option");
+      none.value = "-1";
+      none.textContent = noBasemapLabel;
+      select.appendChild(none);
+      select.value = String(activeIndex);
+      select.addEventListener("change", function () {
+        activate(Number(select.value));
+      });
+      selectNode = select;
+      return select;
+    }
+
+    if (controls.basemap_switcher === false || !basemaps.length) {
+      if (customSection) {
+        customSection.hidden = true;
+      }
+    } else if (customMount) {
+      customMount.replaceChildren(buildSelect());
+    } else {
       var basemapControl = L.control({ position: "topleft" });
       basemapControl.onAdd = function () {
         var container = element("div", undefined, "imb-leaflet-tool");
-        var select = document.createElement("select");
-        select.className = "imb-map-tool-select";
-        select.setAttribute("aria-label", basemapLabel);
-        basemaps.forEach(function (candidate, index) {
-          var option = document.createElement("option");
-          option.value = String(index);
-          option.textContent = text(firstDefined(candidate.name, "Basemap " + (index + 1)));
-          option.selected = index === activeIndex;
-          select.appendChild(option);
-        });
-        select.addEventListener("change", function () {
-          activate(Number(select.value));
-        });
-        container.appendChild(select);
+        container.appendChild(buildSelect());
         if (L.DomEvent && L.DomEvent.disableClickPropagation) {
           L.DomEvent.disableClickPropagation(container);
         }
@@ -424,6 +492,9 @@
 
     qa.actions.setBasemap = function (value) {
       var target = text(value);
+      if (target === "-1" || target.toLocaleLowerCase() === "none" || target === noBasemapLabel) {
+        return activate(-1);
+      }
       var index = basemaps.findIndex(function (candidate, candidateIndex) {
         return text(firstDefined(candidate.name, candidateIndex)) === target
           || String(candidateIndex) === target;
