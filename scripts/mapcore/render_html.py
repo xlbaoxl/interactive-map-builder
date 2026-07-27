@@ -296,7 +296,6 @@ def render_html(
         "qa_interface": "__interactiveMapBuilderQA",
         "feature_count": sum(layer_counts.values()),
         "layer_counts": layer_counts,
-        "multilayer_enhancements": selected_template == "multilayer",
     }
 
 
