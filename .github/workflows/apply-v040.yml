@@ -1,0 +1,62 @@
+name: apply v0.4.0 Atlas visual tree
+
+on:
+  push:
+    branches:
+      - agent/v0.4.0-atlas-visual-upgrade
+    paths:
+      - ".github/workflows/apply-v040.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply-v040:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: agent/v0.4.0-atlas-visual-upgrade
+          fetch-depth: 0
+      - name: Apply reviewed visual-system patch
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cat .github/v040-patch/part-* > /tmp/v0.4.0.patch.gz.b64
+          test "$(wc -c < /tmp/v0.4.0.patch.gz.b64)" = "41192"
+          echo "ddd2954574a35ad108312255fa5f9614629885a67c365e8c0d636b131fea47c8  /tmp/v0.4.0.patch.gz.b64" | sha256sum -c -
+          base64 -d /tmp/v0.4.0.patch.gz.b64 > /tmp/v0.4.0.patch.gz
+          echo "733cc993491003b74dcf7cd450c33f4027687ff01a955effae822c84ccef7000  /tmp/v0.4.0.patch.gz" | sha256sum -c -
+          gzip -dc /tmp/v0.4.0.patch.gz > /tmp/v0.4.0.patch
+          echo "9f81364ead57cb9c8f2b21ff1efa0916e5ab344a2e183478593af362ed2f0f7e  /tmp/v0.4.0.patch" | sha256sum -c -
+          git apply --check --index --binary /tmp/v0.4.0.patch
+          git apply --index --binary /tmp/v0.4.0.patch
+      - name: Regenerate deterministic README screenshots
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt Pillow
+          python -m playwright install --with-deps chromium
+          python scripts/capture_readme_screenshots.py
+          git add assets/screenshots/en-US/map-list.png \
+            assets/screenshots/en-US/multilayer.png \
+            assets/screenshots/zh-CN/map-list.png \
+            assets/screenshots/zh-CN/multilayer.png
+      - name: Validate and publish branch commit
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git diff --cached --check
+          test "$(python - <<'PY'
+          import tomllib
+          from pathlib import Path
+          print(tomllib.loads(Path('pyproject.toml').read_text(encoding='utf-8'))['project']['version'])
+          PY
+          )" = "0.4.0"
+          test -f scripts/mapcore/visual_defaults.py
+          test -f scripts/mapcore/resources/templates/atlas-studio-light.css
+          test -f tests/test_visual_defaults.py
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "release: prepare Atlas Studio Light v0.4.0"
+          git push origin HEAD:agent/v0.4.0-atlas-visual-upgrade
