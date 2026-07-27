@@ -1,0 +1,91 @@
+name: fix-v043-ci
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
+    paths:
+      - ".github/workflows/fix-v043-ci.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out hotfix branch
+        uses: actions/checkout@v6
+        with:
+          ref: hotfix/v0.4.3-update-preflight
+          fetch-depth: 0
+
+      - name: Apply targeted compatibility fixes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          test_path = Path("tests/test_update_skill.py")
+          tests = test_path.read_text(encoding="utf-8")
+          old = '''def test_update_check_uses_network_then_24_hour_cache(tmp_path: Path):
+              state = tmp_path / "state.json"
+              session = FakeSession(_release("0.4.3"))'''
+          new = '''def test_update_check_uses_network_then_24_hour_cache(tmp_path: Path):
+              state = tmp_path / "state.json"
+              session = FakeSession(_release("0.4.4"))'''
+          if old not in tests:
+              raise SystemExit("version-sensitive cache test block not found")
+          tests = tests.replace(old, new, 1)
+          tests = tests.replace(
+              '    assert first["latest_version"] == "0.4.3"',
+              '    assert first["latest_version"] == "0.4.4"',
+              1,
+          )
+          test_path.write_text(tests, encoding="utf-8")
+
+          readme = Path("README.md")
+          english = readme.read_text(encoding="utf-8")
+          anchor = "Use one active Codex Skill directory rather than keeping duplicate `.codex` and `.agents` copies.\n"
+          note = (
+              "Use one active Codex Skill directory rather than keeping duplicate `.codex` and `.agents` copies.\n"
+              "A legacy Windows location may be `$HOME\\.agents\\skills`; archive it before using the active Codex directory below.\n"
+          )
+          if anchor not in english:
+              raise SystemExit("English manual-install anchor not found")
+          readme.write_text(english.replace(anchor, note, 1), encoding="utf-8")
+
+          readme_zh = Path("README.zh-CN.md")
+          chinese = readme_zh.read_text(encoding="utf-8")
+          anchor_zh = "Codex 只保留一个活动 Skill 目录，避免 `.codex` 与 `.agents` 同时存在重复副本。\n"
+          note_zh = (
+              "Codex 只保留一个活动 Skill 目录，避免 `.codex` 与 `.agents` 同时存在重复副本。\n"
+              "旧版 Windows 安装位置可能是 `$HOME\\.agents\\skills`；使用下方活动目录前先将其归档。\n"
+          )
+          if anchor_zh not in chinese:
+              raise SystemExit("Chinese manual-install anchor not found")
+          readme_zh.write_text(chinese.replace(anchor_zh, note_zh, 1), encoding="utf-8")
+          PY
+
+      - name: Run focused compatibility suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --quiet pytest requests pyyaml
+          PYTHONPATH=scripts python -m pytest -q \
+            tests/test_update_skill.py \
+            tests/test_update_hotfix.py \
+            tests/test_skill_structure.py
+
+      - name: Commit targeted fixes
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md README.zh-CN.md tests/test_update_skill.py
+          git commit -m "test: keep updater checks version-independent"
+          git push origin HEAD:hotfix/v0.4.3-update-preflight
