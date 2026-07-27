@@ -1,0 +1,68 @@
+name: bootstrap-v044
+
+on:
+  push:
+    branches:
+      - agent/v0.4.4-engineering-stabilization
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: bootstrap-v044-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apply:
+    if: github.event_name != 'pull_request' || github.head_ref == 'agent/v0.4.4-engineering-stabilization'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out stabilization branch
+        uses: actions/checkout@v6
+        with:
+          ref: agent/v0.4.4-engineering-stabilization
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Reconstruct stabilization script
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat tools/v044_payload/part*.txt | base64 --decode | gzip --decompress > tools/v044_stabilize.py
+          python -m py_compile tools/v044_stabilize.py
+
+      - name: Apply stabilization payload
+        run: python tools/v044_stabilize.py
+
+      - name: Install and validate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
+          python scripts/evaluate_triggers.py validate
+          python -m pytest -q -m "not browser"
+          python -m build --wheel
+          python scripts/build_skill_package.py
+
+      - name: Commit verified source changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf tools/v044_payload
+          git config user.name "openai-agent"
+          git config user.email "openai-agent@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "Release v0.4.4: stabilize delivery and release boundaries"
+          git push origin HEAD:agent/v0.4.4-engineering-stabilization
