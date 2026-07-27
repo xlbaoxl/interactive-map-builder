@@ -1,12 +1,6 @@
 name: apply-v043-hotfix
 
 on:
-  push:
-    branches:
-      - hotfix/v0.4.3-update-preflight
-    paths:
-      - ".hotfix-payload/**"
-      - ".github/workflows/apply-v043-hotfix.yml"
   pull_request:
     branches:
       - main
@@ -55,6 +49,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          git checkout -- .github/workflows/release.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
