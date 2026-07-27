@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - agent/v0.4.0-atlas-visual-upgrade
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
