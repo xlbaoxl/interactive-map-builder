@@ -10,7 +10,7 @@ from __future__ import annotations
 import math
 import re
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Mapping, Sequence, Tuple
+from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
 import geopandas as gpd
 import matplotlib
@@ -24,6 +24,7 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 
 from .locales import DEFAULT_LOCALE, catalog_value, load_catalog
+from .visual_defaults import adjust_hex, resolve_visual_plan
 
 
 OUTPUT_NAMES = {
@@ -76,35 +77,9 @@ def _configure_fonts(spec: Mapping[str, Any]) -> Dict[str, Any]:
         "warning": warning,
     }
 
-_DEFAULT_STYLES = {
-    "point": {
-        "color": "#d1495b",
-        "stroke_color": "#ffffff",
-        "size": 42,
-        "weight": 0.8,
-        "opacity": 0.95,
-        "marker": "o",
-        "zorder": 30,
-    },
-    "line": {
-        "color": "#40566e",
-        "weight": 2.2,
-        "opacity": 0.9,
-        "zorder": 20,
-    },
-    "polygon": {
-        "fill_color": "#7ca6d8",
-        "stroke_color": "#ffffff",
-        "weight": 1.0,
-        "fill_opacity": 0.78,
-        "opacity": 1.0,
-        "zorder": 10,
-    },
-}
-
-
 def _normalise_layers(layers: Any) -> Dict[str, gpd.GeoDataFrame]:
     """Return an insertion-ordered mapping of names to GeoDataFrames."""
+
     normalised: Dict[str, gpd.GeoDataFrame] = {}
     if isinstance(layers, Mapping):
         iterator: Iterable[Tuple[str, Any]] = layers.items()
@@ -165,6 +140,7 @@ def _ordered_layers(
 
 def _plot_crs(frames: Iterable[gpd.GeoDataFrame]) -> Any:
     """Prefer a local metric CRS, with Web Mercator as a safe fallback."""
+
     for frame in frames:
         if frame.empty:
             continue
@@ -183,9 +159,7 @@ def _style_mapping(layer_spec: Mapping[str, Any]) -> Dict[str, Any]:
     return dict(raw) if isinstance(raw, Mapping) else {}
 
 
-def _category_config(
-    layer_spec: Mapping[str, Any], spec: Mapping[str, Any]
-) -> Tuple[Any, Mapping[str, Any]]:
+def _category_config(layer_spec: Mapping[str, Any]) -> Tuple[Any, Mapping[str, Any]]:
     style = _style_mapping(layer_spec)
     field = style.get("color_field")
     categories = style.get("categories") or {}
@@ -194,35 +168,58 @@ def _category_config(
     return field, categories
 
 
-def _geometry_family(geometry_types: Iterable[str]) -> str:
-    values = {str(value).lower() for value in geometry_types}
-    if any("polygon" in value for value in values):
+def _geometry_family(geometry_type: Any) -> str:
+    value = str(geometry_type).lower()
+    if "polygon" in value:
         return "polygon"
-    if any("line" in value for value in values):
+    if "line" in value:
         return "line"
     return "point"
 
 
-def _canonical_style(family: str, raw: Mapping[str, Any]) -> Dict[str, Any]:
-    style = dict(_DEFAULT_STYLES[family])
-    style.update(raw)
-    if family == "polygon" and "color" in raw and "fill_color" not in raw:
-        style["fill_color"] = raw["color"]
-    if family == "point" and "radius" in style and "size" not in raw:
-        radius = float(style["radius"])
-        style["size"] = max(8.0, radius * radius * 1.5)
-    return style
+def _family_style(plan: Mapping[str, Any], family: str) -> Dict[str, Any]:
+    families = plan.get("families", {})
+    raw = families.get(family, {}) if isinstance(families, Mapping) else {}
+    result = dict(raw) if isinstance(raw, Mapping) else {}
+    result["zorder"] = float(result.get("draw_order", plan.get("draw_order", 100)))
+    if family == "point":
+        radius = float(result.get("radius", 4.0))
+        result["size"] = max(8.0, radius * radius * 1.5)
+        result.setdefault("marker", "o")
+    return result
 
 
-def _rule_style(rule: Any) -> Dict[str, Any]:
+def _rule_color(rule: Any) -> Optional[str]:
     if isinstance(rule, str):
-        return {"color": rule, "fill_color": rule}
-    if isinstance(rule, Mapping):
-        result = dict(rule)
-        if "label" in result:
-            result.pop("label")
+        return rule
+    if isinstance(rule, Mapping) and rule.get("color"):
+        return str(rule["color"])
+    return None
+
+
+def _category_style(
+    family: str, base: Mapping[str, Any], rule: Any
+) -> Dict[str, Any]:
+    result = dict(base)
+    color = _rule_color(rule)
+    if not color:
         return result
-    return {}
+    strategy = str(result.get("category_stroke", "same"))
+    if family == "line":
+        result["color"] = color
+    elif family == "point":
+        result["fill_color"] = color
+        if strategy == "same":
+            result["stroke_color"] = color
+        elif strategy == "darken":
+            result["stroke_color"] = adjust_hex(color, -0.24)
+    else:
+        result["fill_color"] = color
+        if strategy == "same":
+            result["stroke_color"] = color
+        elif strategy == "darken":
+            result["stroke_color"] = adjust_hex(color, -0.24)
+    return result
 
 
 def _rule_label(value: Any, rule: Any) -> str:
@@ -232,56 +229,55 @@ def _rule_label(value: Any, rule: Any) -> str:
 
 
 def _plot_subset(
-    axis: Any, frame: gpd.GeoDataFrame, family: str, raw_style: Mapping[str, Any]
+    axis: Any, frame: gpd.GeoDataFrame, family: str, style: Mapping[str, Any]
 ) -> None:
-    style = _canonical_style(family, raw_style)
-    common = {
-        "ax": axis,
-        "alpha": float(style.get("opacity", 1.0)),
-        "zorder": float(style.get("zorder", _DEFAULT_STYLES[family]["zorder"])),
-    }
+    zorder = float(style.get("zorder", 100))
     if family == "polygon":
         frame.plot(
-            facecolor=style.get("fill_color", style.get("color")),
-            edgecolor=style.get("stroke_color", style.get("color", "#ffffff")),
-            linewidth=float(style.get("weight", 1.0)),
-            alpha=float(style.get("fill_opacity", style.get("opacity", 1.0))),
-            **{key: value for key, value in common.items() if key != "alpha"}
+            ax=axis,
+            facecolor=style.get("fill_color", "#8FA8A4"),
+            edgecolor=style.get("stroke_color", "#617B78"),
+            linewidth=float(style.get("weight", 0.75)),
+            alpha=float(style.get("fill_opacity", 0.25)),
+            zorder=zorder,
         )
     elif family == "line":
         frame.plot(
-            color=style.get("color", "#40566e"),
-            linewidth=float(style.get("weight", 2.0)),
-            **common
+            ax=axis,
+            color=style.get("color", "#59747A"),
+            linewidth=float(style.get("weight", 1.35)),
+            alpha=float(style.get("opacity", 0.74)),
+            zorder=zorder,
         )
     else:
         frame.plot(
-            color=style.get("color", style.get("fill_color", "#d1495b")),
-            edgecolor=style.get("stroke_color", "#ffffff"),
-            linewidth=float(style.get("weight", 0.8)),
-            markersize=float(style.get("size", 42)),
+            ax=axis,
+            color=style.get("fill_color", style.get("color", "#C45F78")),
+            edgecolor=style.get("stroke_color", "#FFFFFF"),
+            linewidth=float(style.get("weight", 0.9)),
+            markersize=float(style.get("size", 24)),
             marker=str(style.get("marker", "o")),
-            **common
+            alpha=float(style.get("fill_opacity", style.get("opacity", 0.82))),
+            zorder=zorder,
         )
 
 
-def _legend_handle(family: str, style_raw: Mapping[str, Any], label: str) -> Any:
-    style = _canonical_style(family, style_raw)
+def _legend_handle(family: str, style: Mapping[str, Any], label: str) -> Any:
     if family == "polygon":
         return Patch(
-            facecolor=style.get("fill_color"),
-            edgecolor=style.get("stroke_color"),
-            linewidth=float(style.get("weight", 1.0)),
-            alpha=float(style.get("fill_opacity", 1.0)),
+            facecolor=style.get("fill_color", "#8FA8A4"),
+            edgecolor=style.get("stroke_color", "#617B78"),
+            linewidth=float(style.get("weight", 0.75)),
+            alpha=float(style.get("fill_opacity", 0.25)),
             label=label,
         )
     if family == "line":
         return Line2D(
             [0],
             [0],
-            color=style.get("color"),
-            linewidth=float(style.get("weight", 2.0)),
-            alpha=float(style.get("opacity", 1.0)),
+            color=style.get("color", "#59747A"),
+            linewidth=float(style.get("weight", 1.35)),
+            alpha=float(style.get("opacity", 0.74)),
             label=label,
         )
     return Line2D(
@@ -289,10 +285,11 @@ def _legend_handle(family: str, style_raw: Mapping[str, Any], label: str) -> Any
         [0],
         linestyle="",
         marker=str(style.get("marker", "o")),
-        markerfacecolor=style.get("color", style.get("fill_color")),
-        markeredgecolor=style.get("stroke_color"),
-        markersize=max(5.0, math.sqrt(float(style.get("size", 42)))),
-        alpha=float(style.get("opacity", 1.0)),
+        markerfacecolor=style.get("fill_color", style.get("color", "#C45F78")),
+        markeredgecolor=style.get("stroke_color", "#FFFFFF"),
+        markeredgewidth=float(style.get("weight", 0.9)),
+        markersize=max(5.0, math.sqrt(float(style.get("size", 24)))),
+        alpha=float(style.get("fill_opacity", style.get("opacity", 0.82))),
         label=label,
     )
 
@@ -300,46 +297,60 @@ def _legend_handle(family: str, style_raw: Mapping[str, Any], label: str) -> Any
 def _plot_layers(
     axis: Any,
     layers: Sequence[Tuple[str, gpd.GeoDataFrame, Mapping[str, Any]]],
-    spec: Mapping[str, Any],
     destination_crs: Any,
+    visual_plans: Mapping[str, Mapping[str, Any]],
 ) -> List[Any]:
     handles: List[Any] = []
     legend_keys = set()
-    for name, original, layer_spec in layers:
+    ordered = sorted(
+        layers,
+        key=lambda item: float(visual_plans.get(item[0], {}).get("draw_order", 100)),
+    )
+    for name, original, layer_spec in ordered:
         if original.empty or layer_spec.get("visible", True) is False:
             continue
         frame = original.to_crs(destination_crs)
         frame = frame.loc[~frame.geometry.is_empty & frame.geometry.notna()].copy()
         if frame.empty:
             continue
-        base_style = _style_mapping(layer_spec)
-        field, categories = _category_config(layer_spec, spec)
+        plan = visual_plans.get(name, {})
+        field, categories = _category_config(layer_spec)
         groups: List[Tuple[Any, gpd.GeoDataFrame, Any]]
         if field and field in frame.columns and categories:
             groups = []
-            for value, subset in frame.groupby(field, dropna=False, sort=False):
+            normalized_values = frame[field].map(lambda value: str(value))
+            declared = set()
+            for value, rule in categories.items():
+                key = str(value)
+                subset = frame.loc[normalized_values == key]
+                if subset.empty:
+                    continue
+                groups.append((value, subset, rule))
+                declared.add(key)
+            for value, subset in frame.loc[~normalized_values.isin(declared)].groupby(
+                field, dropna=False, sort=False
+            ):
                 rule = categories.get(str(value), categories.get(value, {}))
                 groups.append((value, subset, rule))
         else:
             groups = [(None, frame, {})]
 
         for value, group, rule in groups:
-            combined = dict(base_style)
-            combined.update(_rule_style(rule))
-            families = group.geom_type.map(lambda item: _geometry_family([item]))
+            families = group.geom_type.map(_geometry_family)
             for family in ("polygon", "line", "point"):
                 subset = group.loc[families == family]
                 if subset.empty:
                     continue
-                _plot_subset(axis, subset, family, combined)
+                style = _category_style(family, _family_style(plan, family), rule)
+                _plot_subset(axis, subset, family, style)
                 label = (
                     _rule_label(value, rule)
                     if value is not None
-                    else str(layer_spec.get("label") or name)
+                    else str(layer_spec.get("name") or layer_spec.get("label") or name)
                 )
                 legend_key = (family, label)
                 if legend_key not in legend_keys:
-                    handles.append(_legend_handle(family, combined, label))
+                    handles.append(_legend_handle(family, style, label))
                     legend_keys.add(legend_key)
     return handles
 
@@ -420,14 +431,15 @@ def _render_canvas(
     spec: Mapping[str, Any],
     destination_crs: Any,
     figsize: Tuple[float, float],
+    visual_plans: Mapping[str, Mapping[str, Any]],
 ) -> Any:
     static = spec.get("static", {})
     if not isinstance(static, Mapping):
         static = {}
-    figure, axis = plt.subplots(figsize=figsize, facecolor="#ffffff")
+    figure, axis = plt.subplots(figsize=figsize, facecolor="#FBFCF9")
     figure.subplots_adjust(left=0.025, right=0.975, top=0.91, bottom=0.085)
-    axis.set_facecolor(str(static.get("background", "#f5f7f9")))
-    handles = _plot_layers(axis, layers, spec, destination_crs)
+    axis.set_facecolor(str(static.get("background", "#EEF1ED")))
+    handles = _plot_layers(axis, layers, destination_crs, visual_plans)
     axis.margins(x=0.05, y=0.07)
     axis.set_aspect("equal", adjustable="datalim")
     axis.set_axis_off()
@@ -438,8 +450,8 @@ def _render_canvas(
             loc="lower right",
             frameon=True,
             framealpha=0.94,
-            facecolor="#ffffff",
-            edgecolor="#d9dee5",
+            facecolor="#FBFCF9",
+            edgecolor="#D9E0DC",
             fontsize=8,
             title=static.get("legend_title"),
             title_fontsize=9,
@@ -454,13 +466,13 @@ def _render_canvas(
         "static",
     )
     title = static.get("title") or spec.get("title") or "Interactive map"
-    axis.set_title(str(title), loc="left", fontsize=15, fontweight="bold", pad=12)
+    axis.set_title(str(title), loc="left", fontsize=15, fontweight=650, color="#26363A", pad=12)
     source_prefix = str(messages["source_prefix"])
     source = static.get("source_note")
     source_text = str(source or messages["source_missing"])
     if not source_text.startswith(source_prefix):
         source_text = source_prefix + source_text
-    figure.text(0.025, 0.025, source_text, ha="left", va="bottom", fontsize=7, color="#566573")
+    figure.text(0.025, 0.025, source_text, ha="left", va="bottom", fontsize=7, color="#66777A")
     figure.text(
         0.975,
         0.025,
@@ -468,13 +480,17 @@ def _render_canvas(
         ha="right",
         va="bottom",
         fontsize=7,
-        color="#7b8794",
+        color="#7B898B",
     )
     return figure
 
 
 def render_static_figures(
-    layers: Any, spec: Mapping[str, Any], out_dir: Any
+    layers: Any,
+    spec: Mapping[str, Any],
+    out_dir: Any,
+    *,
+    visual_plans: Optional[Mapping[str, Mapping[str, Any]]] = None,
 ) -> StaticFigureOutputs:
     """Render the fixed slide and publication figure bundle.
 
@@ -500,6 +516,21 @@ def render_static_figures(
     font_report = _configure_fonts(spec)
     normalised = _normalise_layers(layers)
     ordered = _ordered_layers(normalised, spec)
+    if visual_plans is None:
+        resolved_plans: Dict[str, Mapping[str, Any]] = {}
+        for index, (name, frame, layer_spec) in enumerate(ordered):
+            resolved_plans[name] = resolve_visual_plan(
+                frame,
+                layer_spec,
+                template=str(spec.get("template", "multilayer")),
+                primary_layer=(
+                    str(spec.get("primary_layer")) if spec.get("primary_layer") else None
+                ),
+                layer_count=len(ordered),
+                layer_index=index,
+                explicit_style=_style_mapping(layer_spec),
+            )
+        visual_plans = resolved_plans
     destination_crs = _plot_crs(frame for _, frame, _ in ordered)
     destination = Path(out_dir)
     destination.mkdir(parents=True, exist_ok=True)
@@ -508,7 +539,9 @@ def render_static_figures(
 
     if "slide-16x9" in presets:
         paths["slide_png"] = destination / OUTPUT_NAMES["slide_png"]
-        slide = _render_canvas(ordered, spec, destination_crs, (12.8, 7.2))
+        slide = _render_canvas(
+            ordered, spec, destination_crs, (12.8, 7.2), visual_plans
+        )
         slide.savefig(
             str(paths["slide_png"]),
             format="png",
@@ -520,7 +553,9 @@ def render_static_figures(
     if "paper" in presets:
         for key in ("paper_png", "paper_svg", "paper_pdf"):
             paths[key] = destination / OUTPUT_NAMES[key]
-        paper = _render_canvas(ordered, spec, destination_crs, (7.2, 5.4))
+        paper = _render_canvas(
+            ordered, spec, destination_crs, (7.2, 5.4), visual_plans
+        )
         paper.savefig(
             str(paths["paper_png"]),
             format="png",

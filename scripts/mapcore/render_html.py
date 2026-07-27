@@ -132,6 +132,7 @@ def _coerce_layers(prepared_layers: Any) -> List[Dict[str, Any]]:
                 "records": _jsonable(records),
                 "count": int(count),
                 "bounds": _jsonable(_get_layer_value(raw_layer, "bounds")),
+                "visual": _jsonable(_get_layer_value(raw_layer, "visual", {})),
             }
         )
     if not normalized:
@@ -260,6 +261,9 @@ def render_html(
         ),
         shared_css=_safe_style_source(
             read_resource_text("templates", "shared.css")
+        ),
+        theme_css=_safe_style_source(
+            read_resource_text("templates", "atlas-studio-light.css")
         ),
     )
 

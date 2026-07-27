@@ -10,26 +10,14 @@ from typing import Any, Dict, List, Mapping, Optional
 from .basemaps import default_basemaps
 from .locales import DEFAULT_LOCALE, require_locale
 from .spec import current_schema_version, validate_spec
+from .visual_defaults import CATEGORICAL_PALETTE
 
 
 class SpecInitError(ValueError):
     """Raised when inspection ambiguities must be resolved before initialization."""
 
 
-_PALETTE = [
-    "#2563eb",
-    "#0f766e",
-    "#d97706",
-    "#dc2626",
-    "#7c3aed",
-    "#0891b2",
-    "#4d7c0f",
-    "#be185d",
-    "#475569",
-    "#9333ea",
-    "#ea580c",
-    "#15803d",
-]
+_PALETTE = list(CATEGORICAL_PALETTE)
 
 
 def _first(values: Any) -> Optional[str]:
@@ -120,20 +108,23 @@ def _source_spec(
 def _categorical_style(layer: Mapping[str, Any]) -> Dict[str, Any]:
     field = _first(layer.get("candidates", {}).get("category"))
     if not field:
-        return {"color": "#2563eb", "fill_opacity": 0.58}
+        return {}
     details = _field_details(layer, field)
     values = details.get("values")
-    if not isinstance(values, list) or len(values) != details.get("unique_count"):
-        return {"color": "#2563eb", "fill_opacity": 0.58}
+    if (
+        not isinstance(values, list)
+        or len(values) != details.get("unique_count")
+        or len(values) > len(_PALETTE)
+    ):
+        return {}
     categories = {
-        str(value): _PALETTE[index % len(_PALETTE)]
+        str(value): _PALETTE[index]
         for index, value in enumerate(values)
     }
     return {
         "mode": "categorical",
         "color_field": field,
         "categories": categories,
-        "fill_opacity": 0.58,
     }
 
 

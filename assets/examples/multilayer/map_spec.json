@@ -33,14 +33,11 @@
       ],
       "style": {
         "color_field": "name",
-        "weight": 1.3,
-        "opacity": 0.76,
-        "fill_opacity": 0.16,
         "categories": {
-          "Brooklyn Heights": "#8bb8c7",
-          "Downtown Brooklyn-DUMBO-Boerum Hill": "#76a89d",
-          "Fort Greene": "#b3a4cf",
-          "Clinton Hill": "#d2ad7d"
+          "Brooklyn Heights": "#7FAEB3",
+          "Downtown Brooklyn-DUMBO-Boerum Hill": "#6E9B8A",
+          "Fort Greene": "#9B8BAC",
+          "Clinton Hill": "#C29B61"
         }
       }
     },
@@ -75,12 +72,10 @@
       ],
       "style": {
         "color_field": "facility_class",
-        "weight": 3.2,
-        "opacity": 0.94,
         "categories": {
-          "I": "#087f8c",
-          "II": "#3a8d5d",
-          "III": "#c47a2c"
+          "I": "#287D7C",
+          "II": "#5A8A70",
+          "III": "#B98245"
         }
       }
     },
@@ -114,12 +109,8 @@
         "entrance_types"
       ],
       "style": {
-        "color": "#7e294f",
-        "fill_color": "#d1496f",
-        "radius": 6.5,
-        "weight": 1.5,
-        "opacity": 0.96,
-        "fill_opacity": 0.9
+        "color": "#7A3D53",
+        "fill_color": "#C45F78"
       }
     }
   ],

@@ -28,7 +28,7 @@ def test_land_use_demo_build_and_verify_complete_bundle(tmp_path):
     result = build_map(spec, dist)
     assert result["report"]["status"] == "pass"
     assert result["report"]["template"] == "map-list"
-    assert result["report"]["engine_version"] == "0.3.2"
+    assert result["report"]["engine_version"] == "0.4.0"
     assert result["report"]["checks"]["rendered_layer_count"] == 1
     assert result["report"]["performance"]["feature_count"] == 1699
 

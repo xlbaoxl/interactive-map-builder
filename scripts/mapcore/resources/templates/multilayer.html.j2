@@ -7,6 +7,7 @@
   <title>{{ page_title }}</title>
   <style>{{ leaflet_css | safe }}</style>
   <style>{{ shared_css | safe }}</style>
+  <style>{{ theme_css | safe }}</style>
 </head>
 <body>
   <main id="imb-app" class="imb-app multilayer-app">
@@ -186,6 +187,7 @@
           title: layerName,
           spec: layerSpec,
           source: layer,
+          visual: IMB.layerVisual(layer),
           enabled: enabled,
           order: layerIndex,
           geometryRank: geometryRank(featureCollection),
@@ -199,10 +201,10 @@
         };
         runtime.group = L.geoJSON(featureCollection, {
           style: function (feature) {
-            return IMB.geometryStyle(layerSpec, feature);
+            return IMB.geometryStyle(layerSpec, feature, runtime.visual);
           },
           pointToLayer: function (feature, latlng) {
-            return L.circleMarker(latlng, IMB.geometryStyle(layerSpec, feature));
+            return L.circleMarker(latlng, IMB.geometryStyle(layerSpec, feature, runtime.visual));
           },
           onEachFeature: function (feature, leafletLayer) {
             var featureIdentifier = IMB.featureId(
@@ -216,7 +218,7 @@
               ? IMB.text(properties[layerSpec.link_key]).trim()
               : "";
             var identifier = linkValue ? "link::" + linkValue : runtimeIdentifier;
-            var baseStyle = IMB.geometryStyle(layerSpec, feature);
+            var baseStyle = IMB.geometryStyle(layerSpec, feature, runtime.visual);
             var entry = {
               id: identifier,
               runtimeId: runtimeIdentifier,
@@ -224,6 +226,7 @@
               feature: feature,
               leaflet: leafletLayer,
               baseStyle: baseStyle,
+              visual: runtime.visual,
               runtime: runtime,
               matches: true
             };
@@ -259,6 +262,7 @@
         }
         runtimeLayers.push(runtime);
       });
+      IMB.orderGroups(runtimeLayers);
 
       IMB.fitToGroups(map, runtimeLayers.filter(function (runtime) {
         return runtime.enabled;
@@ -288,7 +292,7 @@
         var sampleProperties = runtime.entries.length && runtime.entries[0].feature.properties
           ? runtime.entries[0].feature.properties
           : {};
-        swatch.style.backgroundColor = IMB.colorFor(runtime.spec, sampleProperties);
+        swatch.style.backgroundColor = IMB.colorFor(runtime.spec, sampleProperties, runtime.visual, runtime.visual.geometry_family || "polygon");
         wrapper.appendChild(checkbox);
         wrapper.appendChild(swatch);
         wrapper.appendChild(IMB.element("span", runtime.title));
@@ -303,13 +307,13 @@
         if (!entries.length) {
           entries = [{
             label: runtime.title,
-            color: IMB.colorFor(runtime.spec, {})
+            color: IMB.colorFor(runtime.spec, {}, runtime.visual, runtime.visual.geometry_family || "polygon")
           }];
         }
         entries.forEach(function (entry) {
           var row = IMB.element("div", undefined, "imb-legend-item");
           var swatch = IMB.element("span", undefined, "imb-swatch");
-          swatch.style.backgroundColor = entry.color || IMB.colorFor(runtime.spec, {});
+          swatch.style.backgroundColor = entry.color || IMB.colorFor(runtime.spec, {}, runtime.visual, runtime.visual.geometry_family || "polygon");
           row.appendChild(swatch);
           row.appendChild(IMB.element("span", entry.label));
           groupNode.appendChild(row);
@@ -333,6 +337,29 @@
         hoveredId: "",
         activeLayerId: searchableLayers[0].id
       };
+
+      function refreshVisualStates() {
+        var visualStates = {};
+        runtimeLayers.forEach(function (runtime) {
+          var runtimeState = runtime.id === state.activeLayerId ? "focus" : "dimmed";
+          visualStates[runtime.id] = runtimeState;
+          runtime.entries.forEach(function (entry) {
+            var next = runtimeState;
+            if (!entry.matches) {
+              next = "dimmed";
+            }
+            if (entry.id === state.hoveredId) {
+              next = "hover";
+            }
+            if (entry.id === state.selectedId) {
+              next = "selected";
+            }
+            IMB.applyEntryState(entry, next);
+          });
+        });
+        IMB.orderGroups(runtimeLayers);
+        IMB.qa.layerVisualStates = visualStates;
+      }
 
       searchableLayers.forEach(function (runtime) {
         var button = IMB.element("button", undefined, "imb-type-button");
@@ -435,22 +462,12 @@
           }
           runtime.entries.forEach(function (entry) {
             entry.matches =
-              !isActiveLayer ||
-              !state.query ||
-              entryText(entry).indexOf(state.query) !== -1;
+              !isActiveLayer
+              || !state.query
+              || entryText(entry).indexOf(state.query) !== -1;
             if (searchBehavior === "highlight") {
               if (!runtime.group.hasLayer(entry.leaflet)) {
                 runtime.group.addLayer(entry.leaflet);
-              }
-              if (entry.leaflet.setStyle) {
-                entry.leaflet.setStyle(
-                  entry.matches
-                    ? entry.baseStyle
-                    : Object.assign({}, entry.baseStyle, {
-                        opacity: 0.28,
-                        fillOpacity: 0.12
-                      })
-                );
               }
             } else if (!isActiveLayer || entry.matches) {
               runtime.group.addLayer(entry.leaflet);
@@ -460,6 +477,7 @@
             }
           });
         });
+        refreshVisualStates();
         IMB.qa.mapFeatureCount = runtimeLayers.reduce(function (count, runtime) {
           return count + runtime.group.getLayers().length;
         }, 0);
@@ -475,6 +493,7 @@
         } else if (map.hasLayer(runtime.group)) {
           map.removeLayer(runtime.group);
         }
+        refreshVisualStates();
         updateSummary();
       }
 
@@ -490,7 +509,6 @@
 
       function selectFeature(identifier, source) {
         if (state.selectedId && state.selectedId !== identifier) {
-          IMB.markFeature(globalRegistry, state.selectedId, false);
           IMB.applyLinkedDomState(state.selectedId, false, false);
           Array.prototype.forEach.call(listNode.querySelectorAll("[aria-selected='true']"), function (node) {
             node.setAttribute("aria-selected", "false");
@@ -498,7 +516,7 @@
         }
         state.selectedId = identifier;
         IMB.qa.selectedLinkId = identifier;
-        IMB.markFeature(globalRegistry, identifier, true);
+        refreshVisualStates();
         IMB.applyLinkedDomState(identifier, true, true);
         var matchingNode = Array.prototype.find.call(
           listNode.querySelectorAll("[data-feature-id]"),
@@ -537,22 +555,25 @@
       }
 
       IMB.link_by_id.on("highlight", function (event) {
-        if (state.hoveredId && state.hoveredId !== state.selectedId && state.hoveredId !== event.id) {
-          IMB.markFeature(globalRegistry, state.hoveredId, false);
+        if (
+          state.hoveredId
+          && state.hoveredId !== state.selectedId
+          && state.hoveredId !== event.id
+        ) {
           IMB.applyLinkedDomState(state.hoveredId, false, false);
         }
         state.hoveredId = event.id;
-        IMB.markFeature(globalRegistry, event.id, true);
+        refreshVisualStates();
         IMB.applyLinkedDomState(event.id, true, false);
       });
       IMB.link_by_id.on("clear", function (event) {
         if (event.id !== state.selectedId) {
-          IMB.markFeature(globalRegistry, event.id, false);
           IMB.applyLinkedDomState(event.id, false, false);
         }
         if (state.hoveredId === event.id) {
           state.hoveredId = "";
         }
+        refreshVisualStates();
       });
       IMB.link_by_id.on("select", function (event) {
         selectFeature(event.id, event.source);
@@ -633,6 +654,14 @@
         recordCount: totalFeatures,
         visibleRecordCount: state.matches.length,
         renderedListCount: Math.min(state.matches.length, resultLimitValue),
+        visualSystem: "atlas-studio-light",
+        visualPlans: runtimeLayers.reduce(function (plans, runtime) {
+          plans[runtime.id] = runtime.visual;
+          return plans;
+        }, {}),
+        layerDrawOrder: runtimeLayers.slice().sort(function (left, right) {
+          return Number(left.visual.draw_order || 0) - Number(right.visual.draw_order || 0);
+        }).map(function (runtime) { return runtime.id; }),
         layerCounts: runtimeLayers.reduce(function (counts, runtime) {
           counts[runtime.id] = Number(runtime.source.count || runtime.entries.length);
           return counts;

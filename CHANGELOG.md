@@ -27,6 +27,52 @@ first release with an automated tag, distribution assets, and GitHub Release wor
 
 ## [Unreleased] / 未发布
 
+## [0.4.0] - 2026-07-27
+
+### Added / 新增
+
+- 新增 Atlas Studio Light 轻量视觉默认值解析器：根据点、线、面几何类型、粗粒度要素与坐标
+  密度、模板角色和稳定绘制顺序补齐未明确的视觉参数，并将解析依据写入构建报告。
+  Added the Atlas Studio Light resolver, which fills omitted visual values from geometry family,
+  coarse feature/coordinate density, template role, and stable draw order while recording the
+  resolved plan and reasons in the build report.
+- 新增稳定的面—线—点 Leaflet panes，以及 `focus`、`hover`、`selected`、`dimmed` 状态，让多图层
+  地图在切换搜索对象和选择要素时形成清晰但克制的视觉重点。
+  Added stable polygon-line-point Leaflet panes and focus, hover, selected, and dimmed states for
+  controlled hierarchy during layer search and feature selection.
+- 新增针对几何、密度、显式覆盖、分类色上限和 HTML/构建报告共享视觉方案的自动测试。
+  Added automated coverage for geometry and density defaults, explicit overrides, categorical
+  limits, and shared HTML/build-report visual plans.
+
+### Changed / 变更
+
+- HTML、图例、列表卡片以及 PNG、SVG、PDF 静态输出现在消费同一份渲染器中立视觉方案；用户或
+  Agent 在 MapSpec 中明确填写的颜色、尺寸和透明度始终优先。
+  Unified HTML, legends, list accents, and PNG/SVG/PDF output around one renderer-neutral visual
+  plan while preserving explicit MapSpec colors, sizes, and opacities as the highest priority.
+- 默认分类调色板改为八个低饱和 Atlas 色；初始化器在类别超过八个或类别值不完整时不再循环
+  自动配色，而是保留筛选能力，等待用户与 Agent 继续确定表达方式。
+  Replaced the automatic categorical palette with eight restrained Atlas colors and stopped
+  cycling colors when more than eight classes or incomplete values are found.
+- UI 更新为 Atlas Studio Light 编辑式视觉语言：降低圆角、阴影和面板重量，将清单卡片改为更
+  紧凑的记录行，并提高地图在页面中的视觉优先级。
+  Refreshed the interface with the Atlas Studio Light editorial language: flatter panels, tighter
+  record rows, restrained accents, and greater visual priority for the map.
+- 包版本更新为 0.4.0；MapSpec 继续保持 1.1，不新增模板、前端框架或运行依赖。
+  Updated the package to 0.4.0 while keeping MapSpec 1.1, the two existing templates, the current
+  frontend stack, and the dependency footprint.
+
+### Fixed / 修复
+
+- 修复点、线、面在 HTML 中共用同一套默认尺寸和透明度、静态图另有一套默认值的问题；密集点
+  自动缩小，背景面和辅助线自动后退，HTML 与静态图的填充/描边语义保持一致。
+  Fixed the split default systems that gave HTML one generic style and static output another;
+  dense points now shrink, context polygons and supporting lines recede, and fill/stroke semantics
+  match across deliverables.
+- 修复多图层绘制顺序依赖 MapSpec 文件顺序、关闭后重新开启可能改变遮挡关系的问题。
+  Fixed layer stacking that previously depended on MapSpec order and could change after toggling a
+  layer off and on.
+
 ## [0.3.2] - 2026-07-27
 
 ### Added / 新增

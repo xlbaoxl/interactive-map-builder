@@ -1,13 +1,39 @@
 {
   "locale": "zh-CN",
   "input_aliases": {
-    "longitude": ["经度"],
-    "latitude": ["纬度"],
-    "wkt": ["几何"],
-    "id_tokens": ["编号", "编码", "代码"],
-    "label_tokens": ["名称", "项目", "社区", "地点"],
-    "category_tokens": ["状态", "类型", "类别", "行政区", "街道"],
-    "search_tokens": ["名称", "地址", "编号", "编码"]
+    "longitude": [
+      "经度"
+    ],
+    "latitude": [
+      "纬度"
+    ],
+    "wkt": [
+      "几何"
+    ],
+    "id_tokens": [
+      "编号",
+      "编码",
+      "代码"
+    ],
+    "label_tokens": [
+      "名称",
+      "项目",
+      "社区",
+      "地点"
+    ],
+    "category_tokens": [
+      "状态",
+      "类型",
+      "类别",
+      "行政区",
+      "街道"
+    ],
+    "search_tokens": [
+      "名称",
+      "地址",
+      "编号",
+      "编码"
+    ]
   },
   "shared": {
     "basemap": "底图",
@@ -186,12 +212,12 @@
   "landing": {
     "language_name": "English",
     "page_title": "Interactive Map Builder——从空间数据到精致地图产品",
-    "description": "用于检查空间数据、构建和验证交互地图并导出汇报与论文图件的 Agent Skill。",
+    "description": "一个先检查空间数据、解析克制的几何感知视觉默认值，再生成交互地图、浏览器验证和汇报图件的 Agent Skill。",
     "nav_demos": "演示",
     "nav_workflow": "工作流",
     "eyebrow": "面向高质量地图交付的 AGENT SKILL",
     "hero_title": "输入空间数据，交付地图产品。",
-    "hero_body": "把 Excel、CSV、GeoJSON、GeoPackage 和 Shapefile 转换为可搜索的交互地图、汇报图片和论文图件，并保留检查、来源与浏览器验证记录。",
+    "hero_body": "把 Excel、CSV、GeoJSON、GeoPackage 和 Shapefile 转化为可搜索交互地图、汇报图片和论文图件，内置 Atlas Studio Light 视觉默认值、数据检查、来源记录和浏览器验证。",
     "explore": "查看在线演示",
     "source": "在 GitHub 查看源码",
     "demo_eyebrow": "真实数据 · 真实生成的 HTML",
@@ -204,13 +230,28 @@
     "open_map": "打开在线地图",
     "workflow_eyebrow": "一条可审计的交付路径",
     "workflow_title": "检查、确认、配置、构建、验证。",
-    "workflow_body": "Skill 负责消除需求歧义，Python 引擎负责确定性数据处理与渲染。",
+    "workflow_body": "Skill 负责补齐需求，Atlas Studio Light 提供协调的视觉起点，Python 引擎负责确定性数据处理和渲染。",
     "steps": [
-      ["检查", "识别图层、几何、CRS、字段角色与阻塞项。"],
-      ["确认", "只补齐数据无法回答的信息差。"],
-      ["配置", "写入可复用的 MapSpec 1.1 文件。"],
-      ["构建", "生成单文件 Leaflet 应用与静态图。"],
-      ["验证", "检查浏览器行为、数量、哈希和数据来源。"]
+      [
+        "检查",
+        "识别图层、几何、CRS、字段角色与阻塞项。"
+      ],
+      [
+        "确认",
+        "只补齐数据无法回答的信息差。"
+      ],
+      [
+        "视觉解析",
+        "在保留显式选择的前提下应用几何感知、密度感知的视觉默认值。"
+      ],
+      [
+        "构建",
+        "生成单文件 Leaflet 应用与静态图。"
+      ],
+      [
+        "验证",
+        "检查浏览器行为、数量、哈希和数据来源。"
+      ]
     ],
     "footer": "Interactive Map Builder · MIT 许可证"
   }

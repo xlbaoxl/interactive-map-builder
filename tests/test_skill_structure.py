@@ -31,6 +31,8 @@ def test_skill_metadata_is_concise_complete_and_intent_driven():
     assert "interactive-map-builder update --auto" in body
     assert "Plan mode" in body
     assert "Do not offer, promise, or ask about a public URL" in body
+    assert "Atlas Studio Light" in body
+    assert "not as an automatic design service" in body
 
 
 def test_openai_interface_mentions_skill_and_user_intent():
@@ -43,6 +45,7 @@ def test_openai_interface_mentions_skill_and_user_intent():
     assert "ad hoc Folium or Leaflet" in interface["default_prompt"]
     assert "public URL only when explicitly requested" in interface["default_prompt"]
     assert "Plan mode" in interface["default_prompt"]
+    assert "Atlas Studio Light" in interface["default_prompt"]
     assert len(interface["short_description"]) <= 80
 
 
@@ -85,6 +88,10 @@ def test_behavior_evals_and_localized_readmes_are_present():
     assert "## 快速开始" in readme_zh
     assert "## Ask for the outcome, not the tool" in readme_en
     assert "## 直接描述成果，不必记住工具名称" in readme_zh
+    assert "## Atlas Studio Light" in readme_en
+    assert "## Atlas Studio Light 视觉系统" in readme_zh
+    assert "v0.4.0" in readme_en
+    assert "v0.4.0" in readme_zh
     assert "## 中文" not in readme_en
     assert "## English" not in readme_en
 
@@ -139,3 +146,15 @@ def test_verified_update_policy_is_packaged_and_linked():
         "IMB_DISABLE_AUTO_UPDATE=1",
     ):
         assert expected in policy
+
+
+def test_atlas_visual_guidance_is_documented_without_expanding_mapspec():
+    skill = (ROOT / "SKILL.md").read_text(encoding="utf-8")
+    design = (ROOT / "references" / "design-guidelines.md").read_text(encoding="utf-8")
+    spec = (ROOT / "references" / "map-spec.md").read_text(encoding="utf-8")
+    schema = (ROOT / "scripts" / "mapcore" / "resources" / "map-spec.schema.json").read_text(encoding="utf-8")
+    assert "Atlas Studio Light" in skill
+    assert "coarse density" in design
+    assert "Explicit MapSpec values always win" in spec
+    assert '"schema_version": {"const": "1.1"}' in schema
+    assert "MapSpec 1.2" not in spec

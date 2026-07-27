@@ -1,13 +1,49 @@
 {
   "locale": "en-US",
   "input_aliases": {
-    "longitude": ["longitude", "longitude_wgs84", "lon", "lng", "x"],
-    "latitude": ["latitude", "latitude_wgs84", "lat", "y"],
-    "wkt": ["wkt", "geometry", "geom"],
-    "id_tokens": ["id", "code"],
-    "label_tokens": ["name", "title"],
-    "category_tokens": ["status", "type", "class", "kind", "category", "district", "borough", "region"],
-    "search_tokens": ["name", "title", "address", "code", "id"]
+    "longitude": [
+      "longitude",
+      "longitude_wgs84",
+      "lon",
+      "lng",
+      "x"
+    ],
+    "latitude": [
+      "latitude",
+      "latitude_wgs84",
+      "lat",
+      "y"
+    ],
+    "wkt": [
+      "wkt",
+      "geometry",
+      "geom"
+    ],
+    "id_tokens": [
+      "id",
+      "code"
+    ],
+    "label_tokens": [
+      "name",
+      "title"
+    ],
+    "category_tokens": [
+      "status",
+      "type",
+      "class",
+      "kind",
+      "category",
+      "district",
+      "borough",
+      "region"
+    ],
+    "search_tokens": [
+      "name",
+      "title",
+      "address",
+      "code",
+      "id"
+    ]
   },
   "shared": {
     "basemap": "Basemap",
@@ -186,12 +222,12 @@
   "landing": {
     "language_name": "Chinese",
     "page_title": "Interactive Map Builder — spatial data to polished map products",
-    "description": "An Agent Skill that inspects spatial data, builds polished interactive maps, verifies them in a browser, and exports report-ready figures.",
+    "description": "An Agent Skill that inspects spatial data, resolves restrained geometry-aware visual defaults, builds polished interactive maps, verifies them in a browser, and exports report-ready figures.",
     "nav_demos": "Demos",
     "nav_workflow": "Workflow",
     "eyebrow": "AN AGENT SKILL FOR POLISHED MAP DELIVERY",
     "hero_title": "Spatial data in. Map product out.",
-    "hero_body": "Turn Excel, CSV, GeoJSON, GeoPackage, and Shapefiles into searchable interactive maps, slide-ready images, and publication figures—with inspection, provenance, and browser verification built in.",
+    "hero_body": "Turn Excel, CSV, GeoJSON, GeoPackage, and Shapefiles into searchable interactive maps, slide-ready images, and publication figures—with Atlas Studio Light visual defaults, inspection, provenance, and browser verification built in.",
     "explore": "Explore live demos",
     "source": "View source on GitHub",
     "demo_eyebrow": "REAL DATA · REAL GENERATED HTML",
@@ -204,13 +240,28 @@
     "open_map": "Open live map",
     "workflow_eyebrow": "ONE AUDITABLE DELIVERY PATH",
     "workflow_title": "Inspect, confirm, specify, build, and verify.",
-    "workflow_body": "The Skill resolves ambiguity while the Python engine owns deterministic data handling and rendering.",
+    "workflow_body": "The Skill resolves ambiguity, Atlas Studio Light supplies a coordinated starting point, and the Python engine owns deterministic data handling and rendering.",
     "steps": [
-      ["Inspect", "Discover layers, geometry, CRS, field roles, and blocking issues."],
-      ["Confirm", "Close only the information gaps the data cannot answer."],
-      ["Specify", "Write a reusable MapSpec 1.1 file."],
-      ["Build", "Create a single-file Leaflet app and static figures."],
-      ["Verify", "Exercise browser behavior, counts, hashes, and provenance."]
+      [
+        "Inspect",
+        "Discover layers, geometry, CRS, field roles, and blocking issues."
+      ],
+      [
+        "Confirm",
+        "Close only the information gaps the data cannot answer."
+      ],
+      [
+        "Resolve",
+        "Apply geometry-aware, density-aware visual defaults while preserving explicit choices."
+      ],
+      [
+        "Build",
+        "Create a single-file Leaflet app and static figures."
+      ],
+      [
+        "Verify",
+        "Exercise browser behavior, counts, hashes, and provenance."
+      ]
     ],
     "footer": "Interactive Map Builder · MIT License"
   }
