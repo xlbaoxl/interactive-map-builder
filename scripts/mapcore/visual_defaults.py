@@ -217,7 +217,7 @@ def _polygon_alpha(role: str, semantic_role: Optional[str], density: str) -> Dic
     generic_fill = {
         "primary": {"sparse": 0.50, "normal": 0.46, "dense": 0.41, "very_dense": 0.36},
         "supporting": {"sparse": 0.34, "normal": 0.30, "dense": 0.26, "very_dense": 0.22},
-        "context": {"sparse": 0.19, "normal": 0.16, "dense": 0.13, "very_dense": 0.10},
+        "context": {"sparse": 0.14, "normal": 0.12, "dense": 0.10, "very_dense": 0.08},
     }[role][density]
     opacity = {"primary": 0.90, "supporting": 0.72, "context": 0.54}[role]
     if semantic_role == "water":
