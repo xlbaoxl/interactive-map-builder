@@ -100,16 +100,34 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
           fetch-depth: 0
-      - name: Replace the staging tree with the reviewed v0.3.2 tree
+      - name: Publish the reviewed v0.3.2 tree atomically
         shell: bash
         run: |
           set -euo pipefail
-          cat .github/v032-patch/part-* | base64 -d | gzip -d > /tmp/v0.3.2.patch
+          PARENT=$(git rev-parse HEAD)
+          BASE=$(git rev-parse origin/main)
+          cat .github/v032-patch/part-* > /tmp/v0.3.2.patch.gz.b64
+          test "$(wc -c < /tmp/v0.3.2.patch.gz.b64)" = "48968"
+          echo "dac96f940d2e968372dc996ac7dc3a18d04a35731dab0c037e55d88903d1cd38  /tmp/v0.3.2.patch.gz.b64" | sha256sum -c -
+          base64 -d /tmp/v0.3.2.patch.gz.b64 > /tmp/v0.3.2.patch.gz
+          echo "fa19f508697543fa59b33e947074abf8363008df48ce5a380784427e430863c1  /tmp/v0.3.2.patch.gz" | sha256sum -c -
+          gzip -dc /tmp/v0.3.2.patch.gz > /tmp/v0.3.2.patch
+          echo "9ebcd009226e10e243e391701907d22b93a0ee5f1ce938e6cb7fdb9fe98335c3  /tmp/v0.3.2.patch" | sha256sum -c -
+
+          rm -rf /tmp/interactive-map-builder-v032-final
+          git worktree add --detach /tmp/interactive-map-builder-v032-final "$BASE"
+          mkdir -p /tmp/interactive-map-builder-v032-final/.github/workflows
+          git show "$PARENT:.github/workflows/source-snapshot.yml" > /tmp/interactive-map-builder-v032-final/.github/workflows/source-snapshot.yml
+          git -C /tmp/interactive-map-builder-v032-final add .github/workflows/source-snapshot.yml
+          git -C /tmp/interactive-map-builder-v032-final apply --check --index --binary /tmp/v0.3.2.patch
+          git -C /tmp/interactive-map-builder-v032-final apply --index --binary /tmp/v0.3.2.patch
+          TREE=$(git -C /tmp/interactive-map-builder-v032-final write-tree)
+          test "$TREE" = "cbea42ca70c84111ab458e5f4e1630334dcb1e55"
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout d00a6efbbd0170eee79a2fba779d8808641be264 -- .github/workflows/ci.yml
-          git apply --index --binary /tmp/v0.3.2.patch
-          git rm -r .github/v032-patch
-          git rm .github/workflows/apply-v032.yml
-          git commit -m "release: prepare v0.3.2 controls and safe updates"
-          git push origin HEAD:${{ github.head_ref }}
+          COMMIT=$(printf '%s\n\n%s\n' \
+            'release: prepare v0.3.2 controls and safe updates' \
+            'Publish the locally verified v0.3.2 tree without retaining staging files.' \
+            | git commit-tree "$TREE" -p "$PARENT")
+          git push origin "$COMMIT:refs/heads/${{ github.head_ref }}"
