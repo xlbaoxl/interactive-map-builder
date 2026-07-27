@@ -1582,3 +1582,47 @@ summary:focus-visible,
   width: 100%;
   min-height: 36px;
 }
+
+/* Compact multilayer browsing: neutral overview plus one native layer selector. */
+.imb-layer-browser {
+  display: grid;
+  grid-template-columns: minmax(82px, auto) minmax(0, 1fr);
+  gap: 7px;
+}
+
+.imb-overview-button,
+.imb-layer-browser-select {
+  min-height: 38px;
+}
+
+.imb-overview-button {
+  width: 100%;
+}
+
+.imb-layer-browser-select {
+  min-width: 0;
+  cursor: pointer;
+  color: var(--imb-ink-soft);
+  font-size: 0.74rem;
+  font-weight: 740;
+}
+
+.imb-layer-browser-select.is-active {
+  color: var(--imb-accent-dark);
+  border-color: rgba(15, 118, 110, 0.36);
+  background: #f7fbfa;
+}
+
+.imb-overview-message {
+  margin: 0;
+  padding: 2px 1px 0;
+  color: var(--imb-muted);
+  font-size: 0.7rem;
+  line-height: 1.45;
+}
+
+@media (max-width: 420px) {
+  .imb-layer-browser {
+    grid-template-columns: minmax(74px, 0.42fr) minmax(0, 1fr);
+  }
+}

@@ -28,7 +28,7 @@ def test_land_use_demo_build_and_verify_complete_bundle(tmp_path):
     result = build_map(spec, dist)
     assert result["report"]["status"] == "pass"
     assert result["report"]["template"] == "map-list"
-    assert result["report"]["engine_version"] == "0.4.0"
+    assert result["report"]["engine_version"] == "0.4.1"
     assert result["report"]["checks"]["rendered_layer_count"] == 1
     assert result["report"]["performance"]["feature_count"] == 1699
 
@@ -151,6 +151,40 @@ def test_gpkg_zip_csv_and_excel_build_end_to_end(tmp_path: Path) -> None:
         assert (case_dir / "dist" / "map.html").is_file()
 
 
+def test_missing_static_section_defaults_to_html_only(tmp_path: Path) -> None:
+    source = tmp_path / "places.geojson"
+    gpd.GeoDataFrame(
+        {"id": ["A"], "name": ["Place A"]},
+        geometry=[Point(118.1, 39.6)],
+        crs="EPSG:4326",
+    ).to_file(source, driver="GeoJSON")
+    spec = {
+        "schema_version": current_schema_version(),
+        "template": "map-list",
+        "title": "HTML only",
+        "primary_layer": "places",
+        "layers": [
+            {
+                "id": "places",
+                "name": "Places",
+                "source": {"path": "places.geojson"},
+                "id_field": "id",
+                "label_field": "name",
+            }
+        ],
+    }
+    spec_path = tmp_path / "map_spec.json"
+    spec_path.write_text(json.dumps(spec), encoding="utf-8")
+    dist = tmp_path / "html-only-dist"
+    result = build_map(spec_path, dist)
+
+    assert result["report"]["status"] == "pass"
+    assert (dist / "map.html").is_file()
+    assert not list(dist.glob("*.png"))
+    assert not list(dist.glob("*.svg"))
+    assert not list(dist.glob("*.pdf"))
+
+
 def test_graduated_style_is_resolved_once_for_html_and_static_outputs(tmp_path: Path) -> None:
     source = tmp_path / "scores.geojson"
     gpd.GeoDataFrame(
@@ -167,6 +201,7 @@ def test_graduated_style_is_resolved_once_for_html_and_static_outputs(tmp_path: 
         "template": "map-list",
         "title": "Graduated",
         "primary_layer": "scores",
+        "static": {"enabled": True, "presets": ["paper"]},
         "layers": [
             {
                 "id": "scores",

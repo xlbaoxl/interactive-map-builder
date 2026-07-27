@@ -33,6 +33,7 @@ def test_defaults_are_applied():
     assert resolved["layers"][0]["visible"] is True
     assert resolved["layers"][0]["required"] is True
     assert resolved["layers"][0]["style"]["missing_label"] == "Missing"
+    assert "static" not in resolved
 
 
 @pytest.mark.parametrize(

@@ -135,9 +135,10 @@ control already explains the same classes and a second legend would be redundant
 
 ## Static output
 
-Set `static.presets` to `["slide-16x9"]`, `["paper"]`, or both. The slide preset writes
-`map_slide_16x9.png`; paper writes `map_paper.png`, `map_paper.svg`, and
-`map_paper.pdf`. Use `static.enabled: false` when no static output is needed.
+Static output is disabled by default. Set `static.enabled: true` and `static.presets` to
+`["slide-16x9"]`, `["paper"]`, or both only when the user explicitly requests those files. The
+slide preset writes `map_slide_16x9.png`; paper writes `map_paper.png`, `map_paper.svg`, and
+`map_paper.pdf`. HTML-only requests should keep `static.enabled: false` or omit `static`.
 
 ## Build record and portable bundle
 

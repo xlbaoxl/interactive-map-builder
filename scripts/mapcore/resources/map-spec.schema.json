@@ -222,7 +222,7 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "enabled": {"type": "boolean", "default": true},
+        "enabled": {"type": "boolean", "default": false},
         "presets": {
           "type": "array",
           "minItems": 1,

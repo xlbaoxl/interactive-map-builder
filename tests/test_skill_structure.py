@@ -33,6 +33,8 @@ def test_skill_metadata_is_concise_complete_and_intent_driven():
     assert "Do not offer, promise, or ask about a public URL" in body
     assert "Atlas Studio Light" in body
     assert "not as an automatic design service" in body
+    assert "Never expand an HTML-only request into static files" in body
+    assert "python scripts/cli.py doctor" in body
 
 
 def test_openai_interface_mentions_skill_and_user_intent():
@@ -46,6 +48,7 @@ def test_openai_interface_mentions_skill_and_user_intent():
     assert "public URL only when explicitly requested" in interface["default_prompt"]
     assert "Plan mode" in interface["default_prompt"]
     assert "Atlas Studio Light" in interface["default_prompt"]
+    assert "never add slide or paper figures unless explicitly requested" in interface["default_prompt"]
     assert len(interface["short_description"]) <= 80
 
 
@@ -90,8 +93,8 @@ def test_behavior_evals_and_localized_readmes_are_present():
     assert "## 直接描述成果，不必记住工具名称" in readme_zh
     assert "## Atlas Studio Light" in readme_en
     assert "## Atlas Studio Light 视觉系统" in readme_zh
-    assert "v0.4.0" in readme_en
-    assert "v0.4.0" in readme_zh
+    assert "v0.4.1" in readme_en
+    assert "v0.4.1" in readme_zh
     assert "## 中文" not in readme_en
     assert "## English" not in readme_en
 

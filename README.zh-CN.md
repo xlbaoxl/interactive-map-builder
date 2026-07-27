@@ -21,11 +21,11 @@ Interactive Map Builder 是一个**以 Codex 为主要使用场景、兼容 Agen
 Skill。用户即使没有说出 GIS、Leaflet、Web Map 或项目名称，只要表达了“把已有空间数据做成
 可搜索、筛选、发送和汇报的地图”这一目标，Agent 也能够识别任务。Skill 会检查 GeoJSON、
 GeoPackage、Shapefile、CSV、Excel 或 ArcGIS 数据，只询问真正影响结果的选项，再写入可审计
-的 MapSpec，解析一版克制的几何感知视觉起点，生成单文件 Leaflet 地图，并同步导出适合 PPT
-和论文的静态图。
+的 MapSpec，解析一版克制的几何感知视觉起点，生成单文件 Leaflet 地图；只有用户明确提出时，
+才额外导出适合 PPT 或论文的静态图。
 
 ```text
-用户目标 + 空间数据 → 检查 → 集中确认 → MapSpec → 构建 → 验证 → HTML + PNG/SVG/PDF
+用户目标 + 空间数据 → 检查 → 集中确认 → MapSpec → 构建 → 验证 → HTML + 可选 PNG/SVG/PDF
 ```
 
 不需要前端工程，不需要临时手写 Folium 页面，也不会隐藏数据清洗过程。
@@ -43,15 +43,16 @@ GeoPackage、Shapefile、CSV、Excel 或 ArcGIS 数据，只询问真正影响�
 - **两种成熟地图产品**：可搜索筛选的“地图＋清单”，以及可独立开关点、线、面数据的
   “多图层地图”。
 - **本地单文件交付**：Leaflet、界面逻辑和业务几何都嵌入 `map.html`；只有在线底图需要网络。
-- **汇报与论文输出**：同一份配置和解析后的视觉方案可生成 16:9 PNG，以及论文用 PNG、
-  SVG 和 PDF。
+- **按需生成静态图**：只有用户明确要求时，才从同一视觉方案生成 16:9 PNG 或论文用
+  PNG、SVG 和 PDF。
 - **完整构建记录**：自动保存数据检查、几何修复、生成 ID、性能提示、数据来源、文件哈希和
   可移植状态。
 - **安全版本预检**：每次调用可按 24 小时缓存检查官方 Release，只更新干净且校验通过的安装，
   断网或本地修改不会阻塞制图任务。
 - **安装后自动体检**：`interactive-map-builder doctor` 会离线完成一次真实构建和哈希验证。
-- **可靠地图控件**：图层开关固定在可折叠滚动图例上方，默认提供 CARTO Positron、
-  OpenStreetMap Standard 和无底图视图；需要凭证的影像底图保持可选。
+- **可靠地图控件**：多图层地图默认从中性总览开始，使用紧凑的图层选择器决定搜索焦点，
+  将“重点浏览哪个图层”和“哪些图层可见”分开，并提供 CARTO Positron、OpenStreetMap
+  Standard 与无底图视图。
 - **跨 Agent 触发评估**：40 条中英文案例覆盖调用、可选规划、本地与公网交付边界及误触发。
 
 ## 在线演示
@@ -59,7 +60,7 @@ GeoPackage、Shapefile、CSV、Excel 或 ArcGIS 数据，只询问真正影响�
 | 搜索、筛选和比较对象 | 联合查看多个空间主题 |
 | --- | --- |
 | [![地块分类统计地图](assets/screenshots/zh-CN/map-list.png)](https://xlbaoxl.github.io/interactive-map-builder/zh-CN/map-list/) | [![点线面多图层地图](assets/screenshots/zh-CN/multilayer.png)](https://xlbaoxl.github.io/interactive-map-builder/zh-CN/multilayer/) |
-| **地图＋清单。** 搜索地址和属性，筛选类别与数值范围，排序记录，观察统计指标变化，并查看选中地块的完整信息。 | **多图层。** 独立开关邻里分区、自行车线路和地铁站，按业务图层搜索，切换底图并查看对象详情。 |
+| **地图＋清单。** 搜索地址和属性，筛选类别与数值范围，排序记录，观察统计指标变化，并查看选中地块的完整信息。 | **多图层。** 先查看中性总览，再选择一个图层进行搜索和强调；图层可见性仍可独立控制，并可切换底图、查看对象详情。 |
 | [打开交互演示 →](https://xlbaoxl.github.io/interactive-map-builder/zh-CN/map-list/) | [打开交互演示 →](https://xlbaoxl.github.io/interactive-map-builder/zh-CN/multilayer/) |
 
 两个演示都由仓库中的确定性引擎根据固定的
@@ -122,6 +123,10 @@ interactive-map-builder doctor
 `doctor` 会在临时目录中生成一张坐标表，离线完成数据读取、地图构建、Leaflet 资源检查和输出
 哈希验证，返回 JSON 结果后删除临时文件。该命令不会下载底图，也不会发送使用统计。可使用
 `interactive-map-builder update --check` 单独检查版本状态。
+
+安装后优先运行 `interactive-map-builder doctor`。若在源码目录中尚未生成该命令，可使用
+`python scripts/cli.py doctor`；`python scripts/map_builder.py --help` 只列出内部构建命令，
+不能据此判断正式安装包缺少 `doctor`。
 
 <details>
 <summary><strong>手动安装</strong></summary>
@@ -214,7 +219,7 @@ v0.4 引入的是轻量视觉默认值解析器，不是一套全包式自动设
 - 密集点图层自动使用更小的点和更低的填充强度；
 - 点、线、面分别使用适合自身的尺寸、填充和描边；
 - `map-list` 主图层保持突出，背景图层自动后退；
-- 多图层地图固定面—线—点层级，并聚焦当前业务图层；
+- 多图层地图打开时保持所有可见图层的基础样式，用户选择图层后才进入聚焦状态；
 - HTML、图例、卡片、PNG、SVG 和 PDF 共用同一份解析结果；
 - 自动分类配色最多使用八个明确颜色，不再循环形成彩虹图。
 
@@ -353,10 +358,10 @@ Interactive Map Builder 专注于**已有空间数据 → 可交付地图成品*
 
 ## 项目状态
 
-项目当前处于 **v0.4.0 Beta**。这一版本新增 Atlas Studio Light 视觉系统：使用一个小型、
-渲染器中立的解析层统一点线面默认值、粗粒度密度、稳定层级以及 HTML 与静态图输出，并同步
-刷新编辑式 UI。它没有增加新模板、主题市场、聚合、热力图或更大的 MapSpec 契约。引擎负责
-给出更好的第一版，项目专属的视觉打磨仍由用户与 Agent 完成。
+项目当前处于 **v0.4.1 Beta**。这一补丁让多图层地图默认进入中性总览，以紧凑图层选择器
+进入搜索焦点；静态图改为严格按需生成；安装体检明确区分完整 CLI 与内部构建脚本；README
+离线底图也不再出现重复斜杠。MapSpec 1.1、现有两个模板、依赖规模和 Atlas Studio Light
+视觉解析器均保持不变。
 
 已经完成的变化见[更新日志](CHANGELOG.md)。
 

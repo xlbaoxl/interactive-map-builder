@@ -428,3 +428,33 @@ body {
   font-size: 0.61rem;
   font-weight: 610;
 }
+
+.imb-layer-browser {
+  gap: 7px;
+}
+
+.imb-layer-browser-select {
+  min-height: 37px;
+  padding: 7px 28px 7px 10px;
+  color: #40575b;
+  border-color: var(--imb-line);
+  border-radius: 7px;
+  background-color: #fafbf8;
+  font-size: 0.68rem;
+  font-weight: 680;
+}
+
+.imb-layer-browser-select:hover {
+  background-color: #f3f7f3;
+}
+
+.imb-layer-browser-select.is-active {
+  color: #2d5559;
+  border-color: rgba(78, 133, 135, 0.33);
+  background-color: #e7f0ee;
+}
+
+.imb-overview-message {
+  color: #6f7f82;
+  font-size: 0.65rem;
+}

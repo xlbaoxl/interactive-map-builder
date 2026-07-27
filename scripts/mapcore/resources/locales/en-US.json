@@ -96,7 +96,7 @@
     "legend": "Legend",
     "collapse": "Collapse search",
     "expand": "Expand search",
-    "search_layer": "Search by layer",
+    "search_layer": "Browse map",
     "search": "Search field",
     "search_placeholder": "Enter a keyword",
     "search_prefix": "Search ",
@@ -107,7 +107,11 @@
     "visible_layers": "Visible layers",
     "features": "Features",
     "collapse_legend": "Collapse legend",
-    "expand_legend": "Expand legend"
+    "expand_legend": "Expand legend",
+    "overview": "Overview",
+    "choose_layer": "Choose a layer to search",
+    "layer_placeholder": "Layer",
+    "overview_hint": "Choose a layer to search and highlight its features."
   },
   "style": {
     "missing_label": "Missing"

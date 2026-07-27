@@ -45,6 +45,9 @@ Ask one compact group of questions covering only unresolved choices:
 4. Which fields should be searchable, filterable, sortable, or visible on cards?
 5. What title, subtitle, source note, outputs, and audience locale are needed?
 
+Treat HTML as the default output. Enable `slide-16x9` or `paper` only after the user explicitly
+requests that deliverable; do not infer static figures from a request for a website or map.
+
 Explain any proposed repair, generated ID, or simplification before building. Never infer
 scientific meaning from a numeric field or category code.
 
@@ -57,6 +60,13 @@ The default result is a portable local HTML file. Do not interpret “share,” 
 or “open in a browser” as a request for public hosting. Ask about a public URL only after the user
 explicitly requests deployment. Treat deployment as a separate workflow and confirm both the
 hosting target and permission to expose the embedded data.
+
+## CLI selection
+
+Prefer the installed `interactive-map-builder` command. Package-level `doctor`, `update`, and
+`--version` live there. In a source checkout, `python scripts/cli.py doctor` is the supported
+fallback. `python scripts/map_builder.py` is only the internal builder command set and must not be
+used to decide whether the package provides `doctor`.
 
 ## Build and handoff
 

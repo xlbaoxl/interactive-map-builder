@@ -26,21 +26,34 @@
             <span id="imb-feature-type-label" class="imb-field-label"></span>
             <div
               id="imb-feature-types"
-              class="imb-type-switcher"
+              class="imb-layer-browser"
               role="group"
               aria-labelledby="imb-feature-type-label"
-            ></div>
+            >
+              <button
+                id="imb-overview-button"
+                class="imb-type-button imb-overview-button"
+                type="button"
+                aria-pressed="true"
+              ></button>
+              <select
+                id="imb-feature-type-select"
+                class="imb-select imb-layer-browser-select"
+                aria-label="{{ catalog.multilayer.choose_layer }}"
+              ></select>
+            </div>
           </div>
-          <div class="imb-field">
+          <div id="imb-search-field" class="imb-field" hidden>
             <label id="imb-search-label" for="imb-search"></label>
-            <input id="imb-search" class="imb-input" type="search" autocomplete="off">
+            <input id="imb-search" class="imb-input" type="search" autocomplete="off" disabled>
           </div>
+          <p id="imb-overview-message" class="imb-overview-message"></p>
         </div>
-        <div class="imb-status" aria-live="polite">
+        <div id="imb-status" class="imb-status" aria-live="polite" hidden>
           <span id="imb-result-count"></span>
           <span id="imb-result-limit"></span>
         </div>
-        <div id="imb-list" class="imb-list" role="listbox" aria-label="{{ catalog.shared.search_results }}"></div>
+        <div id="imb-list" class="imb-list" role="listbox" aria-label="{{ catalog.shared.search_results }}" hidden></div>
       </aside>
       <section class="imb-map-wrap" aria-label="{{ catalog.shared.interactive_multilayer_map }}">
         <div id="imb-map" class="imb-map"></div>
@@ -151,28 +164,6 @@
       var runtimeLayers = [];
       var totalFeatures = 0;
 
-      function geometryRank(featureCollection) {
-        var features = featureCollection && Array.isArray(featureCollection.features)
-          ? featureCollection.features
-          : [];
-        var feature = features.find(function (candidate) {
-          return candidate && candidate.geometry && candidate.geometry.type;
-        });
-        var geometryType = feature && feature.geometry
-          ? IMB.text(feature.geometry.type).toLocaleLowerCase()
-          : "";
-        if (geometryType.indexOf("point") !== -1) {
-          return 0;
-        }
-        if (geometryType.indexOf("line") !== -1) {
-          return 1;
-        }
-        if (geometryType.indexOf("polygon") !== -1) {
-          return 2;
-        }
-        return 3;
-      }
-
       layers.forEach(function (layer, layerIndex) {
         var layerSpec = IMB.layerSpec(layer);
         var layerIdentifier = IMB.layerId(layer, layerIndex);
@@ -190,7 +181,6 @@
           visual: IMB.layerVisual(layer),
           enabled: enabled,
           order: layerIndex,
-          geometryRank: geometryRank(featureCollection),
           group: null,
           entries: [],
           searchFields: IMB.fieldDefinitions(
@@ -324,10 +314,14 @@
       var listNode = document.getElementById("imb-list");
       var resultCount = document.getElementById("imb-result-count");
       var resultLimit = document.getElementById("imb-result-limit");
+      var statusNode = document.getElementById("imb-status");
       var summary = document.getElementById("imb-summary");
-      var typeSwitcher = document.getElementById("imb-feature-types");
+      var overviewButton = document.getElementById("imb-overview-button");
+      var layerSelect = document.getElementById("imb-feature-type-select");
+      var searchField = document.getElementById("imb-search-field");
+      var overviewMessage = document.getElementById("imb-overview-message");
       var searchableLayers = runtimeLayers.slice().sort(function (left, right) {
-        return left.geometryRank - right.geometryRank || left.order - right.order;
+        return left.order - right.order;
       });
       var resultLimitValue = 200;
       var state = {
@@ -335,13 +329,41 @@
         matches: [],
         selectedId: "",
         hoveredId: "",
-        activeLayerId: searchableLayers[0].id
+        activeLayerId: ""
       };
+
+      overviewButton.textContent = label("overview");
+      overviewMessage.textContent = label("overview_hint");
+      var placeholderOption = document.createElement("option");
+      placeholderOption.value = "";
+      placeholderOption.textContent = label("layer_placeholder");
+      layerSelect.appendChild(placeholderOption);
+      searchableLayers.forEach(function (runtime) {
+        var option = document.createElement("option");
+        option.value = runtime.id;
+        option.textContent = runtime.title + " · " + runtime.entries.length;
+        layerSelect.appendChild(option);
+      });
+
+      function isOverview() {
+        return !state.activeLayerId;
+      }
+
+      function activeRuntime() {
+        if (isOverview()) {
+          return null;
+        }
+        return searchableLayers.find(function (runtime) {
+          return runtime.id === state.activeLayerId;
+        }) || null;
+      }
 
       function refreshVisualStates() {
         var visualStates = {};
         runtimeLayers.forEach(function (runtime) {
-          var runtimeState = runtime.id === state.activeLayerId ? "focus" : "dimmed";
+          var runtimeState = isOverview()
+            ? "base"
+            : (runtime.id === state.activeLayerId ? "focus" : "dimmed");
           visualStates[runtime.id] = runtimeState;
           runtime.entries.forEach(function (entry) {
             var next = runtimeState;
@@ -361,38 +383,25 @@
         IMB.qa.layerVisualStates = visualStates;
       }
 
-      searchableLayers.forEach(function (runtime) {
-        var button = IMB.element("button", undefined, "imb-type-button");
-        button.type = "button";
-        button.dataset.layerId = runtime.id;
-        button.setAttribute("aria-controls", "imb-list");
-        button.appendChild(document.createTextNode(runtime.title + " "));
-        button.appendChild(IMB.element(
-          "span",
-          String(runtime.entries.length),
-          "imb-type-button-count"
-        ));
-        typeSwitcher.appendChild(button);
-      });
-
-      function activeRuntime() {
-        return searchableLayers.find(function (runtime) {
-          return runtime.id === state.activeLayerId;
-        }) || searchableLayers[0];
-      }
-
       function updateTypeControls() {
         var runtime = activeRuntime();
-        IMB.qa.activeLayerId = runtime.id;
-        Array.prototype.forEach.call(
-          typeSwitcher.querySelectorAll(".imb-type-button[data-layer-id]"),
-          function (button) {
-            button.setAttribute(
-              "aria-pressed",
-              button.dataset.layerId === runtime.id ? "true" : "false"
-            );
-          }
-        );
+        var overview = !runtime;
+        IMB.qa.activeLayerId = runtime ? runtime.id : "";
+        IMB.qa.overview = overview;
+        overviewButton.setAttribute("aria-pressed", overview ? "true" : "false");
+        layerSelect.value = runtime ? runtime.id : "";
+        layerSelect.classList.toggle("is-active", !overview);
+        searchField.hidden = overview;
+        statusNode.hidden = overview;
+        listNode.hidden = overview;
+        overviewMessage.hidden = !overview;
+        search.disabled = overview;
+        if (overview) {
+          document.getElementById("imb-search-label").textContent = label("search");
+          search.placeholder = label("overview_hint");
+          listNode.setAttribute("aria-label", label("overview"));
+          return;
+        }
         var fieldLabels = runtime.searchFields.map(function (definition) {
           return definition.label;
         });
@@ -416,6 +425,14 @@
 
       function renderSearchResults() {
         listNode.replaceChildren();
+        var runtime = activeRuntime();
+        if (!runtime) {
+          resultCount.textContent = "";
+          resultLimit.textContent = "";
+          IMB.qa.visibleRecordCount = 0;
+          IMB.qa.renderedListCount = 0;
+          return;
+        }
         var visibleMatches = state.matches.slice(0, resultLimitValue);
         var fragment = document.createDocumentFragment();
         visibleMatches.forEach(function (entry) {
@@ -440,11 +457,11 @@
         if (!state.matches.length) {
           listNode.appendChild(IMB.element(
             "p",
-            label("empty") + " · " + activeRuntime().title,
+            label("empty") + " · " + runtime.title,
             "imb-empty"
           ));
         }
-        resultCount.textContent = activeRuntime().title + ": " + state.matches.length;
+        resultCount.textContent = runtime.title + ": " + state.matches.length;
         resultLimit.textContent = state.matches.length > resultLimitValue
           ? label("limited") + " " + resultLimitValue
           : "";
@@ -453,10 +470,10 @@
       }
 
       function applySearch() {
-        state.query = search.value.trim().toLocaleLowerCase();
+        state.query = isOverview() ? "" : search.value.trim().toLocaleLowerCase();
         state.matches = [];
         runtimeLayers.forEach(function (runtime) {
-          var isActiveLayer = runtime.id === state.activeLayerId;
+          var isActiveLayer = !isOverview() && runtime.id === state.activeLayerId;
           if (searchBehavior === "filter") {
             runtime.group.clearLayers();
           }
@@ -484,6 +501,45 @@
         renderSearchResults();
       }
 
+      function clearSelection() {
+        state.selectedId = "";
+        state.hoveredId = "";
+        IMB.qa.selectedLinkId = "";
+        if (map.closePopup) {
+          map.closePopup();
+        }
+      }
+
+      function setActiveLayer(layerIdentifier) {
+        var requested = IMB.text(layerIdentifier);
+        var runtime = requested
+          ? searchableLayers.find(function (candidate) { return candidate.id === requested; })
+          : null;
+        if (requested && !runtime) {
+          return false;
+        }
+        if (runtime && !runtime.enabled) {
+          var checkbox = Array.prototype.find.call(
+            layerOptions.querySelectorAll("input[data-layer-id]"),
+            function (node) { return node.dataset.layerId === runtime.id; }
+          );
+          if (checkbox) {
+            checkbox.checked = true;
+          }
+          runtime.enabled = true;
+          if (!map.hasLayer(runtime.group)) {
+            runtime.group.addTo(map);
+          }
+        }
+        state.activeLayerId = runtime ? runtime.id : "";
+        search.value = "";
+        clearSelection();
+        updateTypeControls();
+        applySearch();
+        updateSummary();
+        return true;
+      }
+
       function setLayerEnabled(runtime, enabled) {
         runtime.enabled = Boolean(enabled);
         if (runtime.enabled) {
@@ -492,6 +548,10 @@
           }
         } else if (map.hasLayer(runtime.group)) {
           map.removeLayer(runtime.group);
+        }
+        if (!runtime.enabled && state.activeLayerId === runtime.id) {
+          setActiveLayer("");
+          return;
         }
         refreshVisualStates();
         updateSummary();
@@ -580,20 +640,12 @@
       });
 
       search.addEventListener("input", applySearch);
-      Array.prototype.forEach.call(
-        typeSwitcher.querySelectorAll(".imb-type-button[data-layer-id]"),
-        function (button) {
-          button.addEventListener("click", function () {
-            if (state.activeLayerId === button.dataset.layerId) {
-              return;
-            }
-            state.activeLayerId = button.dataset.layerId;
-            search.value = "";
-            updateTypeControls();
-            applySearch();
-          });
-        }
-      );
+      overviewButton.addEventListener("click", function () {
+        setActiveLayer("");
+      });
+      layerSelect.addEventListener("change", function () {
+        setActiveLayer(layerSelect.value);
+      });
       collapse.addEventListener("click", function () {
         var app = document.getElementById("imb-app");
         var collapsed = app.classList.toggle("is-sidebar-collapsed");
@@ -606,17 +658,10 @@
       updateTypeControls();
       applySearch();
       IMB.qa.actions.setFeatureType = function (layerIdentifier) {
-        var requested = IMB.text(layerIdentifier);
-        if (!searchableLayers.some(function (runtime) {
-          return runtime.id === requested;
-        })) {
-          return false;
-        }
-        state.activeLayerId = requested;
-        search.value = "";
-        updateTypeControls();
-        applySearch();
-        return true;
+        return setActiveLayer(layerIdentifier);
+      };
+      IMB.qa.actions.setOverview = function () {
+        return setActiveLayer("");
       };
       IMB.qa.actions.setSearch = function (value) {
         search.value = IMB.text(value);

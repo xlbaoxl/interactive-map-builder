@@ -7,21 +7,22 @@ from pathlib import Path
 from build_skill_package import build_skill_package
 from cli import main as cli_main
 from cli import package_version, run_doctor
+from map_builder import _parser as builder_parser
 
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_package_version_and_cli_version_are_v040(capsys):
-    assert package_version() == "0.4.0"
+def test_package_version_and_cli_version_are_v041(capsys):
+    assert package_version() == "0.4.1"
     assert cli_main(["--version"]) == 0
-    assert capsys.readouterr().out.strip() == "0.4.0"
+    assert capsys.readouterr().out.strip() == "0.4.1"
 
 
 def test_doctor_runs_an_offline_build_and_verification():
     result = run_doctor()
     assert result["status"] == "pass"
-    assert result["package_version"] == "0.4.0"
+    assert result["package_version"] == "0.4.1"
     assert result["feature_count"] == 2
     assert result["network_used"] is False
     assert result["checks"]["leaflet_embedded"] is True
@@ -36,12 +37,19 @@ def test_cli_help_surfaces_doctor_without_changing_existing_commands(capsys):
         assert command in output
 
 
+def test_internal_builder_help_points_to_the_complete_cli():
+    output = builder_parser().format_help()
+    assert "usage: python scripts/map_builder.py" in output
+    assert "python scripts/cli.py" in output
+    assert "package-level doctor" in output
+
+
 def test_skill_package_is_lean_complete_and_deterministic(tmp_path: Path):
     first = tmp_path / "first.zip"
     second = tmp_path / "second.zip"
     first_result = build_skill_package(first)
     second_result = build_skill_package(second)
-    assert first_result["version"] == "0.4.0"
+    assert first_result["version"] == "0.4.1"
     assert first_result["sha256"] == second_result["sha256"]
 
     with zipfile.ZipFile(first) as archive:
@@ -67,7 +75,7 @@ def test_skill_package_is_lean_complete_and_deterministic(tmp_path: Path):
         "interactive-map-builder/PACKAGE_MANIFEST.json",
     }
     assert required <= names
-    assert manifest["version"] == "0.4.0"
+    assert manifest["version"] == "0.4.1"
     assert not any("/tests/" in name for name in names)
     assert not any("/assets/" in name for name in names)
     assert not any("/.github/" in name for name in names)
