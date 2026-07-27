@@ -27,6 +27,56 @@ first release with an automated tag, distribution assets, and GitHub Release wor
 
 ## [Unreleased] / 未发布
 
+## [0.4.3] - 2026-07-27
+
+### Added / 新增
+
+- 新增对标准 Skill 安装器所产生“无 `.git`、无 `PACKAGE_MANIFEST.json`”精确副本的安全接管：
+  updater 会下载当前本地版本对应的官方 Release，完成发行包 SHA-256、清单和逐文件哈希比对；
+  只有本地受管文件与官方版本完全一致时才写入清单并继续更新，用户额外文件保持不变。
+  Added verified adoption for exact unmanaged copies created by common Skill installers. The
+  updater downloads the official Release matching the local version, validates its checksum and
+  manifest, compares every managed file, writes only the verified manifest, and preserves unrelated
+  user files before continuing the update.
+- 版本预检结果新增安装类型、执行阶段和稳定状态字段，Agent 可以明确区分联网检查、缓存检查、
+  自动接管、成功更新、需要人工处理和检查失败。
+  Added explicit installation type, operation phase, and stable result states so Agents can
+  distinguish network checks, cached checks, adoption, successful updates, manual attention, and
+  check failures.
+
+### Changed / 变更
+
+- Skill 每次实际调用均使用 `update --auto --force` 完成一次新鲜的官方 Release 检查；普通用户仍可
+  使用不带 `--force` 的 `--check` 享受 24 小时缓存。Agent 必须读取并简要报告 JSON 结果，不能仅
+  根据退出码判断版本状态。
+  Skill invocations now use `update --auto --force` for a fresh official Release check. Ordinary
+  manual checks may still use the 24-hour cache. Agents must read and briefly report the JSON result
+  instead of inferring success from the process exit code.
+- 包版本更新为 0.4.3；MapSpec、地图模板、运行依赖和制图能力保持不变。
+  Updated the package to 0.4.3 without changing MapSpec, map templates, runtime dependencies, or
+  cartographic scope.
+
+### Fixed / 修复
+
+- 修复缓存未随本地版本或活动 Skill 根目录变化而失效的问题；缓存中的官方版本低于当前本地版本
+  时会被拒绝并重新联网检查，不再产生“本地 0.4.1、最新 0.4.0、状态 current”一类矛盾结果。
+  Fixed cache reuse across a changed local version or active Skill root. A cached official version
+  older than the running version is rejected and refreshed instead of producing contradictory
+  `current` results.
+- 修复自动应用更新失败后丢失已确认的 `latest_version`、`release_url`、来源和
+  `update_available=true` 的问题；失败结果现在保留检查事实，并标注发生在 adoption 或 apply
+  阶段。
+  Fixed apply failures discarding the already verified latest-version metadata. Failure results now
+  preserve the release, source, and availability facts and identify the adoption or apply phase.
+- 修复存在多个标准 Skill 目录时 updater 静默猜测活动副本的问题；此时要求显式 `--skill-dir`，
+  避免更新 `.codex/skills` 与 `.agents/skills` 中错误的那一份。
+  Fixed silent root guessing when multiple standard Skill directories exist; the updater now asks
+  for an explicit `--skill-dir` rather than modifying the wrong copy.
+- 发布工作流现在能够识别并修复“标签已存在但 Release 或发行资产不完整”的中断状态，同时拒绝
+  将既有标签移动到其他提交。
+  The release workflow now repairs an incomplete Release when its tag already exists, while refusing
+  to move an existing tag to a different commit.
+
 ## [0.4.2] - 2026-07-27
 
 ### Added / 新增

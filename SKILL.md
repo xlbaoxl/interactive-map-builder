@@ -33,24 +33,35 @@ GIS, a non-spatial chart or dashboard, or maintenance of an existing custom web 
 
 ## Update preflight
 
-At the beginning of each Skill invocation, run the non-blocking official-release preflight from the
-Skill root:
+At the beginning of each Skill invocation, run the official-release preflight from the Skill root
+and bypass the ordinary cache so every invocation confirms the current public release:
 
 ```powershell
-python scripts/update_skill.py --auto
+python scripts/update_skill.py --auto --force
 ```
 
 After installation, the equivalent command is:
 
 ```powershell
-interactive-map-builder update --auto
+interactive-map-builder update --auto --force
 ```
 
-The preflight checks at most once every 24 hours unless forced. It updates only a clean official
-`main` checkout or an unmodified versioned Skill ZIP whose manifest and release checksum validate.
-Offline access, a dirty checkout, a read-only install, or an unsupported installation must not stop
-the map task. Set `IMB_DISABLE_AUTO_UPDATE=1` to disable checks. If the result is `updated`, re-read
-this `SKILL.md` before continuing so the current task follows the new release instructions.
+Read the returned JSON rather than relying on the command exit code. Report one compact line before
+continuing: local version, official version when known, result source, and status. `--auto` remains
+non-blocking, so an offline check or update problem still exits successfully for the calling Agent.
+Handle statuses as follows:
+
+- `current` or `local_newer`: continue with the map task;
+- `updated`: re-read this `SKILL.md` before continuing;
+- `manual_update_required` or `update_apply_failed`: disclose the confirmed latest version and the
+  reason before continuing;
+- `update_check_failed`: say that the official latest version could not be confirmed, then continue;
+- `disabled`: state that `IMB_DISABLE_AUTO_UPDATE` disabled the preflight.
+
+The updater modifies only a clean official `main` checkout or a manifest-managed Release install.
+Starting with v0.4.3, an exact copied Skill can first be adopted automatically after its files are
+verified against the checksum-protected Release for its current version. Modified copies, duplicate
+standard installations, read-only directories, and unverifiable copies are never overwritten.
 
 ## Conversation guidance
 

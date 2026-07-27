@@ -17,11 +17,14 @@ jobs:
        github.event.workflow_run.head_branch == 'main')
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_SHA: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
     steps:
       - name: Check out the verified commit
         uses: actions/checkout@v6
         with:
-          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+          ref: ${{ env.RELEASE_SHA }}
           fetch-depth: 0
 
       - name: Set up Python
@@ -33,6 +36,7 @@ jobs:
         id: version
         shell: bash
         run: |
+          set -euo pipefail
           VERSION=$(python - <<'PY'
           import tomllib
           from pathlib import Path
@@ -43,21 +47,47 @@ jobs:
           )
           grep -F "## [$VERSION]" CHANGELOG.md
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Check whether the version already exists
+      - name: Inspect existing tag and Release
         id: existing
         shell: bash
         run: |
+          set -euo pipefail
+          TAG="${{ steps.version.outputs.tag }}"
+          VERSION="${{ steps.version.outputs.version }}"
           git fetch --tags --force
-          if git rev-parse "v${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
+
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            TAG_SHA=$(git rev-list -n 1 "$TAG")
+            if [ "$TAG_SHA" != "$RELEASE_SHA" ]; then
+              echo "Existing $TAG points to $TAG_SHA instead of verified commit $RELEASE_SHA." >&2
+              exit 1
+            fi
+          fi
+
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            echo "state=missing" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          ASSETS=$(gh release view "$TAG" --json assets --jq '.assets[].name')
+          MISSING=0
+          grep -Fxq "interactive-map-builder-skill-v${VERSION}.zip" <<<"$ASSETS" || MISSING=1
+          grep -Fxq "SHA256SUMS.txt" <<<"$ASSETS" || MISSING=1
+          grep -Eq '\.whl$' <<<"$ASSETS" || MISSING=1
+          grep -Eq '\.tar\.gz$' <<<"$ASSETS" || MISSING=1
+
+          if [ "$MISSING" -eq 0 ]; then
+            echo "state=complete" >> "$GITHUB_OUTPUT"
           else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "state=incomplete" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Build release assets
-        if: steps.existing.outputs.exists == 'false'
+        if: steps.existing.outputs.state != 'complete'
         run: |
+          set -euo pipefail
           python -m pip install --upgrade pip build
           python -m build
           python scripts/build_skill_package.py \
@@ -65,13 +95,11 @@ jobs:
           (cd dist && sha256sum *.whl *.tar.gz "interactive-map-builder-skill-v${{ steps.version.outputs.version }}.zip" > SHA256SUMS.txt)
 
       - name: Create GitHub Release
-        if: steps.existing.outputs.exists == 'false'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_SHA: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+        if: steps.existing.outputs.state == 'missing'
         shell: bash
         run: |
-          gh release create "v${{ steps.version.outputs.version }}" \
+          set -euo pipefail
+          gh release create "${{ steps.version.outputs.tag }}" \
             dist/*.whl \
             dist/*.tar.gz \
             "dist/interactive-map-builder-skill-v${{ steps.version.outputs.version }}.zip" \
@@ -80,3 +108,28 @@ jobs:
             --title "Interactive Map Builder v${{ steps.version.outputs.version }}" \
             --generate-notes \
             --latest
+
+      - name: Repair incomplete GitHub Release
+        if: steps.existing.outputs.state == 'incomplete'
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release upload "${{ steps.version.outputs.tag }}" \
+            dist/*.whl \
+            dist/*.tar.gz \
+            "dist/interactive-map-builder-skill-v${{ steps.version.outputs.version }}.zip" \
+            dist/SHA256SUMS.txt \
+            --clobber
+          gh release edit "${{ steps.version.outputs.tag }}" --latest
+
+      - name: Verify final Release assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="${{ steps.version.outputs.tag }}"
+          VERSION="${{ steps.version.outputs.version }}"
+          ASSETS=$(gh release view "$TAG" --json assets --jq '.assets[].name')
+          grep -Fxq "interactive-map-builder-skill-v${VERSION}.zip" <<<"$ASSETS"
+          grep -Fxq "SHA256SUMS.txt" <<<"$ASSETS"
+          grep -Eq '\.whl$' <<<"$ASSETS"
+          grep -Eq '\.tar\.gz$' <<<"$ASSETS"

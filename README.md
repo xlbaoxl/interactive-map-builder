@@ -49,8 +49,9 @@ No frontend build system, no hand-written Folium page, and no hidden cleanup.
   plan only when those files are explicitly requested.
 - **Auditable handoff** — every build records inspection results, repairs, generated IDs,
   performance warnings, source notes, hashes, and portability.
-- **Safe release preflight** — each Skill invocation can check the official GitHub Release once per
-  day and update a clean verified installation without blocking offline work.
+- **Fresh, safe release preflight** — every Skill invocation confirms the current official Release;
+  exact copied installs can be adopted only after checksum and file-manifest verification, while
+  offline access or local modifications never block the map task.
 - **Install self-check** — `interactive-map-builder doctor` runs a complete offline build and hash
   verification after installation.
 - **Reliable map controls** — multilayer maps open in a neutral overview, use one compact layer
@@ -99,10 +100,12 @@ required for a matching Agent task.
 Open a new Codex task and send:
 
 ```text
-$skill-installer Install the Skill from https://github.com/xlbaoxl/interactive-map-builder and install its Python dependencies. Run interactive-map-builder doctor and interactive-map-builder update --check after installation.
+$skill-installer Install the Skill from https://github.com/xlbaoxl/interactive-map-builder and install its Python dependencies. Run interactive-map-builder doctor and interactive-map-builder update --auto --force after installation.
 ```
 
 Create a new task after installation. Restart Codex once only when the Skill does not appear.
+Starting with v0.4.3, a repository-copy install can become update-managed automatically only when
+all Release-owned files exactly match the checksum-verified official package.
 
 ### 2. Attach spatial data and describe the result
 
@@ -126,12 +129,15 @@ category meaning, display fields, output formats, and audience locale.
 
 ```bash
 interactive-map-builder doctor
+interactive-map-builder update --auto --force
 ```
 
 `doctor` creates a temporary coordinate table, builds a map without network access, verifies the
 packaged Leaflet resources and output hashes, prints a JSON result, and removes the temporary
-files. It does not download basemaps or send usage telemetry. Check update status separately with
-`interactive-map-builder update --check`.
+files. It does not download basemaps or send usage telemetry. The update command prints structured
+JSON containing the local version, official version when known, source, installation type, and
+status.
+For a cached status-only query, run `interactive-map-builder update --check`.
 
 Prefer `interactive-map-builder doctor` after installation. In a source checkout where the console
 command is not yet available, use `python scripts/cli.py doctor`. The internal
@@ -139,30 +145,35 @@ command is not yet available, use `python scripts/cli.py doctor`. The internal
 must not be used to conclude that the package lacks `doctor`.
 
 <details>
-<summary><strong>Manual installation</strong></summary>
+<summary><strong>Manual Git installation for zero-touch updates</strong></summary>
+
+Use one active Codex Skill directory rather than keeping duplicate `.codex` and `.agents` copies.
+A legacy Windows location may be `$HOME\.agents\skills`; archive it before using the active Codex directory below.
 
 **Windows PowerShell**
 
 ```powershell
-New-Item -ItemType Directory -Force "$HOME\.agents\skills" | Out-Null
+$CodexHome = if ($env:CODEX_HOME) { $env:CODEX_HOME } else { "$HOME\.codex" }
+New-Item -ItemType Directory -Force "$CodexHome\skills" | Out-Null
 git clone https://github.com/xlbaoxl/interactive-map-builder.git `
-  "$HOME\.agents\skills\interactive-map-builder"
-Set-Location "$HOME\.agents\skills\interactive-map-builder"
+  "$CodexHome\skills\interactive-map-builder"
+Set-Location "$CodexHome\skills\interactive-map-builder"
 py -m pip install .
 interactive-map-builder doctor
-interactive-map-builder update --check
+interactive-map-builder update --auto --force
 ```
 
 **macOS or Linux**
 
 ```bash
-mkdir -p "$HOME/.agents/skills"
+CODEX_ROOT="${CODEX_HOME:-$HOME/.codex}"
+mkdir -p "$CODEX_ROOT/skills"
 git clone https://github.com/xlbaoxl/interactive-map-builder.git \
-  "$HOME/.agents/skills/interactive-map-builder"
-cd "$HOME/.agents/skills/interactive-map-builder"
+  "$CODEX_ROOT/skills/interactive-map-builder"
+cd "$CODEX_ROOT/skills/interactive-map-builder"
 python3 -m pip install .
 interactive-map-builder doctor
-interactive-map-builder update --check
+interactive-map-builder update --auto --force
 ```
 
 </details>
@@ -201,18 +212,27 @@ directory.
 
 ## Updates, planning, and public deployment
 
-At the start of a Skill task, the Agent runs `interactive-map-builder update --auto`. The check is
-cached for 24 hours and only modifies a clean official `main` checkout or an unmodified versioned
-Skill ZIP after validating the Release checksum and package manifest. Offline access, local
-changes, read-only installs, and unsupported copies are reported but never block map construction.
-Set `IMB_DISABLE_AUTO_UPDATE=1` to opt out.
+At the start of every Skill task, the Agent runs `interactive-map-builder update --auto --force`
+from the Skill root and reads the returned JSON. The forced preflight confirms the current public
+Release rather than reusing the ordinary 24-hour cache. It reports the local version, official
+version when known, result source, and status before continuing.
+
+Automatic modification remains narrow: a clean official `main` checkout, a verified managed
+Release install, or—starting with v0.4.3—an exact copied install that first passes verification
+against the official Release for its current version. Dirty or modified copies, forks, read-only
+installs, and ambiguous duplicate standard installations return `manual_update_required` and are
+never overwritten. Offline access returns `update_check_failed`; neither state blocks map
+construction. Set `IMB_DISABLE_AUTO_UPDATE=1` to opt out.
+
+Versions v0.3.2–v0.4.2 do not contain the copy-adoption fix. An already installed unmanaged copy of
+one of those versions needs one official v0.4.3 reinstall. Later compatible releases can then be
+adopted and applied automatically.
 
 Updates are transactional: after replacing a verified release, the updater reinstalls the engine
 and runs the offline doctor. A failed install or doctor check restores the prior Git commit or the
-previous manifest-owned files. See [the verified update policy](references/update-policy.md).
-
-Version 0.3.2 is the update bootstrap. Install it once through the repository or its Release; later
-compatible releases can then be detected and applied by the Skill preflight.
+previous manifest-owned files. Confirmed release metadata is preserved when application fails, so
+an Agent cannot silently convert “v0.4.3 is available” into “no update available.” See
+[the verified update policy](references/update-policy.md).
 
 For a genuinely complex Codex task—multiple independent layers, several unresolved design choices,
 or coordinated HTML/slide/paper outputs—the Agent may suggest Plan mode once as an optional
@@ -381,10 +401,12 @@ but does not silently switch rendering engines.
 
 ## Project status
 
-The project is in **v0.4.1 beta**. This patch makes multilayer maps open in a neutral overview with
-a compact layer selector, makes static figures strictly opt-in, clarifies package-level `doctor`
-usage, and replaces the repeated diagonal README mock tiles. It keeps MapSpec 1.1, the two existing
-templates, the dependency footprint, and the Atlas Studio Light visual resolver unchanged.
+The current stable release is **v0.4.3**. This hotfix repairs release preflight consistency: stale caches
+are invalidated when the running version or active Skill root changes; confirmed update metadata is
+preserved when application fails; exact repository-copy installs can be safely adopted into
+manifest management; duplicate standard installs are not guessed; and interrupted Releases can be
+repaired by the release workflow. MapSpec 1.1, the two map templates, rendering dependencies, and
+Atlas Studio Light visual behavior remain unchanged.
 
 See the [changelog](CHANGELOG.md) for completed work.
 
@@ -407,8 +429,8 @@ python scripts/build_skill_package.py
 
 The CI matrix covers Python 3.9, 3.10, and 3.12, trigger-suite validation, Chromium interaction
 tests, wheel creation, the offline installation doctor, a clean out-of-repository build, and the
-Skill distribution archive. A successful tagged release is created automatically after `main`
-passes CI for a new package version.
+Skill distribution archive. After a new package version passes `main` CI, the Release workflow
+creates the tag and assets or repairs an incomplete Release without moving an existing tag.
 
 ## License
 
