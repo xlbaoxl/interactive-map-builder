@@ -42,6 +42,16 @@ jobs:
         run: |
           set -euo pipefail
           cat tools/v044_payload/part*.txt | base64 --decode | gzip --decompress > tools/v044_stabilize.py
+          python - <<'PY'
+          from pathlib import Path
+          path = Path("tools/v044_stabilize.py")
+          text = path.read_text(encoding="utf-8")
+          old = '    "tests/test_examples.py",\n    \'        "README_USAGE.md",\\n\','
+          new = '    "tests/test_cli_integration.py",\n    \'        "README_USAGE.md",\\n\','
+          if text.count(old) != 1:
+              raise SystemExit("Could not apply test-file bootstrap correction")
+          path.write_text(text.replace(old, new, 1), encoding="utf-8")
+          PY
           python -m py_compile tools/v044_stabilize.py
 
       - name: Apply stabilization payload
