@@ -1,64 +1,91 @@
-name: publish v0.3.2 non-workflow tree
+name: ci
 
 on:
+  push:
   pull_request:
-    branches:
-      - main
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  apply-v032:
-    if: github.head_ref == 'agent/v0.3.2-controls-and-updates'
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.10", "3.12"]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -r requirements-dev.txt
+      - run: python scripts/evaluate_triggers.py validate
+      - run: python -m pytest -q -m "not browser"
+
+  browser:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
-          ref: ${{ github.head_ref }}
-          fetch-depth: 0
-          show-progress: false
-      - name: Commit the reviewed non-workflow v0.3.2 changes
-        id: apply
-        continue-on-error: true
-        shell: bash
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -r requirements-dev.txt
+      - run: python -m playwright install --with-deps chromium
+      - run: python -m pytest -q -m browser
+
+  wheel:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install --upgrade pip build
+      - run: python -m build --wheel
+      - run: python scripts/build_skill_package.py
+      - name: Install wheel in a clean environment and run the offline doctor
         run: |
-          exec > >(tee /tmp/v032-apply.log) 2>&1
-          set -euxo pipefail
-          cat .github/v032-patch/part-* > /tmp/v0.3.2.patch.gz.b64
-          test "$(wc -c < /tmp/v0.3.2.patch.gz.b64)" = "48968"
-          echo "dac96f940d2e968372dc996ac7dc3a18d04a35731dab0c037e55d88903d1cd38  /tmp/v0.3.2.patch.gz.b64" | sha256sum -c -
-          base64 -d /tmp/v0.3.2.patch.gz.b64 > /tmp/v0.3.2.patch.gz
-          echo "fa19f508697543fa59b33e947074abf8363008df48ce5a380784427e430863c1  /tmp/v0.3.2.patch.gz" | sha256sum -c -
-          gzip -dc /tmp/v0.3.2.patch.gz > /tmp/v0.3.2.patch
-          echo "9ebcd009226e10e243e391701907d22b93a0ee5f1ce938e6cb7fdb9fe98335c3  /tmp/v0.3.2.patch" | sha256sum -c -
-
-          git apply --check --index --binary --exclude='.github/workflows/*' /tmp/v0.3.2.patch
-          git apply --index --binary --exclude='.github/workflows/*' /tmp/v0.3.2.patch
-          git rm -r .github/v032-patch
-          test -z "$(git diff --cached --name-only | grep '^.github/workflows/' || true)"
-          git diff --cached --check
-          test "$(python - <<'PY'
-          import tomllib
+          python -m venv /tmp/imb-wheel
+          /tmp/imb-wheel/bin/python -m pip install --upgrade pip
+          /tmp/imb-wheel/bin/python -m pip install --force-reinstall dist/*.whl
+          /tmp/imb-wheel/bin/interactive-map-builder --version
+          /tmp/imb-wheel/bin/interactive-map-builder doctor
+      - name: Build outside the repository from the installed wheel
+        run: |
+          mkdir -p /tmp/imb-project
+          cp -R assets/examples/csv-points/. /tmp/imb-project/
+          cd /tmp
+          /tmp/imb-wheel/bin/interactive-map-builder build \
+            --spec /tmp/imb-project/map_spec.json \
+            --out /tmp/imb-dist
+          /tmp/imb-wheel/bin/interactive-map-builder verify --dist /tmp/imb-dist
+          test -s /tmp/imb-dist/map.html
+          test -s /tmp/imb-dist/build_report.json
+      - name: Verify the lean Skill archive
+        run: |
+          ls dist/interactive-map-builder-skill-v*.zip >/dev/null
+          python - <<'PY'
+          import zipfile
           from pathlib import Path
-          print(tomllib.loads(Path('pyproject.toml').read_text(encoding='utf-8'))['project']['version'])
-          PY
-          )" = "0.3.2"
-          test -f scripts/update_skill.py
-          test -f scripts/mapcore/basemaps.py
 
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "release: prepare v0.3.2 controls and safe updates"
-          git push --verbose origin "HEAD:refs/heads/${{ github.head_ref }}"
-      - name: Upload staging diagnostic
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: v032-apply-diagnostic
-          path: /tmp/v032-apply.log
-          retention-days: 1
-      - name: Propagate staging failure
-        if: steps.apply.outcome == 'failure'
-        run: exit 1
+          archive = next(Path("dist").glob("interactive-map-builder-skill-v*.zip"))
+          with zipfile.ZipFile(archive) as handle:
+              names = set(handle.namelist())
+          required = {
+              "interactive-map-builder/SKILL.md",
+              "interactive-map-builder/agents/openai.yaml",
+              "interactive-map-builder/pyproject.toml",
+              "interactive-map-builder/scripts/cli.py",
+              "interactive-map-builder/scripts/map_builder.py",
+              "interactive-map-builder/PACKAGE_MANIFEST.json",
+          }
+          assert required <= names
+          assert not any("/tests/" in name or "/assets/" in name for name in names)
+          PY
