@@ -96,7 +96,7 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          python -m pip install --quiet pytest requests pyyaml
+          python -m pip install --quiet -r requirements-dev.txt
           PYTHONPATH=scripts python -m pytest -q \
             tests/test_update_skill.py \
             tests/test_update_hotfix.py \
