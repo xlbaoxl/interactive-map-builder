@@ -35,15 +35,15 @@ jobs:
           python-version: "3.12"
           cache: pip
 
-      - name: Repair verification exception literal
+      - name: Repair verification and version-safe tests
         shell: bash
         run: |
           set -euo pipefail
           python - <<'PY'
           from pathlib import Path
 
-          path = Path("scripts/map_builder.py")
-          lines = path.read_text(encoding="utf-8").splitlines()
+          map_builder = Path("scripts/map_builder.py")
+          lines = map_builder.read_text(encoding="utf-8").splitlines()
           broken = [
               '        raise BuildError("Verification failed:',
               '- " + "',
@@ -58,9 +58,36 @@ jobs:
               raise SystemExit(f"Expected one broken verification literal, found {len(matches)}")
           index = matches[0]
           lines[index:index + len(broken)] = replacement
-          path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+          map_builder.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+          skill_test = Path("tests/test_skill_structure.py")
+          text = skill_test.read_text(encoding="utf-8")
+          if "import json\n" not in text:
+              text = text.replace("import struct\n", "import json\nimport struct\n", 1)
+          old = '    assert \'"schema_version": {"const": "1.1"}\' in schema\n'
+          new = '    assert json.loads(schema)["properties"]["schema_version"]["const"] == "1.1"\n'
+          if text.count(old) != 1:
+              raise SystemExit("Could not replace brittle schema text assertion")
+          skill_test.write_text(text.replace(old, new, 1), encoding="utf-8")
+
+          update_test = Path("tests/test_update_skill.py")
+          text = update_test.read_text(encoding="utf-8")
+          old = '    session = FakeSession(_release("0.4.4"))\n'
+          new = (
+              '    major, minor, patch = parse_version(update_skill.__version__)\n'
+              '    newer = f"{major}.{minor}.{patch + 1}"\n'
+              '    session = FakeSession(_release(newer))\n'
+          )
+          if text.count(old) != 1:
+              raise SystemExit("Could not replace hard-coded update test release")
+          text = text.replace(old, new, 1)
+          old = '    assert first["latest_version"] == "0.4.4"\n'
+          new = '    assert first["latest_version"] == newer\n'
+          if text.count(old) != 1:
+              raise SystemExit("Could not replace hard-coded update test assertion")
+          update_test.write_text(text.replace(old, new, 1), encoding="utf-8")
           PY
-          python -m py_compile scripts/map_builder.py
+          python -m py_compile scripts/map_builder.py tests/test_skill_structure.py tests/test_update_skill.py
 
       - name: Validate repaired source
         id: validation
@@ -92,7 +119,7 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-      - name: Commit verified syntax repair
+      - name: Commit verified repairs
         id: commit
         if: steps.validation.outputs.status == '0'
         shell: bash
@@ -102,9 +129,9 @@ jobs:
             set -euo pipefail
             git config user.name "openai-agent"
             git config user.email "openai-agent@users.noreply.github.com"
-            git add scripts/map_builder.py
+            git add scripts/map_builder.py tests/test_skill_structure.py tests/test_update_skill.py
             git diff --cached --check
-            git commit -m "Fix v0.4.4 delivery verification syntax"
+            git commit -m "Fix v0.4.4 verification and version-safe tests"
             git push origin HEAD:agent/v0.4.4-engineering-stabilization
           ) > /tmp/v044-fix-commit.log 2>&1
           STATUS=$?
