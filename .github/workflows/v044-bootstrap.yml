@@ -11,6 +11,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: bootstrap-v044-${{ github.ref }}
@@ -25,6 +26,8 @@ jobs:
       patch_failure: ${{ steps.patch.outputs.failure }}
       validation_status: ${{ steps.validation.outputs.status }}
       validation_failure: ${{ steps.validation.outputs.failure }}
+      commit_status: ${{ steps.commit.outputs.status }}
+      commit_failure: ${{ steps.commit.outputs.failure }}
     steps:
       - name: Check out stabilization branch
         uses: actions/checkout@v6
@@ -95,17 +98,25 @@ jobs:
           exit 0
 
       - name: Commit verified source changes
-        if: github.event_name == 'push' && steps.patch.outputs.status == '0' && steps.validation.outputs.status == '0'
+        id: commit
+        if: steps.patch.outputs.status == '0' && steps.validation.outputs.status == '0'
         shell: bash
         run: |
-          set -euo pipefail
-          rm -rf tools/v044_payload
-          git config user.name "openai-agent"
-          git config user.email "openai-agent@users.noreply.github.com"
-          git add -A
-          git diff --cached --check
-          git commit -m "Release v0.4.4: stabilize delivery and release boundaries"
-          git push origin HEAD:agent/v0.4.4-engineering-stabilization
+          set +e
+          {
+            rm -rf tools/v044_payload
+            git config user.name "openai-agent"
+            git config user.email "openai-agent@users.noreply.github.com"
+            git add -A
+            git diff --cached --check
+            git commit -m "Release v0.4.4: stabilize delivery and release boundaries"
+            git push origin HEAD:agent/v0.4.4-engineering-stabilization
+          } > /tmp/v044-commit.log 2>&1
+          STATUS=$?
+          echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+          FAILURE=$(tail -120 /tmp/v044-commit.log | base64 -w0)
+          echo "failure=$FAILURE" >> "$GITHUB_OUTPUT"
+          exit 0
 
   report-patch-failure:
     needs: apply
@@ -129,6 +140,19 @@ jobs:
         shell: bash
         env:
           FAILURE: ${{ needs.apply.outputs.validation_failure }}
+        run: |
+          echo "$FAILURE" | base64 --decode
+          exit 1
+
+  report-commit-failure:
+    needs: apply
+    if: needs.apply.outputs.patch_status == '0' && needs.apply.outputs.validation_status == '0' && needs.apply.outputs.commit_status != '0'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print exact commit failure
+        shell: bash
+        env:
+          FAILURE: ${{ needs.apply.outputs.commit_failure }}
         run: |
           echo "$FAILURE" | base64 --decode
           exit 1
