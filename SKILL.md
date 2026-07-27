@@ -34,34 +34,30 @@ GIS, a non-spatial chart or dashboard, or maintenance of an existing custom web 
 ## Update preflight
 
 At the beginning of each Skill invocation, run the official-release preflight from the Skill root
-and bypass the ordinary cache so every invocation confirms the current public release:
+using the validated 24-hour cache when available. This check never modifies the installation:
 
 ```powershell
-python scripts/update_skill.py --auto --force
+python scripts/update_skill.py --preflight
 ```
 
 After installation, the equivalent command is:
 
 ```powershell
-interactive-map-builder update --auto --force
+interactive-map-builder update --preflight
 ```
 
-Read the returned JSON rather than relying on the command exit code. Report one compact line before
-continuing: local version, official version when known, result source, and status. `--auto` remains
-non-blocking, so an offline check or update problem still exits successfully for the calling Agent.
+Read the returned JSON rather than relying on the command exit code. Report only an available update or a failed check; keep a current cached result silent. `--preflight` remains non-fatal for the calling Agent and never applies an update.
 Handle statuses as follows:
 
 - `current` or `local_newer`: continue with the map task;
-- `updated`: re-read this `SKILL.md` before continuing;
 - `manual_update_required` or `update_apply_failed`: disclose the confirmed latest version and the
   reason before continuing;
 - `update_check_failed`: say that the official latest version could not be confirmed, then continue;
 - `disabled`: state that `IMB_DISABLE_AUTO_UPDATE` disabled the preflight.
 
-The updater modifies only a clean official `main` checkout or a manifest-managed Release install.
-Starting with v0.4.3, an exact copied Skill can first be adopted automatically after its files are
-verified against the checksum-protected Release for its current version. Modified copies, duplicate
-standard installations, read-only directories, and unverifiable copies are never overwritten.
+Applying an update is a separate, explicit maintenance action with `update --apply` or the legacy
+non-fatal `update --auto` mode. Those commands retain checksum, manifest, local-change, duplicate-root,
+and rollback safeguards; normal map construction never modifies its own running Skill.
 
 ## Conversation guidance
 
@@ -212,8 +208,8 @@ loading, map construction, and output hashes without downloading data or basemap
 
 ## Output contract
 
-Always return `map.html`, resolved `map_spec.json`, `inspection.json`, `build_report.json`, and
-`README_USAGE.md` in the selected locale. Static output is opt-in: generate
+Always return `map.html`, resolved `map_spec.json`, `inspection.json`, `build_report.json`,
+`DELIVERY_MANIFEST.json`, and `README_USAGE.md` in the selected locale. Static output is opt-in: generate
 `map_slide_16x9.png` only when the user requests a slide figure and enable the paper preset only
 when the user requests paper PNG/SVG/PDF. Never expand an HTML-only request into static files.
 Treat an unbundled `map_spec.json` as a build record; promise an independent rebuild only when

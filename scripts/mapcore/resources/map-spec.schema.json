@@ -4,62 +4,155 @@
   "title": "Interactive Map Builder specification v1.1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "template", "title", "layers"],
+  "required": [
+    "schema_version",
+    "template",
+    "title",
+    "layers"
+  ],
   "properties": {
-    "schema_version": {"const": "1.1"},
-    "template": {"enum": ["map-list", "multilayer"]},
-    "title": {"type": "string", "minLength": 1},
-    "subtitle": {"type": "string"},
+    "schema_version": {
+      "const": "1.1"
+    },
+    "template": {
+      "enum": [
+        "map-list",
+        "multilayer"
+      ]
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "subtitle": {
+      "type": "string"
+    },
     "locale": {
       "type": "string",
-      "enum": ["en-US", "zh-CN"],
+      "enum": [
+        "en-US",
+        "zh-CN"
+      ],
       "default": "en-US"
     },
-    "primary_layer": {"type": "string"},
+    "primary_layer": {
+      "type": "string"
+    },
     "layers": {
       "type": "array",
       "minItems": 1,
-      "items": {"$ref": "#/$defs/layer"}
+      "items": {
+        "$ref": "#/$defs/layer"
+      }
     },
     "basemaps": {
       "type": "array",
-      "items": {"$ref": "#/$defs/basemap"},
+      "items": {
+        "$ref": "#/$defs/basemap"
+      },
       "default": []
     },
-    "map": {"$ref": "#/$defs/map"},
-    "list": {"$ref": "#/$defs/list"},
-    "linked_view": {"$ref": "#/$defs/linkedView"},
-    "static": {"$ref": "#/$defs/static"}
+    "map": {
+      "$ref": "#/$defs/map"
+    },
+    "list": {
+      "$ref": "#/$defs/list"
+    },
+    "linked_view": {
+      "$ref": "#/$defs/linkedView"
+    },
+    "static": {
+      "$ref": "#/$defs/static"
+    }
   },
   "$defs": {
     "source": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["path"],
+      "required": [
+        "path"
+      ],
       "properties": {
-        "path": {"type": "string", "minLength": 1},
-        "layer": {"type": "string"},
-        "sheet": {"oneOf": [{"type": "string"}, {"type": "integer", "minimum": 0}]},
-        "crs": {"type": ["string", "integer"]},
-        "encoding": {"type": "string", "minLength": 1},
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "layer": {
+          "type": "string"
+        },
+        "sheet": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer",
+              "minimum": 0
+            }
+          ]
+        },
+        "crs": {
+          "type": [
+            "string",
+            "integer"
+          ]
+        },
+        "encoding": {
+          "type": "string",
+          "minLength": 1
+        },
         "geometry": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["type"],
+          "required": [
+            "type"
+          ],
           "properties": {
-            "type": {"enum": ["lonlat", "wkt"]},
-            "x_field": {"type": "string"},
-            "y_field": {"type": "string"},
-            "wkt_field": {"type": "string"}
+            "type": {
+              "enum": [
+                "lonlat",
+                "wkt"
+              ]
+            },
+            "x_field": {
+              "type": "string"
+            },
+            "y_field": {
+              "type": "string"
+            },
+            "wkt_field": {
+              "type": "string"
+            }
           },
           "allOf": [
             {
-              "if": {"properties": {"type": {"const": "lonlat"}}},
-              "then": {"required": ["x_field", "y_field"]}
+              "if": {
+                "properties": {
+                  "type": {
+                    "const": "lonlat"
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "x_field",
+                  "y_field"
+                ]
+              }
             },
             {
-              "if": {"properties": {"type": {"const": "wkt"}}},
-              "then": {"required": ["wkt_field"]}
+              "if": {
+                "properties": {
+                  "type": {
+                    "const": "wkt"
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "wkt_field"
+                ]
+              }
             }
           ]
         }
@@ -68,49 +161,108 @@
     "categoryRule": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["color"],
+      "required": [
+        "color"
+      ],
       "properties": {
-        "label": {"type": "string"},
-        "color": {"type": "string", "minLength": 1}
+        "label": {
+          "type": "string"
+        },
+        "color": {
+          "type": "string",
+          "minLength": 1
+        }
       }
     },
     "style": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "mode": {"enum": ["single", "categorical", "graduated"]},
-        "color": {"type": "string"},
-        "fill_color": {"type": "string"},
-        "weight": {"type": "number", "minimum": 0},
-        "opacity": {"type": "number", "minimum": 0, "maximum": 1},
-        "fill_opacity": {"type": "number", "minimum": 0, "maximum": 1},
-        "radius": {"type": "number", "exclusiveMinimum": 0},
-        "color_field": {"type": "string"},
-        "field": {"type": "string"},
+        "mode": {
+          "enum": [
+            "single",
+            "categorical",
+            "graduated"
+          ]
+        },
+        "color": {
+          "type": "string"
+        },
+        "fill_color": {
+          "type": "string"
+        },
+        "weight": {
+          "type": "number",
+          "minimum": 0
+        },
+        "opacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "fill_opacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "radius": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "color_field": {
+          "type": "string"
+        },
+        "field": {
+          "type": "string"
+        },
         "method": {
-          "enum": ["quantile", "equal_interval", "custom_breaks"],
+          "enum": [
+            "quantile",
+            "equal_interval",
+            "custom_breaks"
+          ],
           "default": "quantile"
         },
-        "classes": {"type": "integer", "minimum": 2, "maximum": 9, "default": 5},
+        "classes": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 9,
+          "default": 5
+        },
         "breaks": {
           "type": "array",
           "minItems": 3,
-          "items": {"type": "number"}
+          "items": {
+            "type": "number"
+          }
         },
         "colors": {
           "type": "array",
           "minItems": 2,
-          "items": {"type": "string"}
+          "items": {
+            "type": "string"
+          }
         },
-        "missing_color": {"type": "string", "default": "#9ca3af"},
-        "missing_label": {"type": "string"},
-        "legend_title": {"type": "string"},
+        "missing_color": {
+          "type": "string",
+          "default": "#9ca3af"
+        },
+        "missing_label": {
+          "type": "string"
+        },
+        "legend_title": {
+          "type": "string"
+        },
         "categories": {
           "type": "object",
           "additionalProperties": {
             "oneOf": [
-              {"type": "string"},
-              {"$ref": "#/$defs/categoryRule"}
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/$defs/categoryRule"
+              }
             ]
           }
         }
@@ -119,44 +271,133 @@
     "layer": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "name", "source"],
+      "required": [
+        "id",
+        "name",
+        "source"
+      ],
       "properties": {
-        "id": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"},
-        "name": {"type": "string", "minLength": 1},
-        "required": {"type": "boolean", "default": true},
-        "visible": {"type": "boolean", "default": true},
-        "source": {"$ref": "#/$defs/source"},
-        "id_field": {"type": "string"},
-        "label_field": {"type": "string"},
-        "link_key": {"type": "string"},
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "required": {
+          "type": "boolean",
+          "default": true
+        },
+        "visible": {
+          "type": "boolean",
+          "default": true
+        },
+        "source": {
+          "$ref": "#/$defs/source"
+        },
+        "id_field": {
+          "type": "string"
+        },
+        "label_field": {
+          "type": "string"
+        },
+        "link_key": {
+          "type": "string"
+        },
         "field_labels": {
           "type": "object",
-          "additionalProperties": {"type": "string"}
+          "additionalProperties": {
+            "type": "string"
+          }
         },
-        "style": {"$ref": "#/$defs/style"},
-        "tooltip_fields": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
-        "popup_fields": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
-        "search_fields": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
-        "filter_fields": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
-        "card_fields": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
-        "sort_fields": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "style": {
+          "$ref": "#/$defs/style"
+        },
+        "tooltip_fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "popup_fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "search_fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "filter_fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "card_fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "sort_fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
         "simplify": {
-          "enum": ["none", "light", "medium"],
+          "enum": [
+            "none",
+            "light",
+            "medium"
+          ],
           "default": "none"
         },
-        "source_note": {"type": "string"}
+        "source_note": {
+          "type": "string"
+        }
       }
     },
     "basemap": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["name", "url", "attribution"],
+      "required": [
+        "name",
+        "url",
+        "attribution"
+      ],
       "properties": {
-        "name": {"type": "string"},
-        "url": {"type": "string", "pattern": "^https://"},
-        "attribution": {"type": "string"},
-        "visible": {"type": "boolean", "default": false},
-        "max_zoom": {"type": "integer", "minimum": 1, "maximum": 24, "default": 19}
+        "name": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string",
+          "pattern": "^https://"
+        },
+        "attribution": {
+          "type": "string"
+        },
+        "visible": {
+          "type": "boolean",
+          "default": false
+        },
+        "max_zoom": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 24,
+          "default": 19
+        }
       }
     },
     "map": {
@@ -164,18 +405,36 @@
       "additionalProperties": false,
       "properties": {
         "search_behavior": {
-          "enum": ["filter", "highlight"],
+          "enum": [
+            "filter",
+            "highlight"
+          ],
           "default": "filter"
         },
         "controls": {
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "fullscreen": {"type": "boolean", "default": true},
-            "scale": {"type": "boolean", "default": true},
-            "basemap_switcher": {"type": "boolean", "default": true},
-            "layer_control": {"type": "boolean", "default": true},
-            "legend": {"type": "boolean", "default": true}
+            "fullscreen": {
+              "type": "boolean",
+              "default": true
+            },
+            "scale": {
+              "type": "boolean",
+              "default": true
+            },
+            "basemap_switcher": {
+              "type": "boolean",
+              "default": true
+            },
+            "layer_control": {
+              "type": "boolean",
+              "default": true
+            },
+            "legend": {
+              "type": "boolean",
+              "default": true
+            }
           }
         }
       }
@@ -184,60 +443,157 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "batch_size": {"type": "integer", "minimum": 20, "maximum": 2000, "default": 200},
-        "default_sort": {"type": "string"},
-        "collapsible": {"type": "boolean", "default": true},
-        "summary_fields": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
-        "summary_update_with_filter": {"type": "boolean", "default": true},
+        "batch_size": {
+          "type": "integer",
+          "minimum": 20,
+          "maximum": 2000,
+          "default": 200
+        },
+        "default_sort": {
+          "type": "string"
+        },
+        "collapsible": {
+          "type": "boolean",
+          "default": true
+        },
+        "summary_fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "summary_update_with_filter": {
+          "type": "boolean",
+          "default": true
+        },
         "summary_metrics": {
           "type": "array",
-          "items": {"$ref": "#/$defs/summaryMetric"}
+          "items": {
+            "$ref": "#/$defs/summaryMetric"
+          }
         }
       }
     },
     "summaryMetric": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["type", "label"],
+      "required": [
+        "type",
+        "label"
+      ],
       "properties": {
-        "type": {"enum": ["count", "category_count", "sum", "mean", "median"]},
-        "label": {"type": "string"},
-        "field": {"type": "string"},
+        "type": {
+          "enum": [
+            "count",
+            "category_count",
+            "sum",
+            "mean",
+            "median"
+          ]
+        },
+        "label": {
+          "type": "string"
+        },
+        "field": {
+          "type": "string"
+        },
         "value": {},
-        "format": {"enum": ["number", "percent"]}
+        "format": {
+          "enum": [
+            "number",
+            "percent"
+          ]
+        }
       }
     },
     "linkedView": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["layer", "x_field", "y_field"],
+      "required": [
+        "layer",
+        "x_field",
+        "y_field"
+      ],
       "properties": {
-        "layer": {"type": "string"},
-        "x_field": {"type": "string"},
-        "y_field": {"type": "string"},
-        "title": {"type": "string"}
+        "layer": {
+          "type": "string"
+        },
+        "x_field": {
+          "type": "string"
+        },
+        "y_field": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        }
       }
     },
     "static": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "enabled": {"type": "boolean", "default": false},
+        "enabled": {
+          "type": "boolean",
+          "default": false
+        },
         "presets": {
           "type": "array",
           "minItems": 1,
-          "items": {"enum": ["slide-16x9", "paper"]},
-          "uniqueItems": true,
-          "default": ["slide-16x9", "paper"]
+          "items": {
+            "enum": [
+              "slide-16x9",
+              "paper"
+            ]
+          },
+          "uniqueItems": true
         },
-        "title": {"type": "string"},
-        "background": {"type": "string", "default": "#f5f7f9"},
-        "legend": {"type": "boolean", "default": true},
-        "legend_title": {"type": "string"},
-        "north_arrow": {"type": "boolean", "default": true},
-        "scale_bar": {"type": "boolean", "default": true},
-        "source_note": {"type": "string"}
-      }
+        "title": {
+          "type": "string"
+        },
+        "background": {
+          "type": "string",
+          "default": "#f5f7f9"
+        },
+        "legend": {
+          "type": "boolean",
+          "default": true
+        },
+        "legend_title": {
+          "type": "string"
+        },
+        "north_arrow": {
+          "type": "boolean",
+          "default": true
+        },
+        "scale_bar": {
+          "type": "boolean",
+          "default": true
+        },
+        "source_note": {
+          "type": "string"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "enabled": {
+                "const": true
+              }
+            },
+            "required": [
+              "enabled"
+            ]
+          },
+          "then": {
+            "required": [
+              "presets"
+            ]
+          }
+        }
+      ]
     }
   }
 }

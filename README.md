@@ -49,9 +49,8 @@ No frontend build system, no hand-written Folium page, and no hidden cleanup.
   plan only when those files are explicitly requested.
 - **Auditable handoff** — every build records inspection results, repairs, generated IDs,
   performance warnings, source notes, hashes, and portability.
-- **Fresh, safe release preflight** — every Skill invocation confirms the current official Release;
-  exact copied installs can be adopted only after checksum and file-manifest verification, while
-  offline access or local modifications never block the map task.
+- **Cached, non-mutating release preflight** — Skill tasks check the official Release at most once
+  per 24 hours, never modify the running installation, and keep offline work unblocked.
 - **Install self-check** — `interactive-map-builder doctor` runs a complete offline build and hash
   verification after installation.
 - **Reliable map controls** — multilayer maps open in a neutral overview, use one compact layer
@@ -100,7 +99,7 @@ required for a matching Agent task.
 Open a new Codex task and send:
 
 ```text
-$skill-installer Install the Skill from https://github.com/xlbaoxl/interactive-map-builder and install its Python dependencies. Run interactive-map-builder doctor and interactive-map-builder update --auto --force after installation.
+$skill-installer Install the Skill from https://github.com/xlbaoxl/interactive-map-builder and install its Python dependencies. Run interactive-map-builder doctor and interactive-map-builder update --preflight after installation.
 ```
 
 Create a new task after installation. Restart Codex once only when the Skill does not appear.
@@ -129,7 +128,7 @@ category meaning, display fields, output formats, and audience locale.
 
 ```bash
 interactive-map-builder doctor
-interactive-map-builder update --auto --force
+interactive-map-builder update --preflight
 ```
 
 `doctor` creates a temporary coordinate table, builds a map without network access, verifies the
@@ -160,7 +159,7 @@ git clone https://github.com/xlbaoxl/interactive-map-builder.git `
 Set-Location "$CodexHome\skills\interactive-map-builder"
 py -m pip install .
 interactive-map-builder doctor
-interactive-map-builder update --auto --force
+interactive-map-builder update --preflight
 ```
 
 **macOS or Linux**
@@ -173,7 +172,7 @@ git clone https://github.com/xlbaoxl/interactive-map-builder.git \
 cd "$CODEX_ROOT/skills/interactive-map-builder"
 python3 -m pip install .
 interactive-map-builder doctor
-interactive-map-builder update --auto --force
+interactive-map-builder update --preflight
 ```
 
 </details>
@@ -212,17 +211,15 @@ directory.
 
 ## Updates, planning, and public deployment
 
-At the start of every Skill task, the Agent runs `interactive-map-builder update --auto --force`
-from the Skill root and reads the returned JSON. The forced preflight confirms the current public
-Release rather than reusing the ordinary 24-hour cache. It reports the local version, official
-version when known, result source, and status before continuing.
+At the start of a Skill task, the Agent runs `interactive-map-builder update --preflight` from the
+Skill root. This is a cached, check-only request: it reuses a valid result for up to 24 hours, never
+modifies files, stays silent when the installed version is current, and reports only an available
+update or a failed check. Offline access never blocks map construction. Set
+`IMB_DISABLE_AUTO_UPDATE=1` to opt out.
 
-Automatic modification remains narrow: a clean official `main` checkout, a verified managed
-Release install, or—starting with v0.4.3—an exact copied install that first passes verification
-against the official Release for its current version. Dirty or modified copies, forks, read-only
-installs, and ambiguous duplicate standard installations return `manual_update_required` and are
-never overwritten. Offline access returns `update_check_failed`; neither state blocks map
-construction. Set `IMB_DISABLE_AUTO_UPDATE=1` to opt out.
+Applying an update is a separate maintenance action. `update --apply` and the legacy non-fatal
+`update --auto --force` retain checksum, manifest, exact-copy adoption, local-change protection,
+duplicate-root refusal, post-install doctor verification, and rollback.
 
 Versions v0.3.2–v0.4.2 do not contain the copy-adoption fix. An already installed unmanaged copy of
 one of those versions needs one official v0.4.3 reinstall. Later compatible releases can then be
@@ -231,7 +228,7 @@ adopted and applied automatically.
 Updates are transactional: after replacing a verified release, the updater reinstalls the engine
 and runs the offline doctor. A failed install or doctor check restores the prior Git commit or the
 previous manifest-owned files. Confirmed release metadata is preserved when application fails, so
-an Agent cannot silently convert “v0.4.3 is available” into “no update available.” See
+an Agent cannot silently convert “an update is available” into “no update available.” See
 [the verified update policy](references/update-policy.md).
 
 For a genuinely complex Codex task—multiple independent layers, several unresolved design choices,
@@ -311,6 +308,7 @@ and category roles, ambiguities, and performance signals before a map is propose
 | `map_spec.json` | Resolved, reusable build contract |
 | `inspection.json` | Inputs, CRS, fields, candidate roles, and unresolved choices |
 | `build_report.json` | Counts, repairs, warnings, performance metrics, hashes, and portability |
+| `DELIVERY_MANIFEST.json` | Managed-file ownership, sizes, and SHA-256 values for transactional verification |
 | `README_USAGE.md` | Localized handoff note for the final map recipient |
 
 A normal build keeps source paths relative to the original project and treats `map_spec.json` as a
@@ -401,12 +399,10 @@ but does not silently switch rendering engines.
 
 ## Project status
 
-The current stable release is **v0.4.3**. This hotfix repairs release preflight consistency: stale caches
-are invalidated when the running version or active Skill root changes; confirmed update metadata is
-preserved when application fails; exact repository-copy installs can be safely adopted into
-manifest management; duplicate standard installs are not guessed; and interrupted Releases can be
-repaired by the release workflow. MapSpec 1.1, the two map templates, rendering dependencies, and
-Atlas Studio Light visual behavior remain unchanged.
+The current stable release is **v0.4.4**. This stabilization release makes delivery transactional,
+adds a managed-file manifest and strict verification, moves ordinary release preflight to cached
+check-only behavior, limits ZIP extraction resources, and restricts manual Release runs to repairing
+an existing tag. MapSpec remains 1.1 and cartographic behavior is unchanged.
 
 See the [changelog](CHANGELOG.md) for completed work.
 

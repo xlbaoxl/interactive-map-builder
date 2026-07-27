@@ -2,11 +2,17 @@ name: ci
 
 on:
   push:
+    branches:
+      - main
   pull_request:
   workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
@@ -15,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.9", "3.10", "3.12"]
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
@@ -65,6 +71,28 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
+  windows-smoke:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -r requirements-dev.txt
+      - name: Run Windows path, package, and updater smoke tests
+        run: >-
+          python -m pytest -q
+          tests/test_spec.py
+          tests/test_loaders.py
+          tests/test_cli_integration.py
+          tests/test_delivery_transaction.py
+          tests/test_safe_zip.py
+          tests/test_update_skill.py
+          tests/test_update_hotfix.py
+
   wheel:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -95,6 +123,7 @@ jobs:
           /tmp/imb-wheel/bin/interactive-map-builder verify --dist /tmp/imb-dist
           test -s /tmp/imb-dist/map.html
           test -s /tmp/imb-dist/build_report.json
+          test -s /tmp/imb-dist/DELIVERY_MANIFEST.json
       - name: Verify the lean Skill archive
         run: |
           ls dist/interactive-map-builder-skill-v*.zip >/dev/null

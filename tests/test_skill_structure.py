@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import json
 import struct
 from pathlib import Path
 
 import yaml
+
+from build_skill_package import project_version
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -28,7 +31,7 @@ def test_skill_metadata_is_concise_complete_and_intent_driven():
     assert "The user does not need to say GIS" in body
     assert "one-off Folium" in body
     assert "local HTML file, not a public URL" in metadata["description"]
-    assert "interactive-map-builder update --auto" in body
+    assert "interactive-map-builder update --preflight" in body
     assert "Plan mode" in body
     assert "Do not offer, promise, or ask about a public URL" in body
     assert "Atlas Studio Light" in body
@@ -83,6 +86,7 @@ def test_behavior_evals_and_localized_readmes_are_present():
         assert "interactive-map-builder-skill-vX.Y.Z.zip" in readme
         assert "Plan mode" in readme
         assert "interactive-map-builder update --check" in readme
+        assert "interactive-map-builder update --preflight" in readme
         assert "public" in readme.casefold() or "公网" in readme
         assert "/plan" not in readme
         assert "Shift+Tab" not in readme
@@ -93,8 +97,9 @@ def test_behavior_evals_and_localized_readmes_are_present():
     assert "## 直接描述成果，不必记住工具名称" in readme_zh
     assert "## Atlas Studio Light" in readme_en
     assert "## Atlas Studio Light 视觉系统" in readme_zh
-    assert "v0.4.3" in readme_en
-    assert "v0.4.3" in readme_zh
+    version = project_version()
+    assert f"v{version}" in readme_en
+    assert f"v{version}" in readme_zh
     assert "## 中文" not in readme_en
     assert "## English" not in readme_en
 
@@ -147,6 +152,7 @@ def test_verified_update_policy_is_packaged_and_linked():
         "PACKAGE_MANIFEST.json",
         "Transaction and rollback",
         "IMB_DISABLE_AUTO_UPDATE=1",
+        "--preflight",
     ):
         assert expected in policy
 
@@ -159,5 +165,5 @@ def test_atlas_visual_guidance_is_documented_without_expanding_mapspec():
     assert "Atlas Studio Light" in skill
     assert "coarse density" in design
     assert "Explicit MapSpec values always win" in spec
-    assert '"schema_version": {"const": "1.1"}' in schema
+    assert json.loads(schema)["properties"]["schema_version"]["const"] == "1.1"
     assert "MapSpec 1.2" not in spec

@@ -8,6 +8,8 @@ import json
 import math
 import shutil
 import sys
+import tempfile
+import uuid
 from copy import deepcopy
 from datetime import datetime, timezone
 from pathlib import Path
@@ -19,6 +21,18 @@ import shapely
 from shapely.geometry import mapping
 
 from mapcore.arcgis import ArcGISError, download_feature_service
+from mapcore.delivery import (
+    CORE_OUTPUTS,
+    DELIVERY_MANIFEST_NAME,
+    KNOWN_STATIC_OUTPUTS,
+    DeliveryError,
+    copy_unmanaged_files,
+    relative_path as delivery_relative_path,
+    safe_relative_path,
+    target_path as delivery_target_path,
+    verify_delivery_manifest,
+    write_delivery_manifest,
+)
 from mapcore.inspect_data import (
     inspect_frame,
     inspect_inputs,
@@ -382,7 +396,7 @@ def _bundle_spec_sources(
     return bundled
 
 
-def build_map(
+def _build_map_in_place(
     spec_path: Path,
     out_dir: Path,
     *,
@@ -619,40 +633,215 @@ def build_map(
     return {"report_path": str(report_path), "report": report}
 
 
+def _path_is_within(path: Path, root: Path) -> bool:
+    try:
+        path.resolve().relative_to(root.resolve())
+        return True
+    except (OSError, ValueError):
+        return False
+
+
+def _managed_paths_from_build(staging: Path, report: Mapping[str, Any]) -> List[Path]:
+    paths = [staging / "build_report.json"]
+    for entry in report.get("outputs", []):
+        if isinstance(entry, Mapping) and entry.get("path"):
+            paths.append(delivery_target_path(staging, entry["path"]))
+    data_dir = staging / "data"
+    if data_dir.is_dir():
+        paths.extend(path for path in data_dir.rglob("*") if path.is_file())
+    unique: Dict[str, Path] = {}
+    for path in paths:
+        unique[delivery_relative_path(staging, path)] = path
+    return [unique[key] for key in sorted(unique)]
+
+
+def build_map(
+    spec_path: Path,
+    out_dir: Path,
+    *,
+    bundle_sources: bool = False,
+) -> Dict[str, Any]:
+    """Build and verify in a sibling staging directory, then atomically replace the delivery."""
+
+    source_spec = Path(spec_path).resolve()
+    destination = Path(out_dir).resolve()
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    staging = Path(
+        tempfile.mkdtemp(
+            prefix=f".{destination.name}.staging-",
+            dir=str(destination.parent),
+        )
+    )
+    seed: Optional[Path] = None
+    backup: Optional[Path] = None
+    try:
+        effective_bundle = bool(bundle_sources)
+        if destination.exists() and _path_is_within(source_spec, destination):
+            seed = Path(
+                tempfile.mkdtemp(
+                    prefix=f".{destination.name}.source-",
+                    dir=str(destination.parent),
+                )
+            )
+            shutil.copytree(destination, seed, dirs_exist_ok=True)
+            source_spec = seed / source_spec.relative_to(destination)
+            effective_bundle = True
+
+        result = _build_map_in_place(
+            source_spec,
+            staging,
+            bundle_sources=effective_bundle,
+        )
+        report = result["report"]
+        managed_paths = _managed_paths_from_build(staging, report)
+        managed_relative = [delivery_relative_path(staging, path) for path in managed_paths]
+        preserved = copy_unmanaged_files(destination, staging, managed_relative)
+        report["checks"]["transactional_delivery"] = True
+        report["checks"]["preserved_unmanaged_files"] = preserved
+        report["checks"]["bundled_source_integrity"] = any(
+            value.startswith("data/") for value in managed_relative
+        )
+        write_json(report, staging / "build_report.json")
+        managed_paths = _managed_paths_from_build(staging, report)
+        write_delivery_manifest(
+            staging,
+            managed_paths,
+            engine_version=__version__,
+            built_at=report.get("built_at"),
+            preserved_unmanaged_files=preserved,
+        )
+        verify_dist(staging)
+
+        if destination.exists():
+            backup = destination.parent / f".{destination.name}.backup-{uuid.uuid4().hex}"
+            destination.replace(backup)
+        try:
+            staging.replace(destination)
+        except Exception:
+            if backup is not None and backup.exists() and not destination.exists():
+                backup.replace(destination)
+            raise
+        if backup is not None and backup.exists():
+            shutil.rmtree(backup, ignore_errors=True)
+            backup = None
+        result["report_path"] = str(destination / "build_report.json")
+        result["report"] = report
+        return result
+    finally:
+        if staging.exists():
+            shutil.rmtree(staging, ignore_errors=True)
+        if seed is not None and seed.exists():
+            shutil.rmtree(seed, ignore_errors=True)
+        if backup is not None and backup.exists() and not destination.exists():
+            backup.replace(destination)
+
+
+
 def verify_dist(out_dir: Path) -> Dict[str, Any]:
     destination = out_dir.resolve()
     report_path = destination / "build_report.json"
     if not report_path.is_file():
         raise BuildError(f"Missing build report: {report_path}")
-    report = json.loads(report_path.read_text(encoding="utf-8"))
+    try:
+        report = json.loads(report_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise BuildError(f"Unreadable build report: {report_path}") from exc
+
     errors: List[str] = []
-    for entry in report.get("outputs", []):
-        path = destination / entry["path"]
-        if not path.is_file():
-            errors.append(f"Missing output: {entry['path']}")
+    if not isinstance(report, Mapping):
+        errors.append("Build report must be a JSON object.")
+        report = {}
+    if report.get("schema_version") != "1.0":
+        errors.append("Build report has an unsupported schema version.")
+    if report.get("status") != "pass":
+        errors.append("Build report status is not pass.")
+
+    outputs = report.get("outputs", [])
+    if not isinstance(outputs, list):
+        errors.append("Build report outputs must be an array.")
+        outputs = []
+    report_paths = set()
+    folded = set()
+    for entry in outputs:
+        if not isinstance(entry, Mapping):
+            errors.append("Build report contains a non-object output entry.")
             continue
-        if path.stat().st_size != entry["bytes"]:
-            errors.append(f"Size mismatch: {entry['path']}")
-        if sha256_file(path) != entry["sha256"]:
-            errors.append(f"SHA-256 mismatch: {entry['path']}")
+        try:
+            relative = safe_relative_path(entry.get("path"))
+            path = delivery_target_path(destination, relative)
+        except DeliveryError as exc:
+            errors.append(str(exc))
+            continue
+        if relative in report_paths or relative.casefold() in folded:
+            errors.append(f"Build report contains a duplicate output path: {relative}.")
+            continue
+        report_paths.add(relative)
+        folded.add(relative.casefold())
+        if not path.is_file() or path.is_symlink():
+            errors.append(f"Missing output: {relative}")
+            continue
+        try:
+            expected_bytes = int(entry.get("bytes", -1))
+        except (TypeError, ValueError):
+            expected_bytes = -1
+        if path.stat().st_size != expected_bytes:
+            errors.append(f"Size mismatch: {relative}")
+        expected_sha = str(entry.get("sha256") or "").casefold()
+        if sha256_file(path) != expected_sha:
+            errors.append(f"SHA-256 mismatch: {relative}")
         if not validate_file_signature(path):
-            errors.append(f"Invalid file signature: {entry['path']}")
-    html_entries = [
-        entry for entry in report.get("outputs", []) if str(entry.get("path", "")).lower().endswith(".html")
-    ]
-    for html_entry in html_entries:
-        html_path = destination / html_entry["path"]
+            errors.append(f"Invalid file signature: {relative}")
+
+    for name in CORE_OUTPUTS:
+        if not (destination / name).is_file():
+            errors.append(f"Missing required delivery output: {name}")
+
+    _manifest, manifest_paths, manifest_errors = verify_delivery_manifest(destination)
+    errors.extend(manifest_errors)
+    required_manifest_paths = set(CORE_OUTPUTS) - {DELIVERY_MANIFEST_NAME}
+    for name in sorted(required_manifest_paths - manifest_paths):
+        errors.append(f"Required delivery output is not managed by the manifest: {name}")
+    for name in sorted(report_paths - manifest_paths):
+        errors.append(f"Build-report output is not managed by the manifest: {name}")
+
+    try:
+        spec = json.loads((destination / "map_spec.json").read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        spec = {}
+        errors.append("Resolved map_spec.json is unreadable.")
+    expected_static = set()
+    static = spec.get("static", {}) if isinstance(spec, Mapping) else {}
+    if isinstance(static, Mapping) and static.get("enabled") is True:
+        presets = static.get("presets", [])
+        if "slide-16x9" in presets:
+            expected_static.add("map_slide_16x9.png")
+        if "paper" in presets:
+            expected_static.update({"map_paper.png", "map_paper.svg", "map_paper.pdf"})
+    for name in KNOWN_STATIC_OUTPUTS:
+        path = destination / name
+        if name in expected_static:
+            if not path.is_file():
+                errors.append(f"Missing expected static output: {name}")
+            if name not in manifest_paths:
+                errors.append(f"Expected static output is not managed by the manifest: {name}")
+        elif path.exists():
+            errors.append(f"Unexpected stale static output: {name}")
+
+    html_entries = [value for value in report_paths if value.lower().endswith(".html")]
+    for relative in html_entries:
+        html_path = delivery_target_path(destination, relative)
         html_text = html_path.read_text(encoding="utf-8")
         if "__interactiveMapBuilderQA" not in html_text:
-            errors.append(f"HTML is missing the QA interface: {html_entry['path']}")
+            errors.append(f"HTML is missing the QA interface: {relative}")
         if "https://unpkg.com/leaflet" in html_text or "cdnjs.cloudflare.com" in html_text:
-            errors.append(f"HTML UI unexpectedly depends on a CDN: {html_entry['path']}")
+            errors.append(f"HTML UI unexpectedly depends on a CDN: {relative}")
     if errors:
         raise BuildError("Verification failed:\n- " + "\n- ".join(errors))
     return {
         "status": "pass",
-        "verified_outputs": len(report.get("outputs", [])),
+        "verified_outputs": len(manifest_paths) + 1,
         "report": str(report_path),
+        "manifest": str(destination / DELIVERY_MANIFEST_NAME),
     }
 
 
@@ -845,7 +1034,7 @@ def main(
                         "outputs": [
                             entry["path"] for entry in result["report"].get("outputs", [])
                         ]
-                        + [Path(result["report_path"]).name],
+                        + [Path(result["report_path"]).name, DELIVERY_MANIFEST_NAME],
                     },
                     ensure_ascii=False,
                     indent=2,
@@ -879,7 +1068,7 @@ def main(
                 locale=args.locale,
             )
             write_json(spec, spec_path)
-            result = build_map(spec_path, destination)
+            result = build_map(spec_path, destination, bundle_sources=True)
             print(
                 json.dumps(
                     {
@@ -889,7 +1078,7 @@ def main(
                         "outputs": [
                             entry["path"] for entry in result["report"].get("outputs", [])
                         ]
-                        + [Path(result["report_path"]).name],
+                        + [Path(result["report_path"]).name, DELIVERY_MANIFEST_NAME],
                     },
                     ensure_ascii=False,
                     indent=2,

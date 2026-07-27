@@ -6,6 +6,7 @@ a map.
 """
 
 from .arcgis import ArcGISDownloadResult, ArcGISError, download_feature_service, fetch_arcgis
+from .delivery import DELIVERY_MANIFEST_NAME
 from .loaders import DataLoadError, load_geodata, load_input, load_source
 from .normalize import NormalizationReport, normalize_geodata, stable_feature_id
 from .spec import current_schema_version
@@ -21,6 +22,7 @@ __all__ = [
     "ArcGISDownloadResult",
     "ArcGISError",
     "DataLoadError",
+    "DELIVERY_MANIFEST_NAME",
     "NormalizationReport",
     "ValidationError",
     "ValidationReport",

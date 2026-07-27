@@ -426,6 +426,23 @@ def _add_north_arrow(axis: Any) -> None:
     )
 
 
+
+def _resolved_source_note(
+    spec: Mapping[str, Any], static: Mapping[str, Any], messages: Mapping[str, Any]
+) -> str:
+    explicit = static.get("source_note")
+    if explicit:
+        return str(explicit)
+    notes = []
+    for layer in spec.get("layers", []):
+        if not isinstance(layer, Mapping):
+            continue
+        value = str(layer.get("source_note") or "").strip()
+        if value and value not in notes:
+            notes.append(value)
+    return "; ".join(notes) if notes else str(messages["source_missing"])
+
+
 def _render_canvas(
     layers: Sequence[Tuple[str, gpd.GeoDataFrame, Mapping[str, Any]]],
     spec: Mapping[str, Any],
@@ -468,8 +485,7 @@ def _render_canvas(
     title = static.get("title") or spec.get("title") or "Interactive map"
     axis.set_title(str(title), loc="left", fontsize=15, fontweight=650, color="#26363A", pad=12)
     source_prefix = str(messages["source_prefix"])
-    source = static.get("source_note")
-    source_text = str(source or messages["source_missing"])
+    source_text = _resolved_source_note(spec, static, messages)
     if not source_text.startswith(source_prefix):
         source_text = source_prefix + source_text
     figure.text(0.025, 0.025, source_text, ha="left", va="bottom", fontsize=7, color="#66777A")

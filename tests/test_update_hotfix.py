@@ -296,3 +296,15 @@ def test_successful_update_rewrites_cache_for_installed_version(monkeypatch, tmp
     assert cached["current_version"] == "0.4.3"
     assert cached["latest_version"] == "0.4.3"
     assert cached["update_available"] is False
+
+
+def test_preflight_cli_is_check_only_and_nonfatal(monkeypatch, capsys):
+    captured = {}
+    def fake_auto_update(**kwargs):
+        captured.update(kwargs)
+        return {"status": "update_check_failed", "current_version": update_skill.__version__, "update_available": False}
+    monkeypatch.setattr(update_skill, "auto_update", fake_auto_update)
+    assert update_skill.main(["--preflight"]) == 0
+    assert captured["apply"] is False
+    assert captured["force"] is False
+    assert json.loads(capsys.readouterr().out)["status"] == "update_check_failed"

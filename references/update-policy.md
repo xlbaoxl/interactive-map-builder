@@ -1,24 +1,26 @@
 # Verified update policy
 
-Interactive Map Builder checks the official stable release at the beginning of a Skill task. The
-check is deliberately separate from map construction: network failure, a modified installation, or
-an unsupported install must never prevent inspection or building.
+Interactive Map Builder performs a cached, check-only release preflight at the beginning of a Skill
+task. The check is deliberately separate from map construction: it never modifies the running
+installation, and network failure must never prevent inspection or building.
 
 ## Commands
 
 ```bash
+interactive-map-builder update --preflight
 interactive-map-builder update --check
 interactive-map-builder update --apply
 interactive-map-builder update --auto --force
 ```
 
-- `--check` reports the latest stable GitHub Release without modifying files. Without `--force`, a
-  valid result may be reused for up to 24 hours.
+- `--preflight` is the Agent default. It checks only, reuses a valid result for up to 24 hours,
+  never modifies files, and returns successfully so the map task can continue when offline.
+- `--check` is the explicit status command. It also checks only and returns a non-zero exit code for
+  failed checks unless the caller handles the result.
 - `--apply` verifies an exact copied install when necessary, adopts it into manifest management, and
   applies an available update. Failures return a non-zero exit code.
-- `--auto --force` is the Agent preflight. It performs a fresh official-release request on every
-  Skill invocation, adopts and updates when safe, but always returns successfully so the map task
-  can continue when offline or when manual attention is required.
+- `--auto --force` remains available as an explicit non-fatal maintenance command for clients that
+  intentionally want adoption and application. It is no longer run during ordinary map tasks.
 
 Set `IMB_DISABLE_AUTO_UPDATE=1` to disable the preflight. The updater sends no telemetry.
 
@@ -105,7 +107,7 @@ the replacement set.
 
 ## Agent behavior after an update
 
-At the beginning of every Skill task, run `interactive-map-builder update --auto --force` from the
-Skill root and report a compact version-preflight line. When the result is `updated`, re-read
-`SKILL.md` before continuing. When the result is a failure state, disclose the known official
-version and reason before proceeding with the non-blocked map task.
+At the beginning of a Skill task, run `interactive-map-builder update --preflight` from the Skill
+root. Keep a current cached result silent. Report an available update or failed check, then continue
+with the map task without modifying the running installation. Apply updates only as a separate
+maintenance action.

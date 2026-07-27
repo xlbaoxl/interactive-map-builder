@@ -95,6 +95,7 @@ def run_doctor() -> Dict[str, Any]:
             "inspection.json",
             "README_USAGE.md",
             "build_report.json",
+            "DELIVERY_MANIFEST.json",
         }
         actual = {path.name for path in dist.iterdir() if path.is_file()}
         missing = sorted(expected - actual)

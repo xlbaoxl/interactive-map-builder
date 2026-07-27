@@ -68,6 +68,8 @@ def test_skill_package_is_lean_complete_and_deterministic(tmp_path: Path):
         "interactive-map-builder/scripts/map_builder.py",
         "interactive-map-builder/scripts/update_skill.py",
         "interactive-map-builder/scripts/mapcore/basemaps.py",
+        "interactive-map-builder/scripts/mapcore/delivery.py",
+        "interactive-map-builder/scripts/mapcore/safe_zip.py",
         "interactive-map-builder/scripts/mapcore/version.py",
         "interactive-map-builder/scripts/mapcore/semantic_styles.py",
         "interactive-map-builder/scripts/mapcore/resources/map-spec.schema.json",
