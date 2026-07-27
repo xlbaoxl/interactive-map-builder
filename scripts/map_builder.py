@@ -836,9 +836,7 @@ def verify_dist(out_dir: Path) -> Dict[str, Any]:
         if "https://unpkg.com/leaflet" in html_text or "cdnjs.cloudflare.com" in html_text:
             errors.append(f"HTML UI unexpectedly depends on a CDN: {relative}")
     if errors:
-        raise BuildError("Verification failed:
-- " + "
-- ".join(errors))
+        raise BuildError("Verification failed:\n- " + "\n- ".join(errors))
     return {
         "status": "pass",
         "verified_outputs": len(manifest_paths) + 1,

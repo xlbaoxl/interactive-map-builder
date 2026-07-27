@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import struct
 from pathlib import Path
 
@@ -164,5 +165,5 @@ def test_atlas_visual_guidance_is_documented_without_expanding_mapspec():
     assert "Atlas Studio Light" in skill
     assert "coarse density" in design
     assert "Explicit MapSpec values always win" in spec
-    assert '"schema_version": {"const": "1.1"}' in schema
+    assert json.loads(schema)["properties"]["schema_version"]["const"] == "1.1"
     assert "MapSpec 1.2" not in spec
