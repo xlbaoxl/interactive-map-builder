@@ -18,15 +18,18 @@ concurrency:
 
 jobs:
   apply:
-    if: github.event_name != 'pull_request' || github.head_ref == 'agent/v0.4.4-engineering-stabilization'
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    outputs:
+      status: ${{ steps.patch.outputs.status }}
+      failure: ${{ steps.patch.outputs.failure }}
     steps:
       - name: Check out stabilization branch
         uses: actions/checkout@v6
         with:
           ref: agent/v0.4.4-engineering-stabilization
           fetch-depth: 0
+          show-progress: false
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -42,28 +45,19 @@ jobs:
           python -m py_compile tools/v044_stabilize.py
 
       - name: Apply stabilization payload
+        id: patch
         shell: bash
         run: |
           set +e
-          python tools/v044_stabilize.py > tools/v044_payload/apply_failure.log 2>&1
+          python tools/v044_stabilize.py > /tmp/v044-apply.log 2>&1
           STATUS=$?
-          cat tools/v044_payload/apply_failure.log
-          exit "$STATUS"
-
-      - name: Record exact bootstrap failure
-        if: failure()
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name "openai-agent"
-          git config user.email "openai-agent@users.noreply.github.com"
-          git add tools/v044_payload/apply_failure.log
-          if ! git diff --cached --quiet; then
-            git commit -m "Record v0.4.4 bootstrap failure"
-            git push origin HEAD:agent/v0.4.4-engineering-stabilization
-          fi
+          echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+          FAILURE=$(tail -80 /tmp/v044-apply.log | base64 -w0)
+          echo "failure=$FAILURE" >> "$GITHUB_OUTPUT"
+          exit 0
 
       - name: Install and validate
+        if: steps.patch.outputs.status == '0'
         shell: bash
         run: |
           set -euo pipefail
@@ -75,6 +69,7 @@ jobs:
           python scripts/build_skill_package.py
 
       - name: Commit verified source changes
+        if: github.event_name == 'push' && steps.patch.outputs.status == '0'
         shell: bash
         run: |
           set -euo pipefail
@@ -85,3 +80,16 @@ jobs:
           git diff --cached --check
           git commit -m "Release v0.4.4: stabilize delivery and release boundaries"
           git push origin HEAD:agent/v0.4.4-engineering-stabilization
+
+  report-failure:
+    needs: apply
+    if: needs.apply.outputs.status != '0'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print exact patch failure
+        shell: bash
+        env:
+          FAILURE: ${{ needs.apply.outputs.failure }}
+        run: |
+          echo "$FAILURE" | base64 --decode
+          exit 1
