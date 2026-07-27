@@ -5,6 +5,11 @@ on:
     workflows: ["ci"]
     types: [completed]
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing release tag to repair, for example v0.4.4"
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -12,25 +17,34 @@ permissions:
 jobs:
   release:
     if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.conclusion == 'success' &&
-       github.event.workflow_run.head_branch == 'main')
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main') ||
+      github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
       GH_TOKEN: ${{ github.token }}
-      RELEASE_SHA: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+      RELEASE_REF: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || inputs.tag }}
     steps:
-      - name: Check out the verified commit
+      - name: Check out the verified commit or existing repair tag
         uses: actions/checkout@v6
         with:
-          ref: ${{ env.RELEASE_SHA }}
+          ref: ${{ env.RELEASE_REF }}
           fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
           python-version: "3.12"
+
+      - name: Resolve release identity
+        id: identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          RELEASE_SHA=$(git rev-parse HEAD)
+          echo "sha=$RELEASE_SHA" >> "$GITHUB_OUTPUT"
 
       - name: Read and validate the release version
         id: version
@@ -45,9 +59,15 @@ jobs:
           print(data["project"]["version"])
           PY
           )
+          TAG="v$VERSION"
           grep -F "## [$VERSION]" CHANGELOG.md
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            test "${{ inputs.tag }}" = "$TAG"
+            git rev-parse "$TAG" >/dev/null 2>&1
+            test "$(git rev-list -n 1 "$TAG")" = "${{ steps.identity.outputs.sha }}"
+          fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
       - name: Inspect existing tag and Release
         id: existing
@@ -56,6 +76,7 @@ jobs:
           set -euo pipefail
           TAG="${{ steps.version.outputs.tag }}"
           VERSION="${{ steps.version.outputs.version }}"
+          RELEASE_SHA="${{ steps.identity.outputs.sha }}"
           git fetch --tags --force
 
           if git rev-parse "$TAG" >/dev/null 2>&1; then
@@ -64,6 +85,9 @@ jobs:
               echo "Existing $TAG points to $TAG_SHA instead of verified commit $RELEASE_SHA." >&2
               exit 1
             fi
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "Manual runs may repair only an existing tag." >&2
+            exit 1
           fi
 
           if ! gh release view "$TAG" >/dev/null 2>&1; then
@@ -104,7 +128,7 @@ jobs:
             dist/*.tar.gz \
             "dist/interactive-map-builder-skill-v${{ steps.version.outputs.version }}.zip" \
             dist/SHA256SUMS.txt \
-            --target "$RELEASE_SHA" \
+            --target "${{ steps.identity.outputs.sha }}" \
             --title "Interactive Map Builder v${{ steps.version.outputs.version }}" \
             --generate-notes \
             --latest
