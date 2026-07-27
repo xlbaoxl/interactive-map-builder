@@ -1,0 +1,131 @@
+name: v044-fix
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+concurrency:
+  group: v044-fix-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      validation_status: ${{ steps.validation.outputs.status }}
+      validation_failure: ${{ steps.validation.outputs.failure }}
+      commit_status: ${{ steps.commit.outputs.status }}
+      commit_failure: ${{ steps.commit.outputs.failure }}
+    steps:
+      - name: Check out stabilization branch
+        uses: actions/checkout@v6
+        with:
+          ref: agent/v0.4.4-engineering-stabilization
+          fetch-depth: 0
+          show-progress: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Repair verification exception literal
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("scripts/map_builder.py")
+          lines = path.read_text(encoding="utf-8").splitlines()
+          broken = [
+              '        raise BuildError("Verification failed:',
+              '- " + "',
+              '- ".join(errors))',
+          ]
+          replacement = ['        raise BuildError("Verification failed:\\n- " + "\\n- ".join(errors))']
+          matches = []
+          for index in range(len(lines) - len(broken) + 1):
+              if lines[index:index + len(broken)] == broken:
+                  matches.append(index)
+          if len(matches) != 1:
+              raise SystemExit(f"Expected one broken verification literal, found {len(matches)}")
+          index = matches[0]
+          lines[index:index + len(broken)] = replacement
+          path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+          PY
+          python -m py_compile scripts/map_builder.py
+
+      - name: Validate repaired source
+        id: validation
+        shell: bash
+        run: |
+          set +e
+          (
+            set -euo pipefail
+            python -m pip install --upgrade pip
+            python -m pip install -r requirements-dev.txt
+            python scripts/evaluate_triggers.py validate
+            python -m pytest -q -m "not browser"
+            python -m build --wheel
+            python scripts/build_skill_package.py
+            python scripts/cli.py doctor
+          ) > /tmp/v044-fix-validation.log 2>&1
+          STATUS=$?
+          echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+          FAILURE=$(tail -180 /tmp/v044-fix-validation.log | base64 -w0)
+          echo "failure=$FAILURE" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Commit verified syntax repair
+        id: commit
+        if: steps.validation.outputs.status == '0'
+        shell: bash
+        run: |
+          set +e
+          (
+            set -euo pipefail
+            git config user.name "openai-agent"
+            git config user.email "openai-agent@users.noreply.github.com"
+            git add scripts/map_builder.py
+            git diff --cached --check
+            git commit -m "Fix v0.4.4 delivery verification syntax"
+            git push origin HEAD:agent/v0.4.4-engineering-stabilization
+          ) > /tmp/v044-fix-commit.log 2>&1
+          STATUS=$?
+          echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+          FAILURE=$(tail -120 /tmp/v044-fix-commit.log | base64 -w0)
+          echo "failure=$FAILURE" >> "$GITHUB_OUTPUT"
+          exit 0
+
+  report-validation-failure:
+    needs: fix
+    if: needs.fix.outputs.validation_status != '0'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print exact validation failure
+        shell: bash
+        env:
+          FAILURE: ${{ needs.fix.outputs.validation_failure }}
+        run: |
+          echo "$FAILURE" | base64 --decode
+          exit 1
+
+  report-commit-failure:
+    needs: fix
+    if: needs.fix.outputs.validation_status == '0' && needs.fix.outputs.commit_status != '0'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print exact commit failure
+        shell: bash
+        env:
+          FAILURE: ${{ needs.fix.outputs.commit_failure }}
+        run: |
+          echo "$FAILURE" | base64 --decode
+          exit 1
