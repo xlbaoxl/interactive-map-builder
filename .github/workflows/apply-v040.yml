@@ -31,17 +31,7 @@ jobs:
           echo "9f81364ead57cb9c8f2b21ff1efa0916e5ab344a2e183478593af362ed2f0f7e  /tmp/v0.4.0.patch" | sha256sum -c -
           git apply --check --index --binary /tmp/v0.4.0.patch
           git apply --index --binary /tmp/v0.4.0.patch
-      - name: Regenerate deterministic README screenshots
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install -r requirements-dev.txt Pillow
-          python -m playwright install --with-deps chromium
-          python scripts/capture_readme_screenshots.py
-          git add assets/screenshots/en-US/map-list.png \
-            assets/screenshots/en-US/multilayer.png \
-            assets/screenshots/zh-CN/map-list.png \
-            assets/screenshots/zh-CN/multilayer.png
-      - name: Validate and publish branch commit
+      - name: Validate, clean staging files, and publish branch commit
         shell: bash
         run: |
           set -euxo pipefail
@@ -55,6 +45,9 @@ jobs:
           test -f scripts/mapcore/visual_defaults.py
           test -f scripts/mapcore/resources/templates/atlas-studio-light.css
           test -f tests/test_visual_defaults.py
+          git rm -r .github/v040-patch
+          git rm .github/workflows/apply-v040.yml
+          git rm .github/workflows/source-snapshot-v040.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "release: prepare Atlas Studio Light v0.4.0"
