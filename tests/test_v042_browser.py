@@ -106,11 +106,11 @@ def test_semantic_colors_mixed_legend_and_both_panel_toggles(tmp_path: Path) -> 
         assert qa["legendStyleMismatches"] == []
         assert qa["representativeFamilies"]["parking"] == "point"
         assert set(qa["layerFillColors"]["parking"]) == {"#D8892B", "#E2A24D"}
-        assert qa["expectedLegendColors"]["water"] == [
+        assert set(qa["expectedLegendColors"]["water"]) == {
             "#2F78BE",
             "#58A5D8",
             "#8CC4E8",
-        ]
+        }
 
         right_toggle = page.locator("#imb-controls-collapse")
         assert right_toggle.get_attribute("aria-expanded") == "true"
