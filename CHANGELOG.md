@@ -27,6 +27,48 @@ first release with an automated tag, distribution assets, and GitHub Release wor
 
 ## [Unreleased] / 未发布
 
+## [0.4.2] - 2026-07-27
+
+### Added / 新增
+
+- 多图层地图的右侧底图、图层和图例现在组成一个可整体收起与恢复的控制栈；左侧搜索面板的
+  收起按钮改为紧凑方向按钮，两侧均保留键盘操作和 ARIA 状态。
+  Added a collapsible right-side control stack for basemaps, visibility switches, and the legend,
+  while making the existing left search-panel toggle compact, keyboard reachable, and explicit.
+- 浏览器 QA 新增图例—地图颜色一致性、实际填充色、描边色和混合几何代表类型记录，避免视觉
+  错误在构建报告中被误判为通过。
+  Added browser QA for legend-to-map color consistency, rendered fill/stroke colors, and the
+  representative family used by mixed-geometry layers.
+
+### Changed / 变更
+
+- Atlas Studio Light 新增保守的双语语义配色解析：水体使用蓝色系、公园与开放空间使用绿色系、
+  停车设施使用暖橙色、商业与服务设施使用玫红色，并提高专题图层与浅色底图之间的对比度。
+  Added conservative bilingual semantic color defaults for water, green space, parking,
+  commercial/service facilities, pedestrian networks, and boundaries, with stronger contrast on
+  light basemaps.
+- 初始化器会为已知且不超过八类的水体、步行等图层生成语义调色板；已明确配置的自定义颜色
+  继续保留。精确匹配旧版自动 Atlas 调色板的类别色会迁移到对应语义调色板。
+  Initialized known bounded categories with semantic palettes, preserved custom colors, and
+  migrated only the exact legacy auto-generated Atlas palette when a semantic layer is recognized.
+- 包版本更新为 0.4.2；MapSpec 继续保持 1.1，不增加运行依赖或新的地图模板。
+  Updated the package to 0.4.2 while retaining MapSpec 1.1, the current runtime dependencies, and
+  the existing templates.
+
+### Fixed / 修复
+
+- 修复水体分类被通用八色调色板渲染为蓝、黄、紫等互不相关颜色的问题；河流、溪流和池塘现在
+  使用可区分但保持水体语义的蓝色梯度。
+  Fixed water categories being rendered with unrelated generic categorical colors; rivers,
+  streams, and ponds now use a coherent blue family.
+- 修复点面混合停车图层把 `mixed` 当作不存在的几何族、继而在图例中回退到哈希橙色的问题；
+  图层控制和图例现在使用真实代表几何类型，并与地图上的停车符号一致。
+  Fixed mixed point/polygon layers falling through to a hashed legend color; controls and legends
+  now resolve a real representative geometry family and match rendered parking symbols.
+- 修复多类图层透明度过低、边界、水体、绿地和设施在浅色底图上几乎融为一色的问题。
+  Fixed overly pale defaults that made boundaries, water, green space, and facilities difficult to
+  distinguish on light basemaps.
+
 ## [0.4.1] - 2026-07-27
 
 ### Added / 新增
@@ -258,51 +300,3 @@ first release with an automated tag, distribution assets, and GitHub Release wor
 - 删除已完成蒸馏的中文实施记录和冗余产品调研文件，保留规则已并入英文技术指南。
   Removed the distilled Chinese implementation note and redundant product-research file after
   preserving durable rules in the English technical guidance.
-
-## [0.2.0] - 2026-07-24
-
-### Added / 新增
-
-- 引入 Atlas UI，包括搜索驱动的地图清单、关键指标摘要、分类与数值范围筛选，以及要素详情面板。
-  Introduced the Atlas UI with a search-driven map list, KPI summaries, category and numeric range
-  filters, and feature details.
-- 新增演示项目构建流程，为真实地图示例生成可部署的 GitHub Pages 站点。
-  Added a demo-project build workflow that produces a deployable GitHub Pages site from real map
-  examples.
-
-### Changed / 变更
-
-- 重新设计共享 HTML、CSS 和 JavaScript 模板，统一清单地图与多图层地图的响应式界面。
-  Redesigned the shared HTML, CSS, and JavaScript templates for a consistent responsive map-list
-  and multilayer interface.
-- 将用地示例升级为可搜索、可分类的 Lower Manhattan 地块地图，并更新演示截图和说明。
-  Upgraded the land-use example to a searchable, classified Lower Manhattan parcel map and
-  refreshed its screenshots and documentation.
-
-## [0.1.0] - 2026-07-23
-
-### Added / 新增
-
-- 发布 `inspect`、`init-spec`、`build`、`verify` 和 `run` 命令，形成从数据检查到地图交付的
-  完整命令行流程。
-  Released `inspect`, `init-spec`, `build`, `verify`, and `run` for an end-to-end workflow from
-  data inspection to map delivery.
-- 支持 GeoJSON、GeoPackage、Shapefile ZIP、CSV、Excel 和 ArcGIS FeatureServer 数据，并对
-  CRS、字段和配置进行显式检查。
-  Added support for GeoJSON, GeoPackage, Shapefile ZIP, CSV, Excel, and ArcGIS FeatureServer data
-  with explicit CRS, field, and configuration checks.
-- 提供 `map-list` 与 `multilayer` 模板、MapSpec v1 配置，以及按语义键进行跨图层关联的能力。
-  Added `map-list` and `multilayer` templates, the MapSpec v1 configuration, and semantic-key
-  linking across layers.
-- 支持生成单文件 Leaflet 地图、构建报告、交付说明，以及用于幻灯片和论文的 PNG、SVG 与 PDF
-  静态输出。
-  Added single-file Leaflet maps, build reports, delivery notes, and PNG, SVG, and PDF static
-  outputs for slides and papers.
-- 建立示例、浏览器检查、契约测试和多 Python 版本持续集成。
-  Added examples, browser checks, contract tests, and continuous integration across multiple
-  Python versions.
-
-### Fixed / 修复
-
-- 修复 Windows 和 POSIX 风格绝对路径的跨平台识别。
-  Fixed cross-platform recognition of Windows and POSIX absolute paths.
