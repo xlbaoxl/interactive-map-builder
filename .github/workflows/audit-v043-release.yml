@@ -38,7 +38,7 @@ jobs:
           rm -rf "$RELEASE_DIR" "$SKILL_DIR" /tmp/imb-v043-venv
           mkdir -p "$RELEASE_DIR" "$SKILL_DIR"
 
-          gh release view v0.4.3 --json tagName,isLatest,assets > /tmp/imb-v043-metadata.json
+          gh release view v0.4.3 --json tagName,isDraft,isPrerelease,assets > /tmp/imb-v043-metadata.json
           gh release download v0.4.3 --dir "$RELEASE_DIR"
 
           cd "$RELEASE_DIR"
@@ -90,11 +90,14 @@ jobs:
           doctor = json.loads(Path('/tmp/imb-v043-doctor.json').read_text(encoding='utf-8'))
           assets = sorted(path.name for path in Path('/tmp/imb-v043-release').iterdir() if path.is_file())
           assert metadata['tagName'] == 'v0.4.3'
+          assert metadata['isDraft'] is False
+          assert metadata['isPrerelease'] is False
           assert doctor['status'] == 'pass'
           report = {
               'status': 'pass',
               'tag': metadata['tagName'],
-              'is_latest': metadata['isLatest'],
+              'is_draft': metadata['isDraft'],
+              'is_prerelease': metadata['isPrerelease'],
               'assets': assets,
               'asset_count': len(assets),
               'checksums_verified': True,
