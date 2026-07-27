@@ -29,8 +29,8 @@ jobs:
           python - <<'PY'
           from pathlib import Path
 
-          test_path = Path("tests/test_update_skill.py")
-          tests = test_path.read_text(encoding="utf-8")
+          update_tests = Path("tests/test_update_skill.py")
+          tests = update_tests.read_text(encoding="utf-8")
           old = '''def test_update_check_uses_network_then_24_hour_cache(tmp_path: Path):
               state = tmp_path / "state.json"
               session = FakeSession(_release("0.4.3"))'''
@@ -45,29 +45,51 @@ jobs:
               '    assert first["latest_version"] == "0.4.4"',
               1,
           )
-          test_path.write_text(tests, encoding="utf-8")
+          update_tests.write_text(tests, encoding="utf-8")
+
+          structure_tests = Path("tests/test_skill_structure.py")
+          structure = structure_tests.read_text(encoding="utf-8")
+          structure = structure.replace(
+              '    assert "v0.4.1" in readme_en\n    assert "v0.4.1" in readme_zh',
+              '    assert "v0.4.3" in readme_en\n    assert "v0.4.3" in readme_zh',
+              1,
+          )
+          structure_tests.write_text(structure, encoding="utf-8")
 
           readme = Path("README.md")
           english = readme.read_text(encoding="utf-8")
-          anchor = "Use one active Codex Skill directory rather than keeping duplicate `.codex` and `.agents` copies.\n"
-          note = (
-              "Use one active Codex Skill directory rather than keeping duplicate `.codex` and `.agents` copies.\n"
-              "A legacy Windows location may be `$HOME\\.agents\\skills`; archive it before using the active Codex directory below.\n"
+          install_anchor = "Use one active Codex Skill directory rather than keeping duplicate `.codex` and `.agents` copies.\n"
+          install_note = (
+              install_anchor
+              + "A legacy Windows location may be `$HOME\\.agents\\skills`; archive it before using the active Codex directory below.\n"
           )
-          if anchor not in english:
+          if install_anchor not in english:
               raise SystemExit("English manual-install anchor not found")
-          readme.write_text(english.replace(anchor, note, 1), encoding="utf-8")
+          english = english.replace(install_anchor, install_note, 1)
+          status_anchor = (
+              "JSON containing the local version, official version when known, source, installation type, and\n"
+              "status.\n"
+          )
+          status_note = status_anchor + "For a cached status-only query, run `interactive-map-builder update --check`.\n"
+          if status_anchor not in english:
+              raise SystemExit("English update-status anchor not found")
+          readme.write_text(english.replace(status_anchor, status_note, 1), encoding="utf-8")
 
           readme_zh = Path("README.zh-CN.md")
           chinese = readme_zh.read_text(encoding="utf-8")
-          anchor_zh = "Codex 只保留一个活动 Skill 目录，避免 `.codex` 与 `.agents` 同时存在重复副本。\n"
-          note_zh = (
-              "Codex 只保留一个活动 Skill 目录，避免 `.codex` 与 `.agents` 同时存在重复副本。\n"
-              "旧版 Windows 安装位置可能是 `$HOME\\.agents\\skills`；使用下方活动目录前先将其归档。\n"
+          install_anchor_zh = "Codex 只保留一个活动 Skill 目录，避免 `.codex` 与 `.agents` 同时存在重复副本。\n"
+          install_note_zh = (
+              install_anchor_zh
+              + "旧版 Windows 安装位置可能是 `$HOME\\.agents\\skills`；使用下方活动目录前先将其归档。\n"
           )
-          if anchor_zh not in chinese:
+          if install_anchor_zh not in chinese:
               raise SystemExit("Chinese manual-install anchor not found")
-          readme_zh.write_text(chinese.replace(anchor_zh, note_zh, 1), encoding="utf-8")
+          chinese = chinese.replace(install_anchor_zh, install_note_zh, 1)
+          status_anchor_zh = "返回结构化 JSON，明确给出本地版本、可确认的官方版本、结果来源、安装类型和状态。\n"
+          status_note_zh = status_anchor_zh + "仅需缓存状态查询时，运行 `interactive-map-builder update --check`。\n"
+          if status_anchor_zh not in chinese:
+              raise SystemExit("Chinese update-status anchor not found")
+          readme_zh.write_text(chinese.replace(status_anchor_zh, status_note_zh, 1), encoding="utf-8")
           PY
 
       - name: Run focused compatibility suite
@@ -86,6 +108,6 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add README.md README.zh-CN.md tests/test_update_skill.py
+          git add README.md README.zh-CN.md tests/test_update_skill.py tests/test_skill_structure.py
           git commit -m "test: keep updater checks version-independent"
           git push origin HEAD:hotfix/v0.4.3-update-preflight
