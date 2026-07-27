@@ -40,6 +40,7 @@ from mapcore.spec import SpecError, load_spec, write_resolved_spec
 from mapcore.spec_init import SpecInitError, init_spec_from_inspection
 from mapcore.style import StyleError, resolve_layer_style
 from mapcore.validate import ValidationError, ensure_count_consistency, validate_geodata
+from mapcore.version import __version__
 
 
 class BuildError(RuntimeError):
@@ -530,7 +531,7 @@ def build_map(
     report: Dict[str, Any] = {
         "schema_version": "1.0",
         "built_at": datetime.now(timezone.utc).isoformat(),
-        "engine_version": "0.3.0",
+        "engine_version": __version__,
         "status": "pass",
         "template": spec["template"],
         "title": spec["title"],

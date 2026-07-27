@@ -22,7 +22,9 @@
     "search_map_layers": "Search map layers",
     "search_results": "Search results",
     "interactive_multilayer_map": "Interactive multilayer map",
-    "layer_control": "Layer control"
+    "layer_control": "Layer control",
+    "no_basemap": "No basemap",
+    "basemap_unavailable": "Basemap tiles could not be loaded. Showing no basemap."
   },
   "map_list": {
     "eyebrow": "ATLAS DATA EXPLORER",
@@ -67,7 +69,9 @@
     "empty": "No features match the current search",
     "limited": "Showing first",
     "visible_layers": "Visible layers",
-    "features": "Features"
+    "features": "Features",
+    "collapse_legend": "Collapse legend",
+    "expand_legend": "Expand legend"
   },
   "style": {
     "missing_label": "Missing"

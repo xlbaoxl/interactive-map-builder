@@ -8,6 +8,7 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any, Dict, Mapping, Sequence
 
+from mapcore.basemaps import default_basemaps
 from mapcore.locales import (
     DEFAULT_LOCALE,
     catalog_value,
@@ -170,20 +171,7 @@ def atlas_map_list_spec(
                 },
             }
         ],
-        "basemaps": [
-            {
-                "name": "Carto Positron",
-                "url": "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
-                "attribution": "© OpenStreetMap contributors © CARTO",
-                "visible": True,
-            },
-            {
-                "name": "OpenStreetMap",
-                "url": "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-                "attribution": "© OpenStreetMap contributors",
-                "visible": False,
-            },
-        ],
+        "basemaps": default_basemaps(),
         "map": {
             "search_behavior": "highlight",
             "controls": {

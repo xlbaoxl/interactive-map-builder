@@ -9,6 +9,7 @@ from .arcgis import ArcGISDownloadResult, ArcGISError, download_feature_service,
 from .loaders import DataLoadError, load_geodata, load_input, load_source
 from .normalize import NormalizationReport, normalize_geodata, stable_feature_id
 from .spec import current_schema_version
+from .version import __version__
 from .validate import (
     ValidationError,
     ValidationReport,
@@ -33,4 +34,5 @@ __all__ = [
     "normalize_geodata",
     "stable_feature_id",
     "validate_geodata",
+    "__version__",
 ]

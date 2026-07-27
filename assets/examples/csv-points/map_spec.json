@@ -47,10 +47,11 @@
   ],
   "basemaps": [
     {
-      "name": "OpenStreetMap",
-      "url": "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      "name": "OpenStreetMap Standard",
+      "url": "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
       "attribution": "© OpenStreetMap contributors",
-      "visible": true
+      "visible": true,
+      "max_zoom": 19
     }
   ],
   "list": {

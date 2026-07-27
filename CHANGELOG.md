@@ -27,6 +27,62 @@ first release with an automated tag, distribution assets, and GitHub Release wor
 
 ## [Unreleased] / 未发布
 
+## [0.3.2] - 2026-07-27
+
+### Added / 新增
+
+- 新增安全更新预检：Skill 每次调用可按 24 小时缓存检查官方 GitHub Release；只对官方仓库中
+  干净的 `main` 分支或清单未被修改的正式 Skill ZIP 自动更新，并校验发行资产 SHA-256 和包内
+  文件清单。断网、本地修改、只读目录和非标准安装不会阻塞地图任务。
+  Added a cached, non-blocking release preflight that checks the official GitHub Release and
+  automatically updates only a clean official `main` checkout or an unmodified managed Skill ZIP
+  after validating the release SHA-256 file and package manifest.
+- 新增 `interactive-map-builder update --check|--apply|--auto`，并支持通过
+  `IMB_DISABLE_AUTO_UPDATE=1` 关闭自动检查。
+  Added `interactive-map-builder update --check|--apply|--auto` with an
+  `IMB_DISABLE_AUTO_UPDATE=1` opt-out.
+- 更新应用后自动重新安装引擎并运行离线 `doctor`；若安装或体检失败，Git 安装恢复原提交，
+  Release ZIP 安装恢复原清单管理的全部文件。
+  Added transactional post-update installation and offline doctor verification, with rollback to
+  the previous Git commit or managed package files on failure.
+- v0.3.2 作为自动更新机制的起始版本；安装该版本一次后，后续兼容版本可由 Skill 预检发现并
+  应用。
+  Established v0.3.2 as the one-time update bootstrap for subsequent compatible releases.
+- 新建 MapSpec 默认加入 CARTO Positron 与 OpenStreetMap Standard 两张免凭证在线底图，
+  界面同时提供无底图选项；Esri World Imagery 作为需要授权服务配置的可选影像底图。
+  Added CARTO Positron and OpenStreetMap Standard as credential-free defaults plus a no-basemap
+  view; Esri World Imagery remains an opt-in provider configuration.
+- 触发评估集扩展到 40 条，新增复杂 Codex 任务的可选 Plan mode 引导、本地文件与公网网址边界、
+  以及用户明确要求部署时的确认规则。
+  Expanded the trigger suite to 40 cases covering optional Codex planning, local-file versus
+  public-URL behavior, and explicit deployment requests.
+
+### Changed / 变更
+
+- 包版本更新为 0.3.2，构建报告和 CLI 统一从单一版本模块读取版本号；正式 Release 额外发布
+  `SHA256SUMS.txt`。
+  Updated the package to 0.3.2, centralized CLI and engine version reporting, and added
+  `SHA256SUMS.txt` to each Release.
+- “可分享”默认统一为可发送、可双击打开的本地 `map.html`。只有用户明确要求部署时才讨论
+  公网网址，并在部署前确认托管平台和数据公开权限。
+  Defined the normal deliverable as a portable local `map.html`; public hosting is discussed only
+  after an explicit deployment request and confirmation of the hosting target and data exposure.
+- 对包含多个独立图层、多个阻塞性设计选择或多种协同输出的 Codex 任务，可在第一轮将 Plan
+  mode 作为一次性可选建议；用户不切换也继续推进，明确单图层任务不提示。
+  Restored Plan mode as a one-time optional Codex suggestion for genuinely complex tasks without
+  making it a prerequisite or recommending it for clear single-layer work.
+
+### Fixed / 修复
+
+- 多图层地图的图层开关和图例改为同一垂直控制区：图层开关固定在上方，长图例在下方滚动并
+  可折叠，窄屏默认收起，避免图例遮挡图层按钮。
+  Stacked multilayer switches above a collapsible, scrolling legend so large legends no longer
+  cover the visibility controls, including at narrow widths.
+- 底图切换器现在对默认生成的地图始终可见，并可在两张免凭证在线底图和无底图之间切换；
+  OSM 默认地址改为官方标准端点，在线瓦片连续失败时自动回退到无底图。
+  Made the basemap selector visible for generated defaults, added a no-basemap fallback, and
+  updated OpenStreetMap to its standard tile endpoint.
+
 ## [0.3.1] - 2026-07-27
 
 ### Added / 新增

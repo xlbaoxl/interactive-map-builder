@@ -18,7 +18,7 @@
 </div>
 
 Interactive Map Builder is a **Codex-first Agent Skill** for turning GeoJSON, GeoPackage,
-Shapefile, CSV, Excel, and ArcGIS data into shareable map products. The Agent recognizes the goal
+Shapefile, CSV, Excel, and ArcGIS data into portable map products. The Agent recognizes the goal
 from ordinary language—even when the user never says GIS, Leaflet, web map, or the Skill name—then
 inspects the data, closes only blocking requirements gaps, writes an auditable MapSpec, builds a
 self-contained Leaflet app, verifies the result, and exports figures for slides and papers.
@@ -39,16 +39,20 @@ No frontend build system, no hand-written Folium page, and no hidden cleanup.
   normalization, styling, rendering, and validation.
 - **Two polished map products** — a searchable map-and-list explorer and a toggleable multilayer
   explorer for points, lines, and polygons.
-- **Single-file delivery** — Leaflet, interface code, and business geometry are embedded in one
+- **Portable local delivery** — Leaflet, interface code, and business geometry are embedded in one
   `map.html`; only online basemap tiles require a network connection.
 - **Report-ready exports** — generate 16:9 PNG plus publication PNG, SVG, and PDF from the same
   specification.
 - **Auditable handoff** — every build records inspection results, repairs, generated IDs,
   performance warnings, source notes, hashes, and portability.
+- **Safe release preflight** — each Skill invocation can check the official GitHub Release once per
+  day and update a clean verified installation without blocking offline work.
 - **Install self-check** — `interactive-map-builder doctor` runs a complete offline build and hash
   verification after installation.
-- **Cross-agent evaluation** — 36 English and Chinese cases cover explicit, implicit, ambiguous,
-  and out-of-scope requests.
+- **Reliable map controls** — layer switches stay above a collapsible scrolling legend, with CARTO
+  Positron, OpenStreetMap Standard, and a no-basemap fallback available by default.
+- **Cross-agent evaluation** — 40 English and Chinese cases cover activation, optional planning,
+  local-versus-public delivery, and out-of-scope requests.
 
 ## Live demos
 
@@ -90,7 +94,7 @@ required for a matching Agent task.
 Open a new Codex task and send:
 
 ```text
-$skill-installer Install the Skill from https://github.com/xlbaoxl/interactive-map-builder and install its Python dependencies. Run interactive-map-builder doctor after installation.
+$skill-installer Install the Skill from https://github.com/xlbaoxl/interactive-map-builder and install its Python dependencies. Run interactive-map-builder doctor and interactive-map-builder update --check after installation.
 ```
 
 Create a new task after installation. Restart Codex once only when the Skill does not appear.
@@ -121,7 +125,8 @@ interactive-map-builder doctor
 
 `doctor` creates a temporary coordinate table, builds a map without network access, verifies the
 packaged Leaflet resources and output hashes, prints a JSON result, and removes the temporary
-files. It does not download basemaps or send usage telemetry.
+files. It does not download basemaps or send usage telemetry. Check update status separately with
+`interactive-map-builder update --check`.
 
 <details>
 <summary><strong>Manual installation</strong></summary>
@@ -135,6 +140,7 @@ git clone https://github.com/xlbaoxl/interactive-map-builder.git `
 Set-Location "$HOME\.agents\skills\interactive-map-builder"
 py -m pip install .
 interactive-map-builder doctor
+interactive-map-builder update --check
 ```
 
 **macOS or Linux**
@@ -146,6 +152,7 @@ git clone https://github.com/xlbaoxl/interactive-map-builder.git \
 cd "$HOME/.agents/skills/interactive-map-builder"
 python3 -m pip install .
 interactive-map-builder doctor
+interactive-map-builder update --check
 ```
 
 </details>
@@ -157,7 +164,8 @@ Every v0.3.1+ GitHub Release publishes:
 
 - `interactive-map-builder-skill-vX.Y.Z.zip` — a lean Agent Skill package containing `SKILL.md`,
   Agent metadata, references, the deterministic engine, and its packaged web resources;
-- a Python wheel and source archive for conventional package installation.
+- a Python wheel and source archive for conventional package installation;
+- `SHA256SUMS.txt` for release-asset verification and managed Skill updates.
 
 The Skill ZIP intentionally excludes demos, screenshots, tests, and CI files. Extract it into an
 Agent Skills directory, run `python -m pip install .`, then run `interactive-map-builder doctor`.
@@ -181,6 +189,31 @@ directory.
 
 </details>
 
+## Updates, planning, and public deployment
+
+At the start of a Skill task, the Agent runs `interactive-map-builder update --auto`. The check is
+cached for 24 hours and only modifies a clean official `main` checkout or an unmodified versioned
+Skill ZIP after validating the Release checksum and package manifest. Offline access, local
+changes, read-only installs, and unsupported copies are reported but never block map construction.
+Set `IMB_DISABLE_AUTO_UPDATE=1` to opt out.
+
+Updates are transactional: after replacing a verified release, the updater reinstalls the engine
+and runs the offline doctor. A failed install or doctor check restores the prior Git commit or the
+previous manifest-owned files. See [the verified update policy](references/update-policy.md).
+
+Version 0.3.2 is the update bootstrap. Install it once through the repository or its Release; later
+compatible releases can then be detected and applied by the Skill preflight.
+
+For a genuinely complex Codex task—multiple independent layers, several unresolved design choices,
+or coordinated HTML/slide/paper outputs—the Agent may suggest Plan mode once as an optional
+convenience. It continues inspecting immediately whether or not the user switches, and clear
+single-layer requests do not receive the suggestion.
+
+The normal deliverable is a portable local `map.html`. “Share with colleagues” means sending that
+file, not publishing embedded data on the internet. A public URL is discussed only when explicitly
+requested, after confirming a hosting target and permission to expose the data. Hosting remains a
+separate workflow from map construction.
+
 ## Choose the right map product
 
 | User goal | Template | Best for | Main interactions |
@@ -191,6 +224,19 @@ directory.
 A `map-list` may also include context layers. With multiple inputs, the Skill never guesses the
 business intent from geometry type alone; it asks the user to confirm the template and primary
 layer.
+
+## Basemaps and multilayer controls
+
+New MapSpec files include two credential-free online basemaps: **CARTO Positron** as the quiet
+default and **OpenStreetMap Standard** for detailed street context. The selector also includes
+**No basemap**, and repeated tile failures automatically fall back to it, so business layers and
+interactions remain usable without tiles. **Esri World Imagery** can be added only when the user
+provides an authorized service URL or token and accepts that browser-delivered credentials can be
+visible in the generated HTML.
+
+In the multilayer product, visibility switches are kept in a fixed upper section. The legend is
+stacked below them, scrolls when long, and starts collapsed at narrow widths, so a large categorical
+legend cannot cover the layer controls.
 
 ## Supported inputs
 
@@ -210,7 +256,7 @@ and category roles, ambiguities, and performance signals before a map is propose
 
 | File | Purpose |
 | --- | --- |
-| `map.html` | Self-contained interactive Leaflet map with embedded business geometry |
+| `map.html` | Portable local Leaflet map with embedded business geometry |
 | `map_slide_16x9.png` | Presentation-ready 1920×1080 figure when the slide preset is enabled |
 | `map_paper.png` / `.svg` / `.pdf` | Publication outputs when the paper preset is enabled |
 | `map_spec.json` | Resolved, reusable build contract |
@@ -246,7 +292,7 @@ User request + spatial files
  provenance, hashes, and browser UI
            │
            ▼
-  shareable HTML + report figures
+  portable HTML + report figures
 ```
 
 The packaged [JSON Schema](scripts/mapcore/resources/map-spec.schema.json) is the only
@@ -294,17 +340,19 @@ currently provide:
 - offline basemap acquisition;
 - CRS guessing from coordinate ranges;
 - 3D terrain, buildings, or digital twins;
-- general maintenance of an existing custom Leaflet or React application.
+- general maintenance of an existing custom Leaflet or React application;
+- automatic public hosting without an explicit deployment request and data-publication approval.
 
 For large GeoJSON payloads, the build report recommends `light` or `medium` geometry simplification
 but does not silently switch rendering engines.
 
 ## Project status
 
-The project is in **v0.3.1 beta**. The current release line stabilizes two map products and one
-MapSpec contract while improving intent-based activation, installation verification, and
-versioned distribution. New rendering features remain driven by real user cases rather than by
-adding templates without evidence.
+The project is in **v0.3.2 beta**. This release stabilizes model behavior around local versus public
+delivery, restores optional Codex planning guidance for complex tasks, makes multilayer controls
+reliably accessible, adds two public basemaps plus a no-basemap fallback, and introduces verified non-blocking
+release updates. New rendering features remain driven by real user cases rather than by adding
+templates without evidence.
 
 See the [changelog](CHANGELOG.md) for completed work.
 

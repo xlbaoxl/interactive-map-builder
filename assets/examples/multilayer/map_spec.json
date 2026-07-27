@@ -125,16 +125,18 @@
   ],
   "basemaps": [
     {
-      "name": "Carto Positron",
+      "name": "CARTO Positron",
       "url": "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
       "attribution": "© OpenStreetMap contributors © CARTO",
-      "visible": true
+      "visible": true,
+      "max_zoom": 20
     },
     {
-      "name": "OpenStreetMap",
-      "url": "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      "name": "OpenStreetMap Standard",
+      "url": "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
       "attribution": "© OpenStreetMap contributors",
-      "visible": false
+      "visible": false,
+      "max_zoom": 19
     }
   ],
   "map": {

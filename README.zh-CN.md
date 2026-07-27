@@ -19,7 +19,7 @@
 
 Interactive Map Builder 是一个**以 Codex 为主要使用场景、兼容 Agent Skills 工作流**的地图
 Skill。用户即使没有说出 GIS、Leaflet、Web Map 或项目名称，只要表达了“把已有空间数据做成
-可搜索、筛选、分享和汇报的地图”这一目标，Agent 也能够识别任务。Skill 会检查 GeoJSON、
+可搜索、筛选、发送和汇报的地图”这一目标，Agent 也能够识别任务。Skill 会检查 GeoJSON、
 GeoPackage、Shapefile、CSV、Excel 或 ArcGIS 数据，只询问真正影响结果的选项，再写入可审计
 的 MapSpec，生成单文件 Leaflet 地图，并同步导出适合 PPT 和论文的静态图。
 
@@ -39,12 +39,16 @@ GeoPackage、Shapefile、CSV、Excel 或 ArcGIS 数据，只询问真正影响�
   渲染和校验，避免每次临时生成一套不同代码。
 - **两种成熟地图产品**：可搜索筛选的“地图＋清单”，以及可独立开关点、线、面数据的
   “多图层地图”。
-- **单文件交付**：Leaflet、界面逻辑和业务几何都嵌入 `map.html`；只有在线街道底图需要网络。
+- **本地单文件交付**：Leaflet、界面逻辑和业务几何都嵌入 `map.html`；只有在线底图需要网络。
 - **汇报与论文输出**：同一份配置可生成 16:9 PNG，以及论文用 PNG、SVG 和 PDF。
 - **完整构建记录**：自动保存数据检查、几何修复、生成 ID、性能提示、数据来源、文件哈希和
   可移植状态。
+- **安全版本预检**：每次调用可按 24 小时缓存检查官方 Release，只更新干净且校验通过的安装，
+  断网或本地修改不会阻塞制图任务。
 - **安装后自动体检**：`interactive-map-builder doctor` 会离线完成一次真实构建和哈希验证。
-- **跨 Agent 触发评估**：36 条中英文案例覆盖明确触发、隐式触发、模糊需求和不应触发任务。
+- **可靠地图控件**：图层开关固定在可折叠滚动图例上方，默认提供 CARTO Positron、
+  OpenStreetMap Standard 和无底图视图；需要凭证的影像底图保持可选。
+- **跨 Agent 触发评估**：40 条中英文案例覆盖调用、可选规划、本地与公网交付边界及误触发。
 
 ## 在线演示
 
@@ -83,7 +87,7 @@ GeoPackage、Shapefile、CSV、Excel 或 ArcGIS 数据，只询问真正影响�
 打开一个新的 Codex 任务，发送：
 
 ```text
-$skill-installer 请从 https://github.com/xlbaoxl/interactive-map-builder 安装这个 Skill，并安装它需要的 Python 依赖。安装后运行 interactive-map-builder doctor。
+$skill-installer 请从 https://github.com/xlbaoxl/interactive-map-builder 安装这个 Skill，并安装它需要的 Python 依赖。安装后运行 interactive-map-builder doctor 和 interactive-map-builder update --check。
 ```
 
 安装完成后新建任务。如果新任务中没有出现该 Skill，再重启一次 Codex。
@@ -112,7 +116,8 @@ interactive-map-builder doctor
 ```
 
 `doctor` 会在临时目录中生成一张坐标表，离线完成数据读取、地图构建、Leaflet 资源检查和输出
-哈希验证，返回 JSON 结果后删除临时文件。该命令不会下载底图，也不会发送使用统计。
+哈希验证，返回 JSON 结果后删除临时文件。该命令不会下载底图，也不会发送使用统计。可使用
+`interactive-map-builder update --check` 单独检查版本状态。
 
 <details>
 <summary><strong>手动安装</strong></summary>
@@ -126,6 +131,7 @@ git clone https://github.com/xlbaoxl/interactive-map-builder.git `
 Set-Location "$HOME\.agents\skills\interactive-map-builder"
 py -m pip install .
 interactive-map-builder doctor
+interactive-map-builder update --check
 ```
 
 **macOS 或 Linux**
@@ -137,6 +143,7 @@ git clone https://github.com/xlbaoxl/interactive-map-builder.git \
 cd "$HOME/.agents/skills/interactive-map-builder"
 python3 -m pip install .
 interactive-map-builder doctor
+interactive-map-builder update --check
 ```
 
 </details>
@@ -148,7 +155,8 @@ interactive-map-builder doctor
 
 - `interactive-map-builder-skill-vX.Y.Z.zip`：包含 `SKILL.md`、Agent 元数据、参考文档、确定性
   引擎和网页资源的精简 Skill 包；
-- Python wheel 与源码包：用于常规 Python 安装。
+- Python wheel 与源码包：用于常规 Python 安装；
+- `SHA256SUMS.txt`：用于发行资产校验和受管 Skill 安全更新。
 
 精简 Skill 包不包含演示数据、截图、测试和 CI 文件。将它解压到 Agent Skills 目录后，运行
 `python -m pip install .`，再运行 `interactive-map-builder doctor`。
@@ -171,6 +179,28 @@ interactive-map-builder doctor
 
 </details>
 
+## 版本更新、计划模式与公网发布
+
+每次 Skill 任务开始时，Agent 会运行 `interactive-map-builder update --auto`。更新检查按 24 小时
+缓存，只会修改官方仓库中干净的 `main` 分支，或文件未被改动且通过 Release 校验和与清单验证的
+正式 Skill ZIP。断网、本地修改、只读目录或非标准安装只会返回提示，不会阻塞地图制作。设置
+`IMB_DISABLE_AUTO_UPDATE=1` 可以关闭更新检查。
+
+更新采用事务式处理：替换经过校验的版本后会重新安装引擎并运行离线 `doctor`；安装或体检失败
+时，自动恢复此前的 Git 提交或原清单管理的全部文件。完整规则见
+[安全更新策略](references/update-policy.md)。
+
+v0.3.2 是自动更新机制的起始版本。用户需要先通过仓库或 Release 安装一次 v0.3.2，此后的兼容
+版本即可由 Skill 预检发现并安全应用。
+
+当 Codex 任务确实复杂，例如包含多个独立图层、多个待确认设计选项，或需要协调 HTML、汇报图和
+论文图时，Agent 可以在第一轮用一句话将 Plan mode 作为可选建议。用户不切换也会立即继续检查
+数据；明确的单图层任务不会收到这项提示。
+
+正常交付物是可移动、可发送的本地 `map.html`。“发给同事”表示发送文件，不等于把内嵌空间数据
+发布到互联网。只有用户明确提出公开网址时，才会在确认托管平台和数据公开权限后进入独立部署
+流程；公网托管不属于地图构建的默认输出。
+
 ## 选择哪种地图
 
 | 用户目标 | 底层模板 | 适用数据 | 主要交互 |
@@ -180,6 +210,16 @@ interactive-map-builder doctor
 
 `map-list` 也可以附带行政区或道路等背景图层。存在多个输入时，Skill 不会仅凭几何类型猜测
 业务意图，而会要求用户确认模板和主图层。
+
+## 默认底图与多图层控件
+
+新建 MapSpec 默认包含两张不需要用户凭证的在线底图：以浅色、低干扰的 **CARTO Positron**
+为默认底图，**OpenStreetMap Standard** 用于查看详细道路与地名。底图选择器还提供**无底图**，
+在线瓦片连续失败时会自动回退，因此业务图层、搜索和图层控制仍然可用。**Esri World Imagery**
+仅在用户提供经过授权的服务地址或令牌，并接受浏览器端凭证可能出现在 HTML 中时加入。
+
+多图层产品将图层开关固定在控制区上方，图例排列在下方；图例内容过长时内部滚动，窄屏默认
+收起，因此大量分类不会再遮挡图层关闭按钮。
 
 ## 支持的数据
 
@@ -199,7 +239,7 @@ interactive-map-builder doctor
 
 | 文件 | 用途 |
 | --- | --- |
-| `map.html` | 内嵌业务几何和全部界面逻辑的单文件 Leaflet 地图 |
+| `map.html` | 内嵌业务几何和全部界面逻辑的本地单文件 Leaflet 地图 |
 | `map_slide_16x9.png` | 启用汇报 preset 时生成的 1920×1080 图片 |
 | `map_paper.png` / `.svg` / `.pdf` | 启用论文 preset 时生成的出版图件 |
 | `map_spec.json` | 解析后的可复用构建契约 |
@@ -234,7 +274,7 @@ interactive-map-builder doctor
  数据来源、哈希和浏览器交互
           │
           ▼
- 可分享 HTML + 汇报与论文图件
+ 可发送 HTML + 汇报与论文图件
 ```
 
 打包的 [JSON Schema](scripts/mapcore/resources/map-spec.schema.json) 是 MapSpec 唯一的机器契约。
@@ -279,16 +319,17 @@ Interactive Map Builder 专注于**已有空间数据 → 可交付地图成品*
 - 离线底图下载；
 - 根据坐标数值猜测 CRS；
 - 三维地形、建筑和数字孪生；
-- 维护已有的定制 Leaflet 或 React 应用。
+- 维护已有的定制 Leaflet 或 React 应用；
+- 在用户没有明确提出部署且未确认数据公开权限时自动发布公网网址。
 
 对于较大的 GeoJSON，构建报告会建议使用 `light` 或 `medium` 几何简化，但不会在用户不知情时
 切换渲染引擎。
 
 ## 项目状态
 
-项目当前处于 **v0.3.1 Beta**。这一版本稳定维护两种地图产品和一份 MapSpec 契约，并重点改善
-自然语言意图触发、安装后验证和版本化分发。新的渲染功能继续由真实使用场景驱动，不以增加
-模板数量作为迭代目标。
+项目当前处于 **v0.3.2 Beta**。这一版本统一了本地与公网交付边界，为复杂 Codex 任务恢复
+可选计划模式建议，修复多图层控件遮挡，增加两张公共底图和无底图回退，并加入经过校验且不阻塞任务的版本
+更新机制。新的渲染功能继续由真实使用场景驱动，不以增加模板数量作为迭代目标。
 
 已经完成的变化见[更新日志](CHANGELOG.md)。
 

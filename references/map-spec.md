@@ -94,6 +94,17 @@ value is `1.1`; unsupported values fail normal Schema validation. Set `locale` t
   unsimplified normalized geometry.
 - Define HTTPS basemaps with attribution. An empty list keeps the business geometry usable.
 
+## Basemap defaults and provider credentials
+
+`init-spec` and `run` create two credential-free online basemaps: CARTO Positron as the quiet
+default and OpenStreetMap Standard as the detailed street reference. The browser UI also creates a
+neutral `No basemap` choice; it is not stored as a tile provider in MapSpec.
+
+Add aerial imagery or another provider only through an explicit, user-authorized HTTPS service
+configuration with complete attribution. Never invent, commit, or log a provider credential. A
+token placed in a browser tile URL can be visible to anyone who receives the generated HTML, so
+confirm that exposure and any origin restrictions before adding it.
+
 ## Interactive controls
 
 For a `multilayer` map, `map.search_behavior` may be `filter` (the default, which removes

@@ -61,6 +61,7 @@ jobs:
           python -m build
           python scripts/build_skill_package.py \
             --output "dist/interactive-map-builder-skill-v${{ steps.version.outputs.version }}.zip"
+          (cd dist && sha256sum *.whl *.tar.gz "interactive-map-builder-skill-v${{ steps.version.outputs.version }}.zip" > SHA256SUMS.txt)
 
       - name: Create GitHub Release
         if: steps.existing.outputs.exists == 'false'
@@ -73,6 +74,7 @@ jobs:
             dist/*.whl \
             dist/*.tar.gz \
             "dist/interactive-map-builder-skill-v${{ steps.version.outputs.version }}.zip" \
+            dist/SHA256SUMS.txt \
             --target "$RELEASE_SHA" \
             --title "Interactive Map Builder v${{ steps.version.outputs.version }}" \
             --generate-notes \

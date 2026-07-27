@@ -19,10 +19,11 @@ from typing import Any, Dict, Optional, Sequence
 
 import map_builder
 from mapcore.spec import current_schema_version
+from mapcore.version import __version__
 
 
 PACKAGE_NAME = "interactive-map-builder"
-PACKAGE_VERSION_FALLBACK = "0.3.1"
+PACKAGE_VERSION_FALLBACK = __version__
 
 
 def package_version() -> str:
@@ -146,6 +147,7 @@ def _print_root_help() -> None:
     print()
     print("package commands:")
     print("  doctor              Run an offline installation and build self-check.")
+    print("  update              Check or apply a verified official release update.")
     print("  --version           Print the installed package version.")
 
 
@@ -157,6 +159,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     if arguments in (["-V"], ["--version"]):
         print(package_version())
         return 0
+    if arguments[0] == "update":
+        from update_skill import main as update_main
+
+        return update_main(arguments[1:])
     if arguments[0] == "doctor":
         parser = _doctor_parser()
         args = parser.parse_args(arguments[1:])

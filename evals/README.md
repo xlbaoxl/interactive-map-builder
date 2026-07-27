@@ -6,11 +6,12 @@ or another Agent Skills client can run the same prompts and record results in on
 
 ## Case manifest
 
-`cases.yaml` contains 36 English and Chinese cases across four categories:
+`cases.yaml` contains 40 English and Chinese cases across four categories:
 
 - `explicit`: the prompt names a supported format or map behavior;
 - `implicit`: the prompt describes the desired outcome without GIS or Skill terminology;
-- `ambiguous`: the task is in scope, but blocking choices must be confirmed before a build;
+- `ambiguous`: the task is in scope, but blocking choices, optional Codex planning, or delivery
+  boundaries must be confirmed before a build;
 - `do_not_use`: a nearby task should be routed to geocoding, analysis, WebGIS, 3D, charting, or
   general software engineering instead.
 
@@ -19,7 +20,8 @@ Every case declares:
 - the expected invocation decision;
 - the expected high-level behavior;
 - whether the Agent should ask the user a consolidated clarification question;
-- whether the request is complete enough to build after inspection without another user turn.
+- whether the request is complete enough to build after inspection without another user turn;
+- whether local-file sharing, public deployment, and optional Plan mode are handled as declared.
 
 Validate the manifest after changing metadata or cases:
 

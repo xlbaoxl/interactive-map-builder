@@ -43,3 +43,16 @@
 Open the built HTML at desktop and narrow widths. Confirm no console errors, no executable input
 strings, working tile-failure fallback, accurate QA counts, wrapped tooltip text inside its
 boundary, and usable controls at roughly 1000 px and 620 px widths.
+
+## Control stacking and basemaps
+
+- In multilayer maps, keep visibility switches in a fixed upper section and the legend below them
+  within one bounded control stack. A long legend must scroll internally rather than cover layer
+  switches or other controls.
+- Make the legend collapsible and start it collapsed at narrow widths. Keep every layer checkbox
+  visible, keyboard reachable, and pointer clickable at desktop and mobile viewports.
+- New maps should expose CARTO Positron, OpenStreetMap Standard, and a neutral no-basemap state.
+  Preserve provider-specific attribution whenever an online layer is active. Add authenticated
+  imagery only from a user-authorized provider configuration; never commit or invent credentials.
+- Verify control bounding boxes at desktop, approximately 1000 px, and approximately 390 px widths;
+  DOM presence alone is not sufficient when controls overlap.
