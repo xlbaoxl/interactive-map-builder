@@ -31,3 +31,5 @@ jobs:
           git rm .github/workflows/apply-v032.yml
           git commit -m "release: prepare v0.3.2 controls and safe updates"
           git push origin HEAD:agent/v0.3.2-controls-and-updates
+
+# Touching this workflow after it exists on the branch intentionally starts the one-shot apply job.
