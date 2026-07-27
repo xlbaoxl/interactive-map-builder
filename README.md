@@ -137,6 +137,7 @@ packaged Leaflet resources and output hashes, prints a JSON result, and removes 
 files. It does not download basemaps or send usage telemetry. The update command prints structured
 JSON containing the local version, official version when known, source, installation type, and
 status.
+For a cached status-only query, run `interactive-map-builder update --check`.
 
 Prefer `interactive-map-builder doctor` after installation. In a source checkout where the console
 command is not yet available, use `python scripts/cli.py doctor`. The internal
@@ -147,6 +148,7 @@ must not be used to conclude that the package lacks `doctor`.
 <summary><strong>Manual Git installation for zero-touch updates</strong></summary>
 
 Use one active Codex Skill directory rather than keeping duplicate `.codex` and `.agents` copies.
+A legacy Windows location may be `$HOME\.agents\skills`; archive it before using the active Codex directory below.
 
 **Windows PowerShell**
 

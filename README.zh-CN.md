@@ -126,6 +126,7 @@ interactive-map-builder update --auto --force
 `doctor` 会在临时目录中生成一张坐标表，离线完成数据读取、地图构建、Leaflet 资源检查和输出
 哈希验证，返回 JSON 结果后删除临时文件。该命令不会下载底图，也不会发送使用统计。更新命令
 返回结构化 JSON，明确给出本地版本、可确认的官方版本、结果来源、安装类型和状态。
+仅需缓存状态查询时，运行 `interactive-map-builder update --check`。
 
 安装后优先运行 `interactive-map-builder doctor`。若在源码目录中尚未生成该命令，可使用
 `python scripts/cli.py doctor`；`python scripts/map_builder.py --help` 只列出内部构建命令，
@@ -135,6 +136,7 @@ interactive-map-builder update --auto --force
 <summary><strong>适合持续自动更新的 Git 手动安装</strong></summary>
 
 Codex 只保留一个活动 Skill 目录，避免 `.codex` 与 `.agents` 同时存在重复副本。
+旧版 Windows 安装位置可能是 `$HOME\.agents\skills`；使用下方活动目录前先将其归档。
 
 **Windows PowerShell**
 

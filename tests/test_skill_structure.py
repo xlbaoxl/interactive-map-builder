@@ -93,8 +93,8 @@ def test_behavior_evals_and_localized_readmes_are_present():
     assert "## 直接描述成果，不必记住工具名称" in readme_zh
     assert "## Atlas Studio Light" in readme_en
     assert "## Atlas Studio Light 视觉系统" in readme_zh
-    assert "v0.4.1" in readme_en
-    assert "v0.4.1" in readme_zh
+    assert "v0.4.3" in readme_en
+    assert "v0.4.3" in readme_zh
     assert "## 中文" not in readme_en
     assert "## English" not in readme_en
 
