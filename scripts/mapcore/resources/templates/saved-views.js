@@ -89,8 +89,44 @@
     var catalog = payload.catalog && payload.catalog.saved_views
       ? payload.catalog.saved_views
       : {};
+    var zh = IMB.text(document.documentElement.lang).toLocaleLowerCase().indexOf("zh") === 0;
+    var defaults = zh ? {
+      region: "保存视角",
+      overview: "总览",
+      save: "+ 保存视角",
+      manage: "管理视角",
+      close: "关闭",
+      default_name: "视角",
+      empty: "暂无保存视角。",
+      rename: "重命名",
+      delete: "删除",
+      rename_prompt: "重命名视角",
+      delete_confirm: "删除“{name}”吗？",
+      go_to: "前往 {name}",
+      limit_reached: "最多保存 8 个视角。",
+      save_hint: "保存当前地图中心和缩放级别。",
+      duplicate_name: "请输入唯一且非空的视角名称。",
+      save_prompt: "将当前视角保存为"
+    } : {
+      region: "Saved views",
+      overview: "Overview",
+      save: "+ Save view",
+      manage: "Manage saved views",
+      close: "Close",
+      default_name: "View",
+      empty: "No saved views yet.",
+      rename: "Rename",
+      delete: "Delete",
+      rename_prompt: "Rename view",
+      delete_confirm: "Delete “{name}”?",
+      go_to: "Go to {name}",
+      limit_reached: "You can save up to 8 views.",
+      save_hint: "Save the current map center and zoom.",
+      duplicate_name: "Use a unique, non-empty view name.",
+      save_prompt: "Save current view as"
+    };
     function label(key, fallback) {
-      return IMB.text(catalog[key] || fallback || key);
+      return IMB.text(catalog[key] || defaults[key] || fallback || key);
     }
 
     var header = document.querySelector(".imb-header");
@@ -161,6 +197,7 @@
     document.body.appendChild(dialog);
 
     function updateQA() {
+      var center = map.getCenter();
       IMB.qa.savedViews = {
         count: views.length,
         max: MAX_VIEWS,
@@ -168,6 +205,8 @@
         storageKey: storageKey,
         activeId: activeId,
         overviewCaptured: Boolean(overview),
+        currentCenter: [Number(center.lat), Number(center.lng)],
+        currentZoom: Number(map.getZoom()),
         views: views.map(function (view) {
           return {
             id: view.id,
