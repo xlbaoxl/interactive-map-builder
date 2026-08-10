@@ -62,6 +62,24 @@
     "no_basemap": "No basemap",
     "basemap_unavailable": "Basemap tiles could not be loaded. Showing no basemap."
   },
+  "saved_views": {
+    "region": "Saved views",
+    "overview": "Overview",
+    "save": "+ Save view",
+    "manage": "Manage saved views",
+    "close": "Close",
+    "defaultName": "View",
+    "empty": "No saved views yet.",
+    "rename": "Rename",
+    "remove": "Delete",
+    "renamePrompt": "Rename view",
+    "deleteConfirm": "Delete “{name}”?",
+    "goTo": "Go to {name}",
+    "limit": "You can save up to 8 views.",
+    "saveHint": "Save the current map center and zoom.",
+    "invalidName": "Use a unique, non-empty view name.",
+    "savePrompt": "Save current view as"
+  },
   "map_list": {
     "eyebrow": "ATLAS DATA EXPLORER",
     "collapse": "Collapse list",

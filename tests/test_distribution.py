@@ -76,6 +76,8 @@ def test_skill_package_is_lean_complete_and_deterministic(tmp_path: Path):
         "interactive-map-builder/scripts/mapcore/resources/templates/atlas-studio-light.css",
         "interactive-map-builder/scripts/mapcore/resources/templates/multilayer-enhancements.css",
         "interactive-map-builder/scripts/mapcore/resources/templates/multilayer-enhancements.js",
+        "interactive-map-builder/scripts/mapcore/resources/templates/saved-views.css",
+        "interactive-map-builder/scripts/mapcore/resources/templates/saved-views.js",
         "interactive-map-builder/scripts/mapcore/visual_defaults.py",
         "interactive-map-builder/scripts/mapcore/resources/vendor/leaflet-1.9.4/leaflet.js",
         "interactive-map-builder/PACKAGE_MANIFEST.json",
