@@ -10,68 +10,109 @@
   var originalSetupMap = IMB.setupMap;
   var originalFitToGroups = IMB.fitToGroups;
 
-  function finiteNumber(value) {
-    var numeric = Number(value);
-    return Number.isFinite(numeric) ? numeric : null;
+  function numberOrNull(value) {
+    var parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
   }
 
-  function hashString(value) {
-    var hash = 2166136261;
-    var source = String(value || "");
-    for (var index = 0; index < source.length; index += 1) {
-      hash ^= source.charCodeAt(index);
-      hash = Math.imul(hash, 16777619);
-    }
-    return (hash >>> 0).toString(36);
+  function hash(value) {
+    var result = 2166136261;
+    String(value || "").split("").forEach(function (character) {
+      result ^= character.charCodeAt(0);
+      result = Math.imul(result, 16777619);
+    });
+    return (result >>> 0).toString(36);
   }
 
-  function mapIdentity(payload) {
-    var spec = payload && payload.spec && typeof payload.spec === "object" ? payload.spec : {};
-    var layers = payload && Array.isArray(payload.layers) ? payload.layers : [];
-    var layerSignature = layers.map(function (layer, index) {
-      return IMB.layerId(layer, index) + ":" + Number(layer && layer.count || 0);
-    }).join("|");
-    return [
+  function labels(payload) {
+    var zh = IMB.text(document.documentElement.lang).toLocaleLowerCase().indexOf("zh") === 0;
+    var fallback = zh ? {
+      region: "保存视角",
+      overview: "总览",
+      save: "+ 保存视角",
+      manage: "管理视角",
+      close: "关闭",
+      defaultName: "视角",
+      empty: "暂无保存视角。",
+      rename: "重命名",
+      remove: "删除",
+      renamePrompt: "重命名视角",
+      deleteConfirm: "删除“{name}”吗？",
+      goTo: "前往 {name}",
+      limit: "最多保存 8 个视角。",
+      saveHint: "保存当前地图中心和缩放级别。",
+      invalidName: "请输入唯一且非空的视角名称。",
+      savePrompt: "将当前视角保存为"
+    } : {
+      region: "Saved views",
+      overview: "Overview",
+      save: "+ Save view",
+      manage: "Manage saved views",
+      close: "Close",
+      defaultName: "View",
+      empty: "No saved views yet.",
+      rename: "Rename",
+      remove: "Delete",
+      renamePrompt: "Rename view",
+      deleteConfirm: "Delete “{name}”?",
+      goTo: "Go to {name}",
+      limit: "You can save up to 8 views.",
+      saveHint: "Save the current map center and zoom.",
+      invalidName: "Use a unique, non-empty view name.",
+      savePrompt: "Save current view as"
+    };
+    var configured = payload.catalog && payload.catalog.saved_views
+      ? payload.catalog.saved_views
+      : {};
+    Object.keys(configured).forEach(function (key) {
+      fallback[key] = IMB.text(configured[key]);
+    });
+    return fallback;
+  }
+
+  function storageFor(payload) {
+    var spec = payload.spec || {};
+    var layers = Array.isArray(payload.layers) ? payload.layers : [];
+    var identity = [
       window.location.pathname || "",
-      IMB.text(payload && payload.template || spec.template || ""),
+      IMB.text(payload.template || spec.template || ""),
       IMB.text(spec.title || ""),
-      layerSignature
+      layers.map(function (layer, index) {
+        return IMB.layerId(layer, index) + ":" + Number(layer && layer.count || 0);
+      }).join("|")
     ].join("::");
-  }
-
-  function storageAdapter(key) {
+    var key = "interactive-map-builder:saved-views:v1:" + hash(identity);
+    var memory = null;
     try {
       var probe = key + ":probe";
       window.localStorage.setItem(probe, "1");
       window.localStorage.removeItem(probe);
       return {
+        key: key,
         persistent: true,
-        read: function () { return window.localStorage.getItem(key); },
-        write: function (value) { window.localStorage.setItem(key, value); }
+        get: function () { return window.localStorage.getItem(key); },
+        set: function (value) { window.localStorage.setItem(key, value); }
       };
     } catch (_error) {
-      var memory = null;
       return {
+        key: key,
         persistent: false,
-        read: function () { return memory; },
-        write: function (value) { memory = value; }
+        get: function () { return memory; },
+        set: function (value) { memory = value; }
       };
     }
   }
 
-  function normalizeViews(raw) {
-    if (!Array.isArray(raw)) {
+  function normalizeViews(value) {
+    if (!Array.isArray(value)) {
       return [];
     }
-    return raw.slice(0, MAX_VIEWS).map(function (item, index) {
-      if (!item || typeof item !== "object") {
-        return null;
-      }
-      var name = IMB.text(item.name).trim();
-      var center = Array.isArray(item.center) ? item.center : [];
-      var latitude = finiteNumber(center[0]);
-      var longitude = finiteNumber(center[1]);
-      var zoom = finiteNumber(item.zoom);
+    return value.slice(0, MAX_VIEWS).map(function (item, index) {
+      var center = item && Array.isArray(item.center) ? item.center : [];
+      var latitude = numberOrNull(center[0]);
+      var longitude = numberOrNull(center[1]);
+      var zoom = numberOrNull(item && item.zoom);
+      var name = IMB.text(item && item.name).trim();
       if (!name || latitude === null || longitude === null || zoom === null) {
         return null;
       }
@@ -84,62 +125,25 @@
     }).filter(Boolean);
   }
 
-  function createController(map) {
-    var payload = IMB.parsePayload();
-    var catalog = payload.catalog && payload.catalog.saved_views
-      ? payload.catalog.saved_views
-      : {};
-    var zh = IMB.text(document.documentElement.lang).toLocaleLowerCase().indexOf("zh") === 0;
-    var defaults = zh ? {
-      region: "保存视角",
-      overview: "总览",
-      save: "+ 保存视角",
-      manage: "管理视角",
-      close: "关闭",
-      default_name: "视角",
-      empty: "暂无保存视角。",
-      rename: "重命名",
-      delete: "删除",
-      rename_prompt: "重命名视角",
-      delete_confirm: "删除“{name}”吗？",
-      go_to: "前往 {name}",
-      limit_reached: "最多保存 8 个视角。",
-      save_hint: "保存当前地图中心和缩放级别。",
-      duplicate_name: "请输入唯一且非空的视角名称。",
-      save_prompt: "将当前视角保存为"
-    } : {
-      region: "Saved views",
-      overview: "Overview",
-      save: "+ Save view",
-      manage: "Manage saved views",
-      close: "Close",
-      default_name: "View",
-      empty: "No saved views yet.",
-      rename: "Rename",
-      delete: "Delete",
-      rename_prompt: "Rename view",
-      delete_confirm: "Delete “{name}”?",
-      go_to: "Go to {name}",
-      limit_reached: "You can save up to 8 views.",
-      save_hint: "Save the current map center and zoom.",
-      duplicate_name: "Use a unique, non-empty view name.",
-      save_prompt: "Save current view as"
-    };
-    function label(key, fallback) {
-      return IMB.text(catalog[key] || defaults[key] || fallback || key);
-    }
-
-    var header = document.querySelector(".imb-header");
-    var heading = header && header.querySelector(".imb-heading");
-    if (!header || !heading) {
+  function readMapView(map) {
+    try {
+      var center = map.getCenter();
+      return {
+        center: [Number(center.lat), Number(center.lng)],
+        zoom: Number(map.getZoom())
+      };
+    } catch (_error) {
       return null;
     }
+  }
 
-    var storageKey = "interactive-map-builder:saved-views:v1:" + hashString(mapIdentity(payload));
-    var storage = storageAdapter(storageKey);
+  function createController(map) {
+    var payload = IMB.parsePayload();
+    var text = labels(payload);
+    var storage = storageFor(payload);
     var views = [];
     try {
-      views = normalizeViews(JSON.parse(storage.read() || "[]"));
+      views = normalizeViews(JSON.parse(storage.get() || "[]"));
     } catch (_error) {
       views = [];
     }
@@ -148,47 +152,47 @@
     var activeId = "overview";
     var navigating = false;
     var sequence = views.length;
+    var header = document.querySelector(".imb-header");
+    var heading = header && header.querySelector(".imb-heading");
+    if (!header || !heading) {
+      return null;
+    }
 
-    var root = IMB.element("nav", undefined, "imb-saved-views");
-    root.id = "imb-saved-views";
-    root.setAttribute("aria-label", label("region", "Saved views"));
-
+    var nav = IMB.element("nav", undefined, "imb-saved-views");
+    nav.id = "imb-saved-views";
+    nav.setAttribute("aria-label", text.region);
     var strip = IMB.element("div", undefined, "imb-saved-view-strip");
-    var overviewButton = IMB.element("button", label("overview", "Overview"), "imb-saved-view-chip is-active");
+    var overviewButton = IMB.element("button", text.overview, "imb-saved-view-chip is-active");
     overviewButton.id = "imb-saved-view-overview";
     overviewButton.type = "button";
     overviewButton.dataset.viewId = "overview";
     overviewButton.setAttribute("aria-pressed", "true");
-
     var listNode = IMB.element("div", undefined, "imb-saved-view-list");
     listNode.id = "imb-saved-view-list";
-
-    var addButton = IMB.element("button", label("save", "+ Save view"), "imb-saved-view-add");
+    var addButton = IMB.element("button", text.save, "imb-saved-view-add");
     addButton.id = "imb-saved-view-add";
     addButton.type = "button";
-
     var manageButton = IMB.element("button", "⋯", "imb-saved-view-manage");
     manageButton.id = "imb-saved-view-manage";
     manageButton.type = "button";
-    manageButton.title = label("manage", "Manage saved views");
-    manageButton.setAttribute("aria-label", manageButton.title);
-
+    manageButton.title = text.manage;
+    manageButton.setAttribute("aria-label", text.manage);
     strip.appendChild(overviewButton);
     strip.appendChild(listNode);
     strip.appendChild(addButton);
     strip.appendChild(manageButton);
-    root.appendChild(strip);
-    heading.insertAdjacentElement("afterend", root);
+    nav.appendChild(strip);
+    heading.insertAdjacentElement("afterend", nav);
 
     var dialog = document.createElement("dialog");
     dialog.id = "imb-saved-view-dialog";
     dialog.className = "imb-saved-view-dialog";
     var dialogCard = IMB.element("div", undefined, "imb-saved-view-dialog-card");
     var dialogHeader = IMB.element("div", undefined, "imb-saved-view-dialog-header");
-    dialogHeader.appendChild(IMB.element("h2", label("manage", "Manage saved views")));
+    dialogHeader.appendChild(IMB.element("h2", text.manage));
     var closeButton = IMB.element("button", "×", "imb-saved-view-dialog-close");
     closeButton.type = "button";
-    closeButton.setAttribute("aria-label", label("close", "Close"));
+    closeButton.setAttribute("aria-label", text.close);
     dialogHeader.appendChild(closeButton);
     var dialogList = IMB.element("div", undefined, "imb-saved-view-dialog-list");
     dialogCard.appendChild(dialogHeader);
@@ -196,17 +200,17 @@
     dialog.appendChild(dialogCard);
     document.body.appendChild(dialog);
 
-    function updateQA() {
-      var center = map.getCenter();
+    function syncQA() {
+      var current = readMapView(map);
       IMB.qa.savedViews = {
         count: views.length,
         max: MAX_VIEWS,
         persistent: storage.persistent,
-        storageKey: storageKey,
+        storageKey: storage.key,
         activeId: activeId,
         overviewCaptured: Boolean(overview),
-        currentCenter: [Number(center.lat), Number(center.lng)],
-        currentZoom: Number(map.getZoom()),
+        currentCenter: current ? current.center.slice() : [null, null],
+        currentZoom: current ? current.zoom : null,
         views: views.map(function (view) {
           return {
             id: view.id,
@@ -219,8 +223,8 @@
     }
 
     function persist() {
-      storage.write(JSON.stringify(views));
-      updateQA();
+      storage.set(JSON.stringify(views));
+      syncQA();
     }
 
     function setActive(identifier) {
@@ -228,54 +232,51 @@
       overviewButton.classList.toggle("is-active", activeId === "overview");
       overviewButton.setAttribute("aria-pressed", activeId === "overview" ? "true" : "false");
       Array.prototype.forEach.call(listNode.querySelectorAll("[data-view-id]"), function (node) {
-        var active = node.dataset.viewId === activeId;
-        node.classList.toggle("is-active", active);
-        node.setAttribute("aria-pressed", active ? "true" : "false");
+        var selected = node.dataset.viewId === activeId;
+        node.classList.toggle("is-active", selected);
+        node.setAttribute("aria-pressed", selected ? "true" : "false");
       });
-      updateQA();
+      syncQA();
     }
 
-    function defaultName() {
-      var base = label("default_name", "View");
-      var number = 1;
-      var existing = new Set(views.map(function (view) { return view.name.toLocaleLowerCase(); }));
-      while (existing.has((base + " " + number).toLocaleLowerCase())) {
-        number += 1;
-      }
-      return base + " " + number;
-    }
-
-    function nameAvailable(name, excludedId) {
+    function uniqueName(name, exceptId) {
       var normalized = IMB.text(name).trim().toLocaleLowerCase();
       return Boolean(normalized) && !views.some(function (view) {
-        return view.id !== excludedId && view.name.toLocaleLowerCase() === normalized;
+        return view.id !== exceptId && view.name.toLocaleLowerCase() === normalized;
       });
     }
 
-    function renderDialog() {
+    function nextName() {
+      var used = new Set(views.map(function (view) { return view.name.toLocaleLowerCase(); }));
+      var index = 1;
+      while (used.has((text.defaultName + " " + index).toLocaleLowerCase())) {
+        index += 1;
+      }
+      return text.defaultName + " " + index;
+    }
+
+    function renderManager() {
       dialogList.replaceChildren();
       if (!views.length) {
-        dialogList.appendChild(IMB.element("p", label("empty", "No saved views yet."), "imb-saved-view-empty"));
+        dialogList.appendChild(IMB.element("p", text.empty, "imb-saved-view-empty"));
         return;
       }
       views.forEach(function (view) {
         var row = IMB.element("div", undefined, "imb-saved-view-dialog-row");
         row.appendChild(IMB.element("span", view.name, "imb-saved-view-dialog-name"));
         var actions = IMB.element("div", undefined, "imb-saved-view-dialog-actions");
-        var rename = IMB.element("button", label("rename", "Rename"), "imb-button imb-button-quiet");
+        var rename = IMB.element("button", text.rename, "imb-button imb-button-quiet");
         rename.type = "button";
         rename.addEventListener("click", function () {
-          var proposed = window.prompt(label("rename_prompt", "Rename view"), view.name);
-          if (proposed === null) {
-            return;
+          var proposed = window.prompt(text.renamePrompt, view.name);
+          if (proposed !== null) {
+            renameView(view.id, proposed, true);
           }
-          renameView(view.id, proposed, true);
         });
-        var remove = IMB.element("button", label("delete", "Delete"), "imb-button imb-saved-view-delete");
+        var remove = IMB.element("button", text.remove, "imb-button imb-saved-view-delete");
         remove.type = "button";
         remove.addEventListener("click", function () {
-          var message = label("delete_confirm", "Delete this saved view?").replace("{name}", view.name);
-          if (window.confirm(message)) {
+          if (window.confirm(text.deleteConfirm.replace("{name}", view.name))) {
             deleteView(view.id);
           }
         });
@@ -286,55 +287,43 @@
       });
     }
 
-    function renderViews() {
+    function render() {
       listNode.replaceChildren();
       views.forEach(function (view) {
         var button = IMB.element("button", view.name, "imb-saved-view-chip");
         button.type = "button";
         button.dataset.viewId = view.id;
-        button.setAttribute("aria-pressed", activeId === view.id ? "true" : "false");
-        button.classList.toggle("is-active", activeId === view.id);
-        button.title = label("go_to", "Go to {name}").replace("{name}", view.name);
-        button.addEventListener("click", function () {
-          goToView(view.id);
-        });
+        button.title = text.goTo.replace("{name}", view.name);
+        button.addEventListener("click", function () { goToView(view.id); });
         listNode.appendChild(button);
       });
       addButton.disabled = views.length >= MAX_VIEWS;
-      addButton.title = addButton.disabled
-        ? label("limit_reached", "Saved-view limit reached.")
-        : label("save_hint", "Save the current map center and zoom.");
+      addButton.title = addButton.disabled ? text.limit : text.saveHint;
       manageButton.hidden = !views.length;
-      renderDialog();
-      updateQA();
+      renderManager();
+      setActive(activeId);
     }
 
     function captureOverview() {
       if (overview) {
         return false;
       }
-      var center = map.getCenter();
-      overview = {
-        center: [Number(center.lat), Number(center.lng)],
-        zoom: Number(map.getZoom())
-      };
-      updateQA();
+      var current = readMapView(map);
+      if (!current) {
+        return false;
+      }
+      overview = current;
+      syncQA();
       return true;
     }
 
-    function navigate(center, zoom, identifier) {
-      var latitude = finiteNumber(center && center[0]);
-      var longitude = finiteNumber(center && center[1]);
-      var targetZoom = finiteNumber(zoom);
-      if (latitude === null || longitude === null || targetZoom === null) {
+    function navigate(view, identifier) {
+      if (!view) {
         return false;
       }
       navigating = true;
       setActive(identifier);
-      map.flyTo([latitude, longitude], targetZoom, {
-        animate: true,
-        duration: 0.55
-      });
+      map.flyTo(view.center, view.zoom, { animate: true, duration: 0.55 });
       window.setTimeout(function () {
         navigating = false;
         setActive(identifier);
@@ -344,106 +333,98 @@
 
     function goToView(identifier) {
       var requested = IMB.text(identifier);
-      if (requested === "overview" || requested === label("overview", "Overview")) {
-        return overview ? navigate(overview.center, overview.zoom, "overview") : false;
+      if (requested === "overview" || requested === text.overview) {
+        return navigate(overview, "overview");
       }
       var view = views.find(function (candidate) {
         return candidate.id === requested || candidate.name === requested;
       });
-      return view ? navigate(view.center, view.zoom, view.id) : false;
+      return view ? navigate(view, view.id) : false;
     }
 
     function saveView(name, center, zoom, alertOnError) {
       if (views.length >= MAX_VIEWS) {
-        if (alertOnError) {
-          window.alert(label("limit_reached", "Saved-view limit reached."));
-        }
+        if (alertOnError) { window.alert(text.limit); }
         return false;
       }
       var resolvedName = IMB.text(name).trim();
-      if (!resolvedName || !nameAvailable(resolvedName, "")) {
-        if (alertOnError) {
-          window.alert(label("duplicate_name", "Use a unique, non-empty view name."));
-        }
+      if (!uniqueName(resolvedName, "")) {
+        if (alertOnError) { window.alert(text.invalidName); }
         return false;
       }
-      var mapCenter = map.getCenter();
-      var requestedCenter = Array.isArray(center) ? center : [mapCenter.lat, mapCenter.lng];
-      var latitude = finiteNumber(requestedCenter[0]);
-      var longitude = finiteNumber(requestedCenter[1]);
-      var targetZoom = finiteNumber(zoom === undefined ? map.getZoom() : zoom);
-      if (latitude === null || longitude === null || targetZoom === null) {
+      var current = readMapView(map);
+      var requestedCenter = Array.isArray(center)
+        ? [numberOrNull(center[0]), numberOrNull(center[1])]
+        : (current && current.center);
+      var requestedZoom = numberOrNull(zoom === undefined ? current && current.zoom : zoom);
+      if (!requestedCenter || requestedCenter[0] === null || requestedCenter[1] === null || requestedZoom === null) {
         return false;
       }
       sequence += 1;
       var view = {
         id: "view-" + Date.now().toString(36) + "-" + sequence.toString(36),
         name: resolvedName,
-        center: [latitude, longitude],
-        zoom: targetZoom
+        center: requestedCenter,
+        zoom: requestedZoom
       };
       views.push(view);
+      activeId = view.id;
       persist();
-      setActive(view.id);
-      renderViews();
+      render();
       return view.id;
     }
 
     function renameView(identifier, name, alertOnError) {
-      var view = views.find(function (candidate) { return candidate.id === IMB.text(identifier); });
+      var requested = IMB.text(identifier);
+      var view = views.find(function (candidate) { return candidate.id === requested; });
       var resolvedName = IMB.text(name).trim();
-      if (!view || !nameAvailable(resolvedName, view.id)) {
-        if (alertOnError) {
-          window.alert(label("duplicate_name", "Use a unique, non-empty view name."));
-        }
+      if (!view || !uniqueName(resolvedName, requested)) {
+        if (alertOnError) { window.alert(text.invalidName); }
         return false;
       }
       view.name = resolvedName;
       persist();
-      renderViews();
+      render();
       return true;
     }
 
     function deleteView(identifier) {
       var requested = IMB.text(identifier);
-      var before = views.length;
-      views = views.filter(function (view) { return view.id !== requested; });
-      if (views.length === before) {
+      var next = views.filter(function (view) { return view.id !== requested; });
+      if (next.length === views.length) {
         return false;
       }
+      views = next;
       if (activeId === requested) {
-        setActive("");
+        activeId = "";
       }
       persist();
-      renderViews();
+      render();
       return true;
     }
 
     function clearViews() {
       views = [];
-      setActive("");
+      activeId = "";
       persist();
-      renderViews();
+      render();
       return true;
     }
 
-    overviewButton.addEventListener("click", function () {
-      goToView("overview");
-    });
+    overviewButton.addEventListener("click", function () { goToView("overview"); });
     addButton.addEventListener("click", function () {
       if (views.length >= MAX_VIEWS) {
         return;
       }
-      var proposed = window.prompt(label("save_prompt", "Save current view as"), defaultName());
-      if (proposed === null) {
-        return;
+      var proposed = window.prompt(text.savePrompt, nextName());
+      if (proposed !== null) {
+        saveView(proposed, null, undefined, true);
       }
-      saveView(proposed, null, undefined, true);
     });
     manageButton.addEventListener("click", function () {
-      renderDialog();
+      renderManager();
       if (typeof dialog.showModal === "function") {
-        dialog.showModal();
+        if (!dialog.open) { dialog.showModal(); }
       } else {
         dialog.setAttribute("open", "open");
       }
@@ -460,7 +441,6 @@
         dialog.close();
       }
     });
-
     map.on("dragstart zoomstart", function () {
       if (!navigating) {
         setActive("");
@@ -470,18 +450,12 @@
     IMB.qa.actions.saveView = function (name, center, zoom) {
       return saveView(name, center, zoom, false);
     };
-    IMB.qa.actions.goToView = function (identifier) {
-      return goToView(identifier);
-    };
+    IMB.qa.actions.goToView = goToView;
     IMB.qa.actions.renameView = function (identifier, name) {
       return renameView(identifier, name, false);
     };
-    IMB.qa.actions.deleteView = function (identifier) {
-      return deleteView(identifier);
-    };
-    IMB.qa.actions.clearSavedViews = function () {
-      return clearViews();
-    };
+    IMB.qa.actions.deleteView = deleteView;
+    IMB.qa.actions.clearSavedViews = clearViews;
     IMB.qa.actions.listSavedViews = function () {
       return views.map(function (view) {
         return {
@@ -493,15 +467,10 @@
       });
     };
 
-    renderViews();
-    updateQA();
-
+    render();
     return {
       captureOverview: captureOverview,
-      goToView: goToView,
-      saveView: saveView,
-      renameView: renameView,
-      deleteView: deleteView
+      goToView: goToView
     };
   }
 
@@ -513,7 +482,7 @@
 
   IMB.fitToGroups = function (map, groups) {
     var result = originalFitToGroups.apply(IMB, arguments);
-    if (map && map.__imbSavedViews && typeof map.__imbSavedViews.captureOverview === "function") {
+    if (map && map.__imbSavedViews) {
       window.setTimeout(function () {
         map.__imbSavedViews.captureOverview();
       }, 0);
