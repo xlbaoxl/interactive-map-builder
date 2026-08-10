@@ -27,22 +27,22 @@
   function labels(payload) {
     var zh = IMB.text(document.documentElement.lang).toLocaleLowerCase().indexOf("zh") === 0;
     var fallback = zh ? {
-      region: "保存视角",
-      overview: "总览",
-      save: "+ 保存视角",
-      manage: "管理视角",
-      close: "关闭",
-      defaultName: "视角",
-      empty: "暂无保存视角。",
-      rename: "重命名",
-      remove: "删除",
-      renamePrompt: "重命名视角",
-      deleteConfirm: "删除“{name}”吗？",
-      goTo: "前往 {name}",
-      limit: "最多保存 8 个视角。",
-      saveHint: "保存当前地图中心和缩放级别。",
-      invalidName: "请输入唯一且非空的视角名称。",
-      savePrompt: "将当前视角保存为"
+      region: "\u4fdd\u5b58\u89c6\u89d2",
+      overview: "\u603b\u89c8",
+      save: "+ \u4fdd\u5b58\u89c6\u89d2",
+      manage: "\u7ba1\u7406\u89c6\u89d2",
+      close: "\u5173\u95ed",
+      defaultName: "\u89c6\u89d2",
+      empty: "\u6682\u65e0\u4fdd\u5b58\u89c6\u89d2\u3002",
+      rename: "\u91cd\u547d\u540d",
+      remove: "\u5220\u9664",
+      renamePrompt: "\u91cd\u547d\u540d\u89c6\u89d2",
+      deleteConfirm: "\u5220\u9664\u201c{name}\u201d\u5417\uff1f",
+      goTo: "\u524d\u5f80 {name}",
+      limit: "\u6700\u591a\u4fdd\u5b58 8 \u4e2a\u89c6\u89d2\u3002",
+      saveHint: "\u4fdd\u5b58\u5f53\u524d\u5730\u56fe\u4e2d\u5fc3\u548c\u7f29\u653e\u7ea7\u522b\u3002",
+      invalidName: "\u8bf7\u8f93\u5165\u552f\u4e00\u4e14\u975e\u7a7a\u7684\u89c6\u89d2\u540d\u79f0\u3002",
+      savePrompt: "\u5c06\u5f53\u524d\u89c6\u89d2\u4fdd\u5b58\u4e3a"
     } : {
       region: "Saved views",
       overview: "Overview",
@@ -483,9 +483,10 @@
   IMB.fitToGroups = function (map, groups) {
     var result = originalFitToGroups.apply(IMB, arguments);
     if (map && map.__imbSavedViews) {
-      window.setTimeout(function () {
+      window.clearTimeout(map.__imbSavedViewsOverviewTimer);
+      map.__imbSavedViewsOverviewTimer = window.setTimeout(function () {
         map.__imbSavedViews.captureOverview();
-      }, 0);
+      }, 260);
     }
     return result;
   };
