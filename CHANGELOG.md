@@ -27,6 +27,27 @@ first release with an automated tag, distribution assets, and GitHub Release wor
 
 ## [Unreleased] / 未发布
 
+## [0.5.0] - 2026-08-11
+
+### Added / 新增
+
+- 两种现有地图产品新增 Saved Views 视角栏：可从顶部保存最多 8 个命名视角，只记录地图中心点
+  与缩放级别，并可在固定“总览”和各重点场地之间一键返回。
+  Added Saved Views to both existing map products: save up to eight named center-and-zoom views
+  from the header and return to them with one click alongside a fixed Overview entry.
+- 保存视角使用当前浏览器的本地存储，在同一地图刷新或重新打开后继续存在，并提供重命名、删除
+  和中英文界面；视角状态不会写回 HTML 或 MapSpec，也不会随地图文件发送到其他浏览器。
+  Persisted saved views in browser-local storage for the same generated map, with rename/delete and
+  bilingual controls; view state does not mutate HTML or MapSpec and does not travel with the map
+  file to another browser.
+
+### Changed / 变更
+
+- 包版本更新为 0.5.0；MapSpec 继续保持 1.1，仍复用 `map-list` 与 `multilayer` 两种模板，不新增
+  运行依赖或通用数据分析能力。
+  Updated the package to 0.5.0 while retaining MapSpec 1.1, the two existing templates, the current
+  dependency footprint, and the existing boundary against generic analytical modeling.
+
 ## [0.4.4] - 2026-07-28
 
 ### Added / 新增
