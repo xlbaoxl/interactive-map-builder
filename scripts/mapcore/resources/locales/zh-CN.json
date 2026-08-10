@@ -52,6 +52,24 @@
     "no_basemap": "无底图",
     "basemap_unavailable": "在线底图加载失败，已切换为无底图。"
   },
+  "saved_views": {
+    "region": "保存视角",
+    "overview": "总览",
+    "save": "+ 保存视角",
+    "manage": "管理视角",
+    "close": "关闭",
+    "defaultName": "视角",
+    "empty": "暂无保存视角。",
+    "rename": "重命名",
+    "remove": "删除",
+    "renamePrompt": "重命名视角",
+    "deleteConfirm": "删除“{name}”吗？",
+    "goTo": "前往 {name}",
+    "limit": "最多保存 8 个视角。",
+    "saveHint": "保存当前地图中心和缩放级别。",
+    "invalidName": "请输入唯一且非空的视角名称。",
+    "savePrompt": "将当前视角保存为"
+  },
   "map_list": {
     "eyebrow": "ATLAS 数据浏览器",
     "collapse": "收起清单",
