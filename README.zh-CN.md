@@ -42,6 +42,8 @@ GeoPackage、Shapefile、CSV、Excel 或 ArcGIS 数据，只询问真正影响�
   角色进行解析，让第一版总体协调，同时不替代设计师继续打磨。
 - **两种成熟地图产品**：可搜索筛选的“地图＋清单”，以及可独立开关点、线、面数据的
   “多图层地图”。
+- **v0.5.0 保存视角**：可在浏览器中保存最多 8 个命名的地图中心点与缩放级别，并在“总览”和
+  重点场地之间一键切换；视角状态不写入 MapSpec。
 - **本地单文件交付**：Leaflet、界面逻辑和业务几何都嵌入 `map.html`；只有在线底图需要网络。
 - **按需生成静态图**：只有用户明确要求时，才从同一视觉方案生成 16:9 PNG 或论文用
   PNG、SVG 和 PDF。
@@ -351,7 +353,7 @@ interactive-map-builder build --spec map_spec.json --out dist --bundle-sources
 interactive-map-builder verify --dist dist
 ```
 
-独立的点、线、面业务图层使用 `--template multilayer`，不填写 `--primary-layer`。
+独立的点、线、面业务图层使用 `--template multilayer`，不填写 `--primary_layer`。
 
 </details>
 
@@ -373,9 +375,9 @@ Interactive Map Builder 专注于**已有空间数据 → 可交付地图成品*
 
 ## 项目状态
 
-当前稳定版本为 **v0.4.4**。本次稳定化更新引入事务性交付、受管文件清单和严格验证；普通任务
-改为带缓存、只检查不修改的版本预检；ZIP 解压加入资源上限；手动 Release 只允许修复既有标签。
-MapSpec 继续保持 1.1，制图范围与 Atlas Studio Light 视觉行为不变。
+**v0.5.0** 新增浏览器本地持久化的保存视角功能，两种现有地图产品都可以保存最多 8 个命名的
+Center + Zoom 视角，在“总览”和重点场地之间一键切换，并支持重命名和删除。该状态不会修改
+MapSpec 或交付的 HTML 文件；MapSpec 继续保持 1.1，两种既有模板不变。
 
 已经完成的变化见[更新日志](CHANGELOG.md)。
 
