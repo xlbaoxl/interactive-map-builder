@@ -353,7 +353,7 @@ interactive-map-builder build --spec map_spec.json --out dist --bundle-sources
 interactive-map-builder verify --dist dist
 ```
 
-独立的点、线、面业务图层使用 `--template multilayer`，不填写 `--primary_layer`。
+独立的点、线、面业务图层使用 `--template multilayer`，不填写 `--primary-layer`。
 
 </details>
 
