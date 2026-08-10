@@ -43,6 +43,8 @@ No frontend build system, no hand-written Folium page, and no hidden cleanup.
   designer's work.
 - **Two polished map products** — a searchable map-and-list explorer and a toggleable multilayer
   explorer for points, lines, and polygons.
+- **Saved Views in v0.5.0** — save up to eight named map centers and zoom levels in the browser,
+  then jump between Overview and key sites during analysis or presentation without changing MapSpec.
 - **Portable local delivery** — Leaflet, interface code, and business geometry are embedded in one
   `map.html`; only online basemap tiles require a network connection.
 - **Opt-in report exports** — generate 16:9 PNG or publication PNG/SVG/PDF from the same visual
@@ -399,10 +401,10 @@ but does not silently switch rendering engines.
 
 ## Project status
 
-The current stable release is **v0.4.4**. This stabilization release makes delivery transactional,
-adds a managed-file manifest and strict verification, moves ordinary release preflight to cached
-check-only behavior, limits ZIP extraction resources, and restricts manual Release runs to repairing
-an existing tag. MapSpec remains 1.1 and cartographic behavior is unchanged.
+The **v0.5.0** release adds browser-persistent Saved Views to both existing map products: save up to
+eight named center-and-zoom positions, return to Overview or key sites with one click, and manage
+those views without changing MapSpec or the delivered HTML file. MapSpec remains 1.1 and the two
+existing template families remain unchanged.
 
 See the [changelog](CHANGELOG.md) for completed work.
 
