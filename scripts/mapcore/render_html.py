@@ -213,7 +213,9 @@ def _template_assets(template_name: str) -> Dict[str, str]:
     """Return shared assets plus narrowly scoped template enhancements."""
 
     javascript = read_resource_text("templates", "shared.js")
+    javascript += "\n" + read_resource_text("templates", "saved-views.js")
     css = read_resource_text("templates", "atlas-studio-light.css")
+    css += "\n" + read_resource_text("templates", "saved-views.css")
     if template_name == "multilayer":
         javascript += "\n" + read_resource_text(
             "templates", "multilayer-enhancements.js"
