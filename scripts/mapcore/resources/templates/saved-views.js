@@ -25,25 +25,7 @@
   }
 
   function labels(payload) {
-    var zh = IMB.text(document.documentElement.lang).toLocaleLowerCase().indexOf("zh") === 0;
-    var fallback = zh ? {
-      region: "\u4fdd\u5b58\u89c6\u89d2",
-      overview: "\u603b\u89c8",
-      save: "+ \u4fdd\u5b58\u89c6\u89d2",
-      manage: "\u7ba1\u7406\u89c6\u89d2",
-      close: "\u5173\u95ed",
-      defaultName: "\u89c6\u89d2",
-      empty: "\u6682\u65e0\u4fdd\u5b58\u89c6\u89d2\u3002",
-      rename: "\u91cd\u547d\u540d",
-      remove: "\u5220\u9664",
-      renamePrompt: "\u91cd\u547d\u540d\u89c6\u89d2",
-      deleteConfirm: "\u5220\u9664\u201c{name}\u201d\u5417\uff1f",
-      goTo: "\u524d\u5f80 {name}",
-      limit: "\u6700\u591a\u4fdd\u5b58 8 \u4e2a\u89c6\u89d2\u3002",
-      saveHint: "\u4fdd\u5b58\u5f53\u524d\u5730\u56fe\u4e2d\u5fc3\u548c\u7f29\u653e\u7ea7\u522b\u3002",
-      invalidName: "\u8bf7\u8f93\u5165\u552f\u4e00\u4e14\u975e\u7a7a\u7684\u89c6\u89d2\u540d\u79f0\u3002",
-      savePrompt: "\u5c06\u5f53\u524d\u89c6\u89d2\u4fdd\u5b58\u4e3a"
-    } : {
+    var fallback = {
       region: "Saved views",
       overview: "Overview",
       save: "+ Save view",
@@ -64,10 +46,11 @@
     var configured = payload.catalog && payload.catalog.saved_views
       ? payload.catalog.saved_views
       : {};
-    Object.keys(configured).forEach(function (key) {
-      fallback[key] = IMB.text(configured[key]);
+    var resolved = {};
+    Object.keys(fallback).forEach(function (key) {
+      resolved[key] = IMB.text(configured[key] || fallback[key]);
     });
-    return fallback;
+    return resolved;
   }
 
   function storageFor(payload) {
