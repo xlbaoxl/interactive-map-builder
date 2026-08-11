@@ -233,26 +233,75 @@
   },
   "landing": {
     "language_name": "English",
-    "page_title": "Interactive Map Builder——从空间数据到精致地图产品",
-    "description": "一个先检查空间数据、解析克制的几何感知视觉默认值，再生成交互地图、浏览器验证和汇报图件的 Agent Skill。",
+    "page_title": "Interactive Map Builder——从空间数据到可交付地图产品",
+    "description": "把已有空间数据转化为可搜索、可切换图层、可保存重点视角、可直接交付的交互式地图产品。",
+    "nav_features": "能力",
     "nav_demos": "演示",
-    "nav_workflow": "工作流",
-    "eyebrow": "面向高质量地图交付的 AGENT SKILL",
+    "nav_workflow": "可靠性",
+    "eyebrow": "面向地图成果交付的 AGENT SKILL",
     "hero_title": "输入空间数据，交付地图产品。",
-    "hero_body": "把 Excel、CSV、GeoJSON、GeoPackage 和 Shapefile 转化为可搜索交互地图、汇报图片和论文图件，内置 Atlas Studio Light 视觉默认值、数据检查、来源记录和浏览器验证。",
+    "hero_body": "把已有空间数据转化为可搜索、可筛选、可切换图层、可保存重点视角的交互地图，并按需输出汇报和论文图件。适用于规划、研究、空间数据展示与成果交付。",
+    "hero_visual_label": "真实多图层地图产品预览",
+    "hero_badges": [
+      "搜索与筛选",
+      "图层控制",
+      "保存视角",
+      "单文件 HTML"
+    ],
     "explore": "查看在线演示",
     "source": "在 GitHub 查看源码",
-    "demo_eyebrow": "真实数据 · 真实生成的 HTML",
-    "demo_title": "两种地图产品，不是两张设计稿。",
-    "demo_body": "两个演示均由仓库内的确定性引擎根据固定的 NYC Open Data 快照构建。",
+    "capabilities_eyebrow": "核心产品能力",
+    "capabilities_title": "围绕地图完成探索、聚焦和交付。",
+    "capabilities_body": "地图始终是主界面：快速找到对象、切换空间上下文、保存重点位置，并把结果作为一个可直接发送的成果交付。",
+    "capabilities": [
+      [
+        "搜索与筛选",
+        "按名称或属性查找对象，筛选类别与数值范围，排序结果，并查看要素详情。"
+      ],
+      [
+        "图层控制",
+        "在中性总览和重点图层之间切换，同时独立控制图层显隐、图例与底图。"
+      ],
+      [
+        "保存视角",
+        "在浏览器中保存最多 8 个命名的 Center + Zoom 视角，不必重新制作地图即可返回重点场地。"
+      ],
+      [
+        "成果交付",
+        "交付自包含的 HTML 地图；只有明确需要时，再生成适合汇报或论文的静态图件。"
+      ]
+    ],
+    "demo_eyebrow": "两种地图产品 · 真实生成的 HTML",
+    "demo_title": "根据任务选择交互方式，而不是套同一个页面。",
+    "demo_body": "两个演示都由仓库中的确定性引擎根据固定的 NYC Open Data 快照生成；主页嵌入的是实际产品，而不是另外绘制的设计稿。",
     "map_list_title": "Lower Manhattan 地块浏览器",
-    "map_list_body": "搜索地址，筛选用地类别与数值字段，排序记录，并查看所选地块详情。",
+    "map_list_body": "通过地图与清单联动完成搜索、筛选、排序、动态统计和单个对象详情查看。",
     "multilayer_title": "Downtown Brooklyn 交通环境",
-    "multilayer_body": "查看地铁站、自行车线路与邻里分区，独立控制图层并按业务图层搜索。",
+    "multilayer_body": "从总览进入图层聚焦，独立控制显隐和空间上下文，并把汇报中需要反复返回的位置保存为命名视角。",
     "open_map": "打开在线地图",
-    "workflow_eyebrow": "一条可审计的交付路径",
-    "workflow_title": "检查、确认、配置、构建、验证。",
-    "workflow_body": "Skill 负责补齐需求，Atlas Studio Light 提供协调的视觉起点，Python 引擎负责确定性数据处理和渲染。",
+    "journey_eyebrow": "探索 → 聚焦 → 汇报",
+    "journey_title": "从全局地图走到真正需要讲的地点。",
+    "journey_body": "保存视角不是一个孤立按钮，而是汇报工作流的一部分：先整体探索，再查看场地上下文，最后在汇报时准确返回同一个位置。",
+    "journey": [
+      [
+        "探索",
+        "先看整体",
+        "搜索对象、切换图层、筛选当前数据，先理解全局空间格局。"
+      ],
+      [
+        "聚焦",
+        "再看一个地点",
+        "缩放到重点场地，结合周边图层理解空间上下文，让地图承担解释位置的任务。"
+      ],
+      [
+        "汇报",
+        "保存并快速返回",
+        "保存命名的 Center + Zoom 视角，在总览和重点场地之间一键切换，让汇报路径保持连贯。"
+      ]
+    ],
+    "workflow_eyebrow": "为可靠交付而构建",
+    "workflow_title": "产品体验背后是一条可审计的构建路径。",
+    "workflow_body": "Agent 负责理解意图和补齐阻塞信息，MapSpec 记录构建契约，确定性引擎统一负责数据处理、渲染、浏览器检查和交付验证。",
     "steps": [
       [
         "检查",
@@ -268,13 +317,17 @@
       ],
       [
         "构建",
-        "生成单文件 Leaflet 应用与静态图。"
+        "生成自包含 Leaflet 地图和用户明确要求的汇报图件。"
       ],
       [
         "验证",
-        "检查浏览器行为、数量、哈希和数据来源。"
+        "检查浏览器行为、数量、哈希、数据来源与最终交付清单。"
       ]
     ],
+    "cta_title": "先体验产品，再查看实现。",
+    "cta_body": "打开任一在线地图体验当前产品界面；需要进一步了解时，再进入 GitHub 查看 Agent Skill、MapSpec、测试和版本记录。",
+    "cta_primary": "打开在线演示",
+    "cta_secondary": "查看 GitHub",
     "footer": "Interactive Map Builder · MIT 许可证"
   }
 }
