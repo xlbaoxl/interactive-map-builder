@@ -213,6 +213,6 @@ def test_saved_views_navigation_persistence_and_management(
         list_box = page.locator("#imb-saved-view-list").bounding_box()
         last_box = page.locator("#imb-saved-view-list .imb-saved-view-chip").nth(7).bounding_box()
         assert list_box is not None and last_box is not None
-        assert last_box["left"] >= list_box["left"] - 1
-        assert last_box["right"] <= list_box["right"] + 1
+        assert last_box["x"] >= list_box["x"] - 1
+        assert last_box["x"] + last_box["width"] <= list_box["x"] + list_box["width"] + 1
         browser.close()
