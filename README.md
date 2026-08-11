@@ -401,10 +401,9 @@ but does not silently switch rendering engines.
 
 ## Project status
 
-The **v0.5.0** release adds browser-persistent Saved Views to both existing map products: save up to
-eight named center-and-zoom positions, return to Overview or key sites with one click, and manage
-those views without changing MapSpec or the delivered HTML file. MapSpec remains 1.1 and the two
-existing template families remain unchanged.
+The current stable release is **v0.5.1**. This hotfix preserves the v0.5.0 Saved Views workflow and
+keeps Overview, Save View, and management controls visible when the named-view list overflows at
+higher view counts. MapSpec remains 1.1 and the two existing template families remain unchanged.
 
 See the [changelog](CHANGELOG.md) for completed work.
 

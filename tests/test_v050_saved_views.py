@@ -166,4 +166,53 @@ def test_saved_views_navigation_persistence_and_management(
         ) is False
         assert page.locator("#imb-saved-view-list .imb-saved-view-chip").count() == 8
         assert page.locator("#imb-saved-view-add").is_disabled()
+
+        page.set_viewport_size({"width": 1100, "height": 760})
+        page.wait_for_timeout(200)
+        layout = page.evaluate(
+            """() => {
+                const strip = document.querySelector('.imb-saved-view-strip');
+                const list = document.getElementById('imb-saved-view-list');
+                const add = document.getElementById('imb-saved-view-add');
+                const manage = document.getElementById('imb-saved-view-manage');
+                const root = document.getElementById('imb-saved-views');
+                const listRect = list.getBoundingClientRect();
+                const addRect = add.getBoundingClientRect();
+                const manageRect = manage.getBoundingClientRect();
+                const rootRect = root.getBoundingClientRect();
+                return {
+                    scrollWidth: list.scrollWidth,
+                    clientWidth: list.clientWidth,
+                    listRight: listRect.right,
+                    addLeft: addRect.left,
+                    addRight: addRect.right,
+                    manageLeft: manageRect.left,
+                    manageRight: manageRect.right,
+                    rootLeft: rootRect.left,
+                    rootRight: rootRect.right,
+                    listOverflowX: getComputedStyle(list).overflowX,
+                    stripOverflowX: getComputedStyle(strip).overflowX,
+                };
+            }"""
+        )
+        assert layout["scrollWidth"] > layout["clientWidth"]
+        assert layout["listOverflowX"] in {"auto", "scroll"}
+        assert layout["stripOverflowX"] == "hidden"
+        assert layout["listRight"] <= layout["addLeft"] + 1
+        assert layout["addRight"] <= layout["manageLeft"] + 1
+        assert layout["addLeft"] >= layout["rootLeft"] - 1
+        assert layout["manageRight"] <= layout["rootRight"] + 1
+
+        page.evaluate(
+            """() => {
+                const list = document.getElementById('imb-saved-view-list');
+                list.scrollLeft = list.scrollWidth;
+            }"""
+        )
+        page.wait_for_timeout(100)
+        list_box = page.locator("#imb-saved-view-list").bounding_box()
+        last_box = page.locator("#imb-saved-view-list .imb-saved-view-chip").nth(7).bounding_box()
+        assert list_box is not None and last_box is not None
+        assert last_box["x"] >= list_box["x"] - 1
+        assert last_box["x"] + last_box["width"] <= list_box["x"] + list_box["width"] + 1
         browser.close()
