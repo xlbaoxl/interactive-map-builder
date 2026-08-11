@@ -166,4 +166,50 @@ def test_saved_views_navigation_persistence_and_management(
         ) is False
         assert page.locator("#imb-saved-view-list .imb-saved-view-chip").count() == 8
         assert page.locator("#imb-saved-view-add").is_disabled()
+
+        page.set_viewport_size({"width": 1100, "height": 760})
+        page.wait_for_timeout(200)
+        layout = page.evaluate(
+            """() => {
+                const list = document.getElementById('imb-saved-view-list');
+                const add = document.getElementById('imb-saved-view-add');
+                const manage = document.getElementById('imb-saved-view-manage');
+                const root = document.getElementById('imb-saved-views');
+                const addRect = add.getBoundingClientRect();
+                const manageRect = manage.getBoundingClientRect();
+                const rootRect = root.getBoundingClientRect();
+                const overlapsControls = Array.from(list.querySelectorAll('.imb-saved-view-chip')).some((chip) => {
+                    const rect = chip.getBoundingClientRect();
+                    const overlapsAdd = rect.right > addRect.left && rect.left < addRect.right;
+                    const overlapsManage = rect.right > manageRect.left && rect.left < manageRect.right;
+                    return overlapsAdd || overlapsManage;
+                });
+                return {
+                    scrollWidth: list.scrollWidth,
+                    clientWidth: list.clientWidth,
+                    addLeft: addRect.left,
+                    manageRight: manageRect.right,
+                    rootLeft: rootRect.left,
+                    rootRight: rootRect.right,
+                    overlapsControls: overlapsControls,
+                };
+            }"""
+        )
+        assert layout["scrollWidth"] > layout["clientWidth"]
+        assert layout["overlapsControls"] is False
+        assert layout["addLeft"] >= layout["rootLeft"] - 1
+        assert layout["manageRight"] <= layout["rootRight"] + 1
+
+        page.evaluate(
+            """() => {
+                const list = document.getElementById('imb-saved-view-list');
+                list.scrollLeft = list.scrollWidth;
+            }"""
+        )
+        page.wait_for_timeout(100)
+        list_box = page.locator("#imb-saved-view-list").bounding_box()
+        last_box = page.locator("#imb-saved-view-list .imb-saved-view-chip").nth(7).bounding_box()
+        assert list_box is not None and last_box is not None
+        assert last_box["left"] >= list_box["left"] - 1
+        assert last_box["right"] <= list_box["right"] + 1
         browser.close()
