@@ -171,32 +171,35 @@ def test_saved_views_navigation_persistence_and_management(
         page.wait_for_timeout(200)
         layout = page.evaluate(
             """() => {
+                const strip = document.querySelector('.imb-saved-view-strip');
                 const list = document.getElementById('imb-saved-view-list');
                 const add = document.getElementById('imb-saved-view-add');
                 const manage = document.getElementById('imb-saved-view-manage');
                 const root = document.getElementById('imb-saved-views');
+                const listRect = list.getBoundingClientRect();
                 const addRect = add.getBoundingClientRect();
                 const manageRect = manage.getBoundingClientRect();
                 const rootRect = root.getBoundingClientRect();
-                const overlapsControls = Array.from(list.querySelectorAll('.imb-saved-view-chip')).some((chip) => {
-                    const rect = chip.getBoundingClientRect();
-                    const overlapsAdd = rect.right > addRect.left && rect.left < addRect.right;
-                    const overlapsManage = rect.right > manageRect.left && rect.left < manageRect.right;
-                    return overlapsAdd || overlapsManage;
-                });
                 return {
                     scrollWidth: list.scrollWidth,
                     clientWidth: list.clientWidth,
+                    listRight: listRect.right,
                     addLeft: addRect.left,
+                    addRight: addRect.right,
+                    manageLeft: manageRect.left,
                     manageRight: manageRect.right,
                     rootLeft: rootRect.left,
                     rootRight: rootRect.right,
-                    overlapsControls: overlapsControls,
+                    listOverflowX: getComputedStyle(list).overflowX,
+                    stripOverflowX: getComputedStyle(strip).overflowX,
                 };
             }"""
         )
         assert layout["scrollWidth"] > layout["clientWidth"]
-        assert layout["overlapsControls"] is False
+        assert layout["listOverflowX"] in {"auto", "scroll"}
+        assert layout["stripOverflowX"] == "hidden"
+        assert layout["listRight"] <= layout["addLeft"] + 1
+        assert layout["addRight"] <= layout["manageLeft"] + 1
         assert layout["addLeft"] >= layout["rootLeft"] - 1
         assert layout["manageRight"] <= layout["rootRight"] + 1
 
