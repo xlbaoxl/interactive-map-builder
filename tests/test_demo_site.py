@@ -64,6 +64,7 @@ def test_demo_site_builds_atlas_landing_without_changing_source_assets(tmp_path:
     assert 'src="./en-US/multilayer/"' in root_html
     assert "Downtown Brooklyn mobility context" in root_html
     assert 'href="./zh-CN/"' in root_html
+    assert ".cta .button:not(.primary){color:var(--ink)}" in root_html
 
     english_landing = (site / "en-US" / "index.html").read_text(encoding="utf-8")
     chinese_landing = (site / "zh-CN" / "index.html").read_text(encoding="utf-8")
