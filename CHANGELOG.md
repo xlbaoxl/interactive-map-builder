@@ -27,6 +27,15 @@ first release with an automated tag, distribution assets, and GitHub Release wor
 
 ## [Unreleased] / 未发布
 
+## [0.5.1] - 2026-08-11
+
+### Fixed / 修复
+
+- 修复保存较多命名视角时，顶部视角按钮挤压或覆盖 `+ 保存视角` 与管理入口的问题；命名视角
+  现在只在自己的横向滚动区域中溢出，固定“总览”、保存和管理入口始终保持可见。
+  Fixed Saved Views overflow at higher view counts: named views now scroll inside their own header
+  region so Overview, Save View, and management controls remain visible instead of overlapping.
+
 ## [0.5.0] - 2026-08-11
 
 ### Added / 新增
@@ -299,7 +308,7 @@ first release with an automated tag, distribution assets, and GitHub Release wor
 - 对包含多个独立图层、多个阻塞性设计选择或多种协同输出的 Codex 任务，可在第一轮将 Plan
   mode 作为一次性可选建议；用户不切换也继续推进，明确单图层任务不提示。
   Restored Plan mode as a one-time optional Codex suggestion for genuinely complex tasks without
-  making it a prerequisite or recommending it for clear single-layer work.
+  making it a prerequisite or recommending it for clear single-layer requests.
 
 ### Fixed / 修复
 
@@ -425,7 +434,7 @@ first release with an automated tag, distribution assets, and GitHub Release wor
 ### Changed / 变更
 
 - 重新设计共享 HTML、CSS 和 JavaScript 模板，统一清单地图与多图层地图的响应式界面。
-  Redesigned the shared HTML, CSS, and JavaScript templates for a consistent responsive map-list
+  Redesigned the shared HTML, CSS and JavaScript templates for a consistent responsive map-list
   and multilayer interface.
 - 将用地示例升级为可搜索、可分类的 Lower Manhattan 地块地图，并更新演示截图和说明。
   Upgraded the land-use example to a searchable, classified Lower Manhattan parcel map and
