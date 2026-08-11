@@ -62,12 +62,14 @@ jobs:
         run: |
           set -o pipefail
           python -m pytest -q -m browser 2>&1 | tee pytest-browser.log
-      - name: Upload browser test log
+      - name: Upload browser test log and visual QA screenshots
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: pytest-browser
-          path: pytest-browser.log
+          path: |
+            pytest-browser.log
+            qa-screenshots
           if-no-files-found: warn
           retention-days: 7
 
