@@ -2,7 +2,7 @@
 
 # Interactive Map Builder
 
-**Turn existing spatial data into polished, verified map products with an AI agent.**
+**Turn existing spatial data into searchable, presentation-ready, verified map products with an AI agent.**
 
 [![CI](https://github.com/xlbaoxl/interactive-map-builder/actions/workflows/ci.yml/badge.svg)](https://github.com/xlbaoxl/interactive-map-builder/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/xlbaoxl/interactive-map-builder)](https://github.com/xlbaoxl/interactive-map-builder/releases)
@@ -10,67 +10,63 @@
 [![MapSpec 1.1](https://img.shields.io/badge/MapSpec-1.1-0f766e)](references/map-spec.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-2ea44f.svg)](LICENSE)
 
-[Live demos](https://xlbaoxl.github.io/interactive-map-builder/) ·
+[Product homepage](https://xlbaoxl.github.io/interactive-map-builder/) ·
 [中文说明](README.zh-CN.md) ·
 [Releases](https://github.com/xlbaoxl/interactive-map-builder/releases) ·
 [Changelog](CHANGELOG.md)
 
 </div>
 
-Interactive Map Builder is a **Codex-first Agent Skill** for turning GeoJSON, GeoPackage,
-Shapefile, CSV, Excel, and ArcGIS data into portable map products. The Agent recognizes the goal
-from ordinary language—even when the user never says GIS, Leaflet, web map, or the Skill name—then
-inspects the data, closes only blocking requirements gaps, writes an auditable MapSpec, resolves
-a restrained geometry-aware visual starting point, builds a self-contained Leaflet app, verifies
-the result, and exports slide or paper figures only when requested.
+Interactive Map Builder is a **Codex-first Agent Skill** for turning existing spatial data into
+portable map products. Describe the outcome in ordinary language, attach GeoJSON, GeoPackage,
+Shapefile, CSV, Excel, or ArcGIS data, and the Agent inspects the inputs, closes only blocking
+requirements gaps, writes an auditable MapSpec, builds the appropriate map product, and verifies the
+final handoff.
 
 ```text
-User intent + spatial data → inspect → confirm → MapSpec → build → verify → HTML + optional PNG/SVG/PDF
+Existing spatial data → inspect → confirm → MapSpec → build → verify → portable HTML + optional figures
 ```
 
-No frontend build system, no hand-written Folium page, and no hidden cleanup.
+The product stays deliberately map-first: it helps people **find spatial objects, understand them in
+context, save important viewpoints, and deliver the result** without turning the browser page into a
+generic BI dashboard.
 
-## Highlights
+## Core product capabilities
 
-- **Intent-based activation** — recognizes requests such as “make this spreadsheet searchable on a
-  map” or “combine roads, water, green space, and parking in one presentation page.”
-- **Agent-guided setup** — works from the user's question and inspected data instead of requiring
-  GIS terminology up front.
-- **Deterministic builds** — the Agent writes MapSpec 1.1; the Python engine owns loading,
-  normalization, visual resolution, rendering, and validation.
-- **Atlas Studio Light defaults** — omitted visual values are resolved from geometry, coarse
-  density, and layer role so the first result is coordinated without pretending to finish the
-  designer's work.
-- **Two polished map products** — a searchable map-and-list explorer and a toggleable multilayer
-  explorer for points, lines, and polygons.
-- **Saved Views in v0.5.0** — save up to eight named map centers and zoom levels in the browser,
-  then jump between Overview and key sites during analysis or presentation without changing MapSpec.
-- **Portable local delivery** — Leaflet, interface code, and business geometry are embedded in one
-  `map.html`; only online basemap tiles require a network connection.
-- **Opt-in report exports** — generate 16:9 PNG or publication PNG/SVG/PDF from the same visual
-  plan only when those files are explicitly requested.
-- **Auditable handoff** — every build records inspection results, repairs, generated IDs,
-  performance warnings, source notes, hashes, and portability.
-- **Cached, non-mutating release preflight** — Skill tasks check the official Release at most once
-  per 24 hours, never modify the running installation, and keep offline work unblocked.
-- **Install self-check** — `interactive-map-builder doctor` runs a complete offline build and hash
-  verification after installation.
-- **Reliable map controls** — multilayer maps open in a neutral overview, use one compact layer
-  selector for search focus, keep visibility switches separate, and provide CARTO Positron,
-  OpenStreetMap Standard, plus a no-basemap fallback.
-- **Cross-agent evaluation** — 40 English and Chinese cases cover activation, optional planning,
-  local-versus-public delivery, and out-of-scope requests.
+- **Search & filter.** Find records by name or attributes, filter categories and numeric ranges,
+  sort results, and inspect feature details without reopening desktop GIS.
+- **Layer control.** Move between a neutral overview and layer-focused exploration while controlling
+  visibility, legends, and basemaps independently.
+- **Saved Views.** Save up to eight named center-and-zoom positions in the current browser, then
+  return to Overview or key sites during exploration and presentation. Saved Views do not change
+  MapSpec or mutate the delivered HTML file.
+- **Portable delivery.** Deliver a self-contained `map.html`; generate 16:9 or publication
+  PNG/SVG/PDF outputs only when they are explicitly requested.
 
-## Live demos
+## Two map products
 
-| Search, filter, compare | Explore independent layers |
+| Map + list | Multilayer |
 | --- | --- |
 | [![Parcel classification and statistics](assets/screenshots/en-US/map-list.png)](https://xlbaoxl.github.io/interactive-map-builder/en-US/map-list/) | [![Multilayer point-line-polygon explorer](assets/screenshots/en-US/multilayer.png)](https://xlbaoxl.github.io/interactive-map-builder/en-US/multilayer/) |
-| **Map + list.** Search addresses and attributes, filter categories and numeric ranges, sort records, watch KPIs update, and inspect a selected parcel. | **Multilayer.** Start from a neutral overview, choose one layer to search and emphasize, toggle visibility independently, switch basemaps, and inspect feature details. |
-| [Open live demo →](https://xlbaoxl.github.io/interactive-map-builder/en-US/map-list/) | [Open live demo →](https://xlbaoxl.github.io/interactive-map-builder/en-US/multilayer/) |
+| **Map + list.** Find, filter, sort, and compare records through linked list-map interaction, KPI summaries, and a detail panel. Best for parcels, buildings, facilities, stores, projects, events, or candidate sites. | **Multilayer.** Explore several independent spatial themes from Overview, focus one searchable layer, control visibility separately, inspect feature details, and save key map views. Best for boundaries, roads, routes, facilities, environmental layers, and planning context. |
+| [Open live map →](https://xlbaoxl.github.io/interactive-map-builder/en-US/map-list/) | [Open live map →](https://xlbaoxl.github.io/interactive-map-builder/en-US/multilayer/) |
 
-Both demos are generated by the repository's deterministic engine from fixed
-[NYC Open Data snapshots](assets/examples/SOURCES.md); they are not separate design mockups.
+Both live maps are generated by the repository's deterministic engine from fixed
+[NYC Open Data snapshots](assets/examples/SOURCES.md). They are real outputs, not separate design
+mockups.
+
+## Explore → Focus → Present
+
+```mermaid
+flowchart LR
+    A["Explore<br/>Search · filter · switch layers"] --> B["Focus<br/>Inspect one place in context"]
+    B --> C["Present<br/>Save and revisit key views"]
+```
+
+A common workflow starts with the whole map, narrows to one or more important sites, and then needs
+to return to those exact map positions during a meeting or review. **Saved Views** completes that
+flow: it records only browser-local Center + Zoom state, keeps a fixed Overview entry, supports
+rename/delete, and remains separate from the map's data and MapSpec contract.
 
 ## Ask for the outcome, not the tool
 
@@ -83,7 +79,7 @@ filter by type, click a record, and share the result.
 
 ```text
 Combine the parcel, road, water, green-space, and parking layers into one planning presentation
-map with layer switches and object details.
+map with layer switches, object details, and a few viewpoints I can return to while presenting.
 ```
 
 ```text
@@ -137,8 +133,7 @@ interactive-map-builder update --preflight
 packaged Leaflet resources and output hashes, prints a JSON result, and removes the temporary
 files. It does not download basemaps or send usage telemetry. The update command prints structured
 JSON containing the local version, official version when known, source, installation type, and
-status.
-For a cached status-only query, run `interactive-map-builder update --check`.
+status. For a cached status-only query, run `interactive-map-builder update --check`.
 
 Prefer `interactive-map-builder doctor` after installation. In a source checkout where the console
 command is not yet available, use `python scripts/cli.py doctor`. The internal
@@ -211,6 +206,44 @@ directory.
 
 </details>
 
+## Built for reliable handoff
+
+The product-facing interactions sit on one deterministic delivery path rather than separate ad hoc
+web pages:
+
+```text
+User request + spatial files
+           │
+           ▼
+       inspect inputs
+  CRS · geometry · fields · scale
+           │
+           ▼
+  confirm unresolved intent once
+           │
+           ▼
+        MapSpec 1.1
+           │
+           ▼
+ Atlas Studio Light resolver
+ geometry · density · role · order
+           │
+           ▼
+ deterministic Python engine
+ load · normalize · render
+           │
+           ▼
+ verify counts, files, QA hooks,
+ provenance, hashes, and browser UI
+           │
+           ▼
+  portable HTML + report figures
+```
+
+The packaged [JSON Schema](scripts/mapcore/resources/map-spec.schema.json) is the only
+machine-readable MapSpec contract. Canonical keys use `snake_case`; unsupported fields and schema
+versions are rejected instead of being silently migrated.
+
 ## Updates, planning, and public deployment
 
 At the start of a Skill task, the Agent runs `interactive-map-builder update --preflight` from the
@@ -262,18 +295,12 @@ a replacement for a planner or designer. Users can keep refining color, size, op
 hierarchy through natural-language instructions or direct MapSpec edits. Every inferred decision
 is recorded in `build_report.json` under `visual` and `visual_system`.
 
-## Choose the right map product
+## Product behavior and controls
 
-| User goal | Template | Best for | Main interactions |
-| --- | --- | --- | --- |
-| Find, screen, rank, and compare records | `map-list` | Parcels, buildings, facilities, stores, projects, events, candidate sites | Search, category and numeric filters, sorting, KPI summaries, list-map linkage, detail panel |
-| Explore several independent spatial themes together | `multilayer` | Boundaries, roads, routes, facilities, environmental layers, planning context | Layer visibility, layer-specific search, point/line/polygon styling, legends, basemap switching, feature details |
-
-A `map-list` may also include context layers. With multiple inputs, the Skill never guesses the
-business intent from geometry type alone; it asks the user to confirm the template and primary
-layer.
-
-## Basemaps and multilayer controls
+A `map-list` may include context layers in addition to its primary searchable layer. A `multilayer`
+map keeps **search focus** separate from **visibility**: choosing one layer to browse does not hide
+other context layers. Both products include Saved Views, and both use the same resolved visual plan
+for map rendering and legends.
 
 New MapSpec files include two credential-free online basemaps: **CARTO Positron** as the quiet
 default and **OpenStreetMap Standard** for detailed street context. The selector also includes
@@ -316,41 +343,6 @@ and category roles, ambiguities, and performance signals before a map is propose
 A normal build keeps source paths relative to the original project and treats `map_spec.json` as a
 build record. Use `--bundle-sources` when the deliverable must rebuild independently after it is
 moved.
-
-## How it works
-
-```text
-User request + spatial files
-           │
-           ▼
-       inspect inputs
-  CRS · geometry · fields · scale
-           │
-           ▼
-  confirm unresolved intent once
-           │
-           ▼
-        MapSpec 1.1
-           │
-           ▼
- Atlas Studio Light resolver
- geometry · density · role · order
-           │
-           ▼
- deterministic Python engine
- load · normalize · render
-           │
-           ▼
- verify counts, files, QA hooks,
- provenance, hashes, and browser UI
-           │
-           ▼
-  portable HTML + report figures
-```
-
-The packaged [JSON Schema](scripts/mapcore/resources/map-spec.schema.json) is the only
-machine-readable MapSpec contract. Canonical keys use `snake_case`; unsupported fields and schema
-versions are rejected instead of being silently migrated.
 
 <details>
 <summary><strong>Command-line workflow</strong></summary>
@@ -401,9 +393,10 @@ but does not silently switch rendering engines.
 
 ## Project status
 
-The current stable release is **v0.5.1**. This hotfix preserves the v0.5.0 Saved Views workflow and
-keeps Overview, Save View, and management controls visible when the named-view list overflows at
-higher view counts. MapSpec remains 1.1 and the two existing template families remain unchanged.
+The current stable release is **v0.5.1**. Version 0.5 introduced browser-persistent Saved Views to
+both existing map products; 0.5.1 keeps Overview, Save View, and management controls visible when a
+larger saved-view list needs horizontal scrolling. MapSpec remains 1.1 and the two template families
+remain unchanged.
 
 See the [changelog](CHANGELOG.md) for completed work.
 
@@ -424,10 +417,11 @@ python scripts/build_demo_site.py --output _site
 python scripts/build_skill_package.py
 ```
 
-The CI matrix covers Python 3.9, 3.10, and 3.12, trigger-suite validation, Chromium interaction
-tests, wheel creation, the offline installation doctor, a clean out-of-repository build, and the
-Skill distribution archive. After a new package version passes `main` CI, the Release workflow
-creates the tag and assets or repairs an incomplete Release without moving an existing tag.
+The CI matrix covers Python 3.9–3.12, trigger-suite validation, Chromium interaction tests, wheel
+creation, the offline installation doctor, Windows smoke tests, a clean out-of-repository build,
+and the Skill distribution archive. After a new package version passes `main` CI, the Release
+workflow creates the tag and assets or repairs an incomplete Release without moving an existing
+tag.
 
 ## License
 
