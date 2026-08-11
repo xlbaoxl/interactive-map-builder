@@ -143,6 +143,16 @@ def _prepare_views(page) -> None:
     page.wait_for_timeout(800)
 
 
+def _prepare_max_views(page) -> None:
+    page.evaluate("window.__interactiveMapBuilderQA.actions.clearSavedViews()")
+    for index in range(8):
+        page.evaluate(
+            "([name, offset]) => window.__interactiveMapBuilderQA.actions.saveView(name, [39.90 + offset, 116.40 + offset], 14)",
+            [f"Site {index + 1}", index * 0.001],
+        )
+    page.wait_for_timeout(300)
+
+
 def test_capture_saved_views_visuals(tmp_path: Path) -> None:
     SCREENSHOT_DIR.mkdir(exist_ok=True)
     map_list_spec = _write_map_list(tmp_path / "map-list")
@@ -163,6 +173,8 @@ def test_capture_saved_views_visuals(tmp_path: Path) -> None:
         page.set_viewport_size({"width": 1100, "height": 760})
         page.wait_for_timeout(300)
         page.screenshot(path=str(SCREENSHOT_DIR / "map-list-en-1100.png"), full_page=True)
+        _prepare_max_views(page)
+        page.screenshot(path=str(SCREENSHOT_DIR / "map-list-en-1100-max8.png"), full_page=True)
         page.close()
 
         page = browser.new_page(viewport={"width": 1440, "height": 900})
