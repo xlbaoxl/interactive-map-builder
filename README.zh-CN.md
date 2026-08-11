@@ -2,7 +2,7 @@
 
 # Interactive Map Builder
 
-**把已有空间数据交给 AI Agent，得到漂亮、可验证、可直接交付的地图产品。**
+**把已有空间数据交给 AI Agent，得到可搜索、可汇报、可验证、可直接交付的地图产品。**
 
 [![CI](https://github.com/xlbaoxl/interactive-map-builder/actions/workflows/ci.yml/badge.svg)](https://github.com/xlbaoxl/interactive-map-builder/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/xlbaoxl/interactive-map-builder)](https://github.com/xlbaoxl/interactive-map-builder/releases)
@@ -10,7 +10,7 @@
 [![MapSpec 1.1](https://img.shields.io/badge/MapSpec-1.1-0f766e)](references/map-spec.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-2ea44f.svg)](LICENSE)
 
-[在线演示](https://xlbaoxl.github.io/interactive-map-builder/zh-CN/) ·
+[产品主页](https://xlbaoxl.github.io/interactive-map-builder/zh-CN/) ·
 [English](README.md) ·
 [版本发布](https://github.com/xlbaoxl/interactive-map-builder/releases) ·
 [更新日志](CHANGELOG.md)
@@ -18,55 +18,50 @@
 </div>
 
 Interactive Map Builder 是一个**以 Codex 为主要使用场景、兼容 Agent Skills 工作流**的地图
-Skill。用户即使没有说出 GIS、Leaflet、Web Map 或项目名称，只要表达了“把已有空间数据做成
-可搜索、筛选、发送和汇报的地图”这一目标，Agent 也能够识别任务。Skill 会检查 GeoJSON、
-GeoPackage、Shapefile、CSV、Excel 或 ArcGIS 数据，只询问真正影响结果的选项，再写入可审计
-的 MapSpec，解析一版克制的几何感知视觉起点，生成单文件 Leaflet 地图；只有用户明确提出时，
-才额外导出适合 PPT 或论文的静态图。
+Skill。用户只需要描述想得到什么成果，并提供 GeoJSON、GeoPackage、Shapefile、CSV、Excel 或
+ArcGIS 数据；Agent 会检查输入、只补齐真正阻塞构建的信息差、写入可审计的 MapSpec，再由确定性
+引擎生成并验证最终地图成果。
 
 ```text
-用户目标 + 空间数据 → 检查 → 集中确认 → MapSpec → 构建 → 验证 → HTML + 可选 PNG/SVG/PDF
+已有空间数据 → 检查 → 集中确认 → MapSpec → 构建 → 验证 → 可发送 HTML + 可选静态图件
 ```
 
-不需要前端工程，不需要临时手写 Folium 页面，也不会隐藏数据清洗过程。
+产品始终以地图为主界面：帮助用户**找到空间对象、理解空间上下文、保存重点视角，并把结果直接
+交付**，而不是把页面继续扩张成通用 BI Dashboard。
 
-## 核心特点
+## 核心产品能力
 
-- **按用户意图触发**：能够识别“把这张经纬度表做成可搜索页面”“把道路、水系、绿地和
-  停车位放到一张汇报图里”等自然表达。
-- **用自然语言配置地图**：用户只需说明想完成什么，不必先掌握分级设色、图层控制等 GIS
-  术语。
-- **确定性构建**：Agent 负责理解需求和编写 MapSpec，Python 引擎统一负责读取、清洗、
-  视觉解析、渲染和校验，避免每次临时生成一套不同代码。
-- **Atlas Studio Light 默认视觉**：未明确填写的视觉参数会依据几何类型、粗粒度密度和图层
-  角色进行解析，让第一版总体协调，同时不替代设计师继续打磨。
-- **两种成熟地图产品**：可搜索筛选的“地图＋清单”，以及可独立开关点、线、面数据的
-  “多图层地图”。
-- **v0.5.0 保存视角**：可在浏览器中保存最多 8 个命名的地图中心点与缩放级别，并在“总览”和
-  重点场地之间一键切换；视角状态不写入 MapSpec。
-- **本地单文件交付**：Leaflet、界面逻辑和业务几何都嵌入 `map.html`；只有在线底图需要网络。
-- **按需生成静态图**：只有用户明确要求时，才从同一视觉方案生成 16:9 PNG 或论文用
-  PNG、SVG 和 PDF。
-- **完整构建记录**：自动保存数据检查、几何修复、生成 ID、性能提示、数据来源、文件哈希和
-  可移植状态。
-- **带缓存且不修改安装的版本预检**：每个 Skill 任务最多每 24 小时检查一次官方 Release，
-  正常制图过程不修改正在运行的 Skill，断网也不会阻塞任务。
-- **安装后自动体检**：`interactive-map-builder doctor` 会离线完成一次真实构建和哈希验证。
-- **可靠地图控件**：多图层地图默认从中性总览开始，使用紧凑的图层选择器决定搜索焦点，
-  将“重点浏览哪个图层”和“哪些图层可见”分开，并提供 CARTO Positron、OpenStreetMap
-  Standard 与无底图视图。
-- **跨 Agent 触发评估**：40 条中英文案例覆盖调用、可选规划、本地与公网交付边界及误触发。
+- **搜索与筛选。** 按名称或属性查找对象，筛选类别和数值范围，排序结果，并查看要素详情；不必
+  为了每个问题重新打开桌面 GIS。
+- **图层控制。** 在中性总览和重点图层之间切换，同时独立控制图层显隐、图例和底图，避免把
+  “当前重点浏览谁”和“哪些上下文可见”混成一件事。
+- **保存视角。** 在当前浏览器中保存最多 8 个命名的 Center + Zoom 位置，在探索和汇报时快速
+  返回“总览”或重点场地。保存视角不修改 MapSpec，也不会回写交付的 HTML 文件。
+- **成果交付。** 默认交付自包含的 `map.html`；只有用户明确需要时，才生成 16:9 汇报图或论文用
+  PNG/SVG/PDF。
 
-## 在线演示
+## 两种地图产品
 
-| 搜索、筛选和比较对象 | 联合查看多个空间主题 |
+| 地图＋清单 | 多图层地图 |
 | --- | --- |
 | [![地块分类统计地图](assets/screenshots/zh-CN/map-list.png)](https://xlbaoxl.github.io/interactive-map-builder/zh-CN/map-list/) | [![点线面多图层地图](assets/screenshots/zh-CN/multilayer.png)](https://xlbaoxl.github.io/interactive-map-builder/zh-CN/multilayer/) |
-| **地图＋清单。** 搜索地址和属性，筛选类别与数值范围，排序记录，观察统计指标变化，并查看选中地块的完整信息。 | **多图层。** 先查看中性总览，再选择一个图层进行搜索和强调；图层可见性仍可独立控制，并可切换底图、查看对象详情。 |
-| [打开交互演示 →](https://xlbaoxl.github.io/interactive-map-builder/zh-CN/map-list/) | [打开交互演示 →](https://xlbaoxl.github.io/interactive-map-builder/zh-CN/multilayer/) |
+| **地图＋清单。** 通过清单—地图联动完成搜索、筛选、排序、动态统计和对象详情查看，适合地块、建筑、设施、门店、项目、事件与候选地点。 | **多图层。** 从总览进入图层聚焦，独立控制多个空间主题的显隐和上下文，查看对象详情，并保存汇报中需要反复返回的视角；适合边界、道路、线路、设施、环境与规划背景。 |
+| [打开交互地图 →](https://xlbaoxl.github.io/interactive-map-builder/zh-CN/map-list/) | [打开交互地图 →](https://xlbaoxl.github.io/interactive-map-builder/zh-CN/multilayer/) |
 
-两个演示都由仓库中的确定性引擎根据固定的
-[NYC Open Data 数据快照](assets/examples/SOURCES.md)生成，不是另外制作的设计稿。
+两个在线地图都由仓库中的确定性引擎根据固定的
+[NYC Open Data 数据快照](assets/examples/SOURCES.md)生成，是实际产品输出，不是另外绘制的设计稿。
+
+## 探索 → 聚焦 → 汇报
+
+```mermaid
+flowchart LR
+    A["探索<br/>搜索 · 筛选 · 切换图层"] --> B["聚焦<br/>查看一个地点的空间上下文"]
+    B --> C["汇报<br/>保存并快速返回重点视角"]
+```
+
+一个常见工作流是：先看完整地图，再逐步聚焦到一个或多个值得讲的地点，最后在会议或汇报中
+需要准确回到这些位置。**保存视角**补上了最后一步：它只记录浏览器本地的 Center + Zoom，保留
+固定“总览”，支持重命名和删除，并与地图数据及 MapSpec 构建契约保持分离。
 
 ## 直接描述成果，不必记住工具名称
 
@@ -78,7 +73,8 @@ GeoPackage、Shapefile、CSV、Excel 或 ArcGIS 数据，只询问真正影响�
 ```
 
 ```text
-把地块、道路、水系、绿地和停车位放到一张规划汇报地图里，可以独立开关图层和查看对象信息。
+把地块、道路、水系、绿地和停车位放到一张规划汇报地图里，可以独立开关图层、查看对象信息，
+并保存几个汇报时需要反复返回的重点视角。
 ```
 
 ```text
@@ -127,8 +123,8 @@ interactive-map-builder update --preflight
 
 `doctor` 会在临时目录中生成一张坐标表，离线完成数据读取、地图构建、Leaflet 资源检查和输出
 哈希验证，返回 JSON 结果后删除临时文件。该命令不会下载底图，也不会发送使用统计。更新命令
-返回结构化 JSON，明确给出本地版本、可确认的官方版本、结果来源、安装类型和状态。
-仅需缓存状态查询时，运行 `interactive-map-builder update --check`。
+返回结构化 JSON，明确给出本地版本、可确认的官方版本、结果来源、安装类型和状态。仅需缓存状态
+查询时，运行 `interactive-map-builder update --check`。
 
 安装后优先运行 `interactive-map-builder doctor`。若在源码目录中尚未生成该命令，可使用
 `python scripts/cli.py doctor`；`python scripts/map_builder.py --help` 只列出内部构建命令，
@@ -199,6 +195,42 @@ interactive-map-builder doctor
 
 </details>
 
+## 为可靠交付而构建
+
+面向用户的交互建立在同一条确定性构建路径之上，而不是每次临时拼一个不同的网页：
+
+```text
+用户需求 + 空间文件
+          │
+          ▼
+       检查数据
+ CRS · 几何 · 字段 · 数据规模
+          │
+          ▼
+  一次性确认无法自动判断的选项
+          │
+          ▼
+       MapSpec 1.1
+          │
+          ▼
+ Atlas Studio Light 解析器
+  几何 · 密度 · 角色 · 层级
+          │
+          ▼
+     确定性 Python 引擎
+      读取 · 规范化 · 渲染
+          │
+          ▼
+ 校验数量、文件、QA 接口、
+ 数据来源、哈希和浏览器交互
+          │
+          ▼
+ 可发送 HTML + 汇报与论文图件
+```
+
+打包的 [JSON Schema](scripts/mapcore/resources/map-spec.schema.json) 是 MapSpec 唯一的机器契约。
+配置只接受规范的 `snake_case` 字段；不支持的字段和 Schema 版本会被直接拒绝，不会静默迁移。
+
 ## 版本更新、计划模式与公网发布
 
 每次 Skill 任务开始时，Agent 会从 Skill 根目录运行
@@ -244,17 +276,11 @@ v0.4 引入的是轻量视觉默认值解析器，不是一套全包式自动设
 继续调整颜色、尺寸、透明度、字段和层级。所有推断结果都会记录在 `build_report.json` 的
 `visual` 与 `visual_system` 中。
 
-## 选择哪种地图
+## 产品行为与地图控件
 
-| 用户目标 | 底层模板 | 适用数据 | 主要交互 |
-| --- | --- | --- | --- |
-| 查找、筛选、排序和比较每条记录 | `map-list` | 地块、建筑、设施、门店、项目、事件、候选地点 | 搜索、分类与数值筛选、排序、动态统计、地图清单联动、详情面板 |
-| 同时查看多个相互独立的空间主题 | `multilayer` | 边界、道路、线路、设施、环境和规划背景 | 图层开关、分图层搜索、点线面样式、图例、底图切换、对象详情 |
-
-`map-list` 也可以附带行政区或道路等背景图层。存在多个输入时，Skill 不会仅凭几何类型猜测
-业务意图，而会要求用户确认模板和主图层。
-
-## 默认底图与多图层控件
+`map-list` 可以在主搜索图层之外附带行政区、道路等背景图层。`multilayer` 则明确区分**搜索焦点**
+和**图层显隐**：选择当前重点浏览的图层不会自动隐藏其他空间上下文。两种产品都支持保存视角，
+并使用同一份解析后的视觉方案生成地图与图例。
 
 新建 MapSpec 默认包含两张不需要用户凭证的在线底图：以浅色、低干扰的 **CARTO Positron**
 为默认底图，**OpenStreetMap Standard** 用于查看详细道路与地名。底图选择器还提供**无底图**，
@@ -293,40 +319,6 @@ v0.4 引入的是轻量视觉默认值解析器，不是一套全包式自动设
 
 普通构建不会复制源数据，`map_spec.json` 只作为原项目中的构建记录。需要把整个结果移动到其他
 电脑后独立重建时，使用 `--bundle-sources`。
-
-## 工作原理
-
-```text
-用户需求 + 空间文件
-          │
-          ▼
-       检查数据
- CRS · 几何 · 字段 · 数据规模
-          │
-          ▼
-  一次性确认无法自动判断的选项
-          │
-          ▼
-       MapSpec 1.1
-          │
-          ▼
- Atlas Studio Light 解析器
-  几何 · 密度 · 角色 · 层级
-          │
-          ▼
-     确定性 Python 引擎
-      读取 · 规范化 · 渲染
-          │
-          ▼
- 校验数量、文件、QA 接口、
- 数据来源、哈希和浏览器交互
-          │
-          ▼
- 可发送 HTML + 汇报与论文图件
-```
-
-打包的 [JSON Schema](scripts/mapcore/resources/map-spec.schema.json) 是 MapSpec 唯一的机器契约。
-配置只接受规范的 `snake_case` 字段；不支持的字段和 Schema 版本会被直接拒绝，不会静默迁移。
 
 <details>
 <summary><strong>命令行工作流</strong></summary>
@@ -375,9 +367,9 @@ Interactive Map Builder 专注于**已有空间数据 → 可交付地图成品*
 
 ## 项目状态
 
-当前稳定版本为 **v0.5.1**。该热修复保留 v0.5.0 的保存视角工作流，并修复命名视角较多时顶部
-按钮互相挤压的问题：命名视角现在在自己的横向滚动区域中溢出，“总览”、保存与管理入口保持
-可见。MapSpec 继续保持 1.1，两种既有模板不变。
+当前稳定版本为 **v0.5.1**。v0.5 为两种现有地图产品加入浏览器本地持久化的保存视角；v0.5.1
+进一步保证命名视角较多、需要横向滚动时，“总览”、保存和管理入口仍保持可见。MapSpec 继续
+保持 1.1，两种既有模板不变。
 
 已经完成的变化见[更新日志](CHANGELOG.md)。
 
@@ -398,9 +390,9 @@ python scripts/build_demo_site.py --output _site
 python scripts/build_skill_package.py
 ```
 
-CI 覆盖 Python 3.9、3.10、3.12、触发评估集验证、Chromium 交互测试、wheel 构建、离线安装体检、
-仓库外构建验证和 Skill ZIP。新包版本通过 `main` CI 后，Release 工作流会创建版本与资产；若同一
-版本的 Release 已存在但资产不完整，则补齐资产而不会移动已有标签。
+CI 覆盖 Python 3.9–3.12、触发评估集验证、Chromium 交互测试、wheel 构建、离线安装体检、Windows
+smoke、仓库外构建验证和 Skill ZIP。新包版本通过 `main` CI 后，Release 工作流会创建版本与资产；
+若同一版本的 Release 已存在但资产不完整，则补齐资产而不会移动已有标签。
 
 ## 许可证
 
