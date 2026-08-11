@@ -14,13 +14,8 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  overflow-x: auto;
+  overflow: hidden;
   padding: 2px;
-  scrollbar-width: none;
-}
-
-.imb-saved-view-strip::-webkit-scrollbar {
-  display: none;
 }
 
 .imb-saved-view-list {
@@ -28,6 +23,23 @@
   min-width: 0;
   align-items: center;
   gap: 6px;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--imb-line-strong) transparent;
+}
+
+.imb-saved-view-list::-webkit-scrollbar {
+  height: 4px;
+}
+
+.imb-saved-view-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.imb-saved-view-list::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: var(--imb-line-strong);
 }
 
 .imb-saved-view-chip,
