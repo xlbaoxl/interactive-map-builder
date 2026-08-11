@@ -46,20 +46,34 @@ def test_demo_site_builds_atlas_landing_without_changing_source_assets(tmp_path:
                 assert "Jay St-MetroTech" in html
                 assert "imb-feature-types" in html
                 assert "setFeatureType" in html
+                assert "imb-saved-views" in html
 
     assert (site / ".nojekyll").is_file()
     root_html = (site / "index.html").read_text(encoding="utf-8")
     assert 'http-equiv="refresh"' not in root_html
     assert "Spatial data in. Map product out." in root_html
+    assert 'class="hero-visual"' in root_html
+    assert 'src="./en-US/multilayer/" loading="eager"' in root_html
+    assert "CORE PRODUCT CAPABILITIES" in root_html
+    assert "Search &amp; Filter" in root_html
+    assert "Saved Views" in root_html
+    assert "Portable Delivery" in root_html
+    assert "EXPLORE → FOCUS → PRESENT" in root_html
+    assert "BUILT FOR RELIABLE HANDOFF" in root_html
     assert 'src="./en-US/map-list/"' in root_html
     assert 'src="./en-US/multilayer/"' in root_html
     assert "Downtown Brooklyn mobility context" in root_html
     assert 'href="./zh-CN/"' in root_html
+    assert ".cta .button:not(.primary){color:var(--ink)}" in root_html
+
     english_landing = (site / "en-US" / "index.html").read_text(encoding="utf-8")
     chinese_landing = (site / "zh-CN" / "index.html").read_text(encoding="utf-8")
     assert 'href="../zh-CN/"' in english_landing
     assert 'href="../en-US/"' in chinese_landing
     assert "输入空间数据，交付地图产品。" in chinese_landing
+    assert "搜索与筛选" in chinese_landing
+    assert "探索 → 聚焦 → 汇报" in chinese_landing
+    assert "保存视角" in chinese_landing
     assert original_assets == {path: path.read_bytes() for path in source_paths}
 
 
@@ -73,7 +87,13 @@ def test_localized_readmes_link_to_their_interactive_demos() -> None:
     assert f"{PAGES_URL}/zh-CN/multilayer/" in readme_zh
 
     for expected in (
-        "## Live demos",
+        "## Core product capabilities",
+        "**Search & filter.**",
+        "**Layer control.**",
+        "**Saved Views.**",
+        "**Portable delivery.**",
+        "## Explore → Focus → Present",
+        "## Two map products",
         "**Map + list.**",
         "**Multilayer.**",
         "## Quick start",
@@ -81,7 +101,13 @@ def test_localized_readmes_link_to_their_interactive_demos() -> None:
         assert expected in readme_en
 
     for expected in (
-        "## 在线演示",
+        "## 核心产品能力",
+        "**搜索与筛选。**",
+        "**图层控制。**",
+        "**保存视角。**",
+        "**成果交付。**",
+        "## 探索 → 聚焦 → 汇报",
+        "## 两种地图产品",
         "**地图＋清单。**",
         "**多图层。**",
         "## 快速开始",
