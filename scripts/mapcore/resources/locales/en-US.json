@@ -242,7 +242,7 @@
     }
   },
   "landing": {
-    "language_name": "中文",
+    "language_name": "Chinese",
     "page_title": "Interactive Map Builder — spatial data to polished map products",
     "description": "Turn existing spatial data into searchable, layer-aware, presentation-ready interactive map products with a deterministic Agent workflow.",
     "nav_features": "Capabilities",
