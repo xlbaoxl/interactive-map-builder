@@ -93,8 +93,8 @@ def test_behavior_evals_and_localized_readmes_are_present():
 
     assert "## Quick start" in readme_en
     assert "## 快速开始" in readme_zh
-    assert "## Ask for the outcome, not the tool" in readme_en
-    assert "## 直接描述成果，不必记住工具名称" in readme_zh
+    assert "## Describe the outcome" in readme_en
+    assert "## 直接描述你想得到的成果" in readme_zh
     assert "## Atlas Studio Light" in readme_en
     assert "## Atlas Studio Light 视觉系统" in readme_zh
     version = project_version()

@@ -18,26 +18,25 @@
 </div>
 
 Interactive Map Builder 是一个**以 Codex 为主要使用场景、兼容 Agent Skills 工作流**的地图
-Skill。用户只需要描述想得到什么成果，并提供 GeoJSON、GeoPackage、Shapefile、CSV、Excel 或
-ArcGIS 数据；Agent 会检查输入、只补齐真正阻塞构建的信息差、写入可审计的 MapSpec，再由确定性
-引擎生成并验证最终地图成果。
+Skill。用户描述想得到的成果，并提供 GeoJSON、GeoPackage、Shapefile、CSV、Excel 或
+ArcGIS 数据；Agent 会检查输入、确认构建所需信息、写入可审计的 MapSpec，再由确定性引擎生成并
+验证最终地图成果。
 
 ```text
 已有空间数据 → 检查 → 集中确认 → MapSpec → 构建 → 验证 → 可发送 HTML + 可选静态图件
 ```
 
-产品始终以地图为主界面：帮助用户**找到空间对象、理解空间上下文、保存重点视角，并把结果直接
-交付**，而不是把页面继续扩张成通用 BI Dashboard。
+产品以地图为主界面，聚焦**找到空间对象、理解空间上下文、保存重点视角和成果交付**，形成
+完整的空间数据探索与汇报体验。
 
 ## 核心产品能力
 
-- **搜索与筛选。** 按名称或属性查找对象，筛选类别和数值范围，排序结果，并查看要素详情；不必
-  为了每个问题重新打开桌面 GIS。
-- **图层控制。** 在中性总览和重点图层之间切换，同时独立控制图层显隐、图例和底图，避免把
-  “当前重点浏览谁”和“哪些上下文可见”混成一件事。
+- **搜索与筛选。** 直接在浏览器中按名称或属性查找对象，筛选类别和数值范围，排序结果，并
+  查看要素详情。
+- **图层控制。** 在中性总览和重点图层之间切换，图层显隐、图例和底图均可独立控制。
 - **保存视角。** 在当前浏览器中保存最多 8 个命名的 Center + Zoom 位置，在探索和汇报时快速
-  返回“总览”或重点场地。保存视角不修改 MapSpec，也不会回写交付的 HTML 文件。
-- **成果交付。** 默认交付自包含的 `map.html`；只有用户明确需要时，才生成 16:9 汇报图或论文用
+  返回“总览”或重点场地。视角保存在浏览器本地状态中，与 MapSpec 和交付 HTML 保持独立。
+- **成果交付。** 支持交付自包含的 `map.html`，并从同一视觉方案生成 16:9 汇报图或论文用
   PNG/SVG/PDF。
 
 ## 两种地图产品
@@ -48,8 +47,8 @@ ArcGIS 数据；Agent 会检查输入、只补齐真正阻塞构建的信息差�
 | **地图＋清单。** 通过清单—地图联动完成搜索、筛选、排序、动态统计和对象详情查看，适合地块、建筑、设施、门店、项目、事件与候选地点。 | **多图层。** 从总览进入图层聚焦，独立控制多个空间主题的显隐和上下文，查看对象详情，并保存汇报中需要反复返回的视角；适合边界、道路、线路、设施、环境与规划背景。 |
 | [打开交互地图 →](https://xlbaoxl.github.io/interactive-map-builder/zh-CN/map-list/) | [打开交互地图 →](https://xlbaoxl.github.io/interactive-map-builder/zh-CN/multilayer/) |
 
-两个在线地图都由仓库中的确定性引擎根据固定的
-[NYC Open Data 数据快照](assets/examples/SOURCES.md)生成，是实际产品输出，不是另外绘制的设计稿。
+两个在线地图均由仓库中的确定性引擎根据固定的
+[NYC Open Data 数据快照](assets/examples/SOURCES.md)生成，直接展示正式产品输出。
 
 ## 探索 → 聚焦 → 汇报
 
@@ -59,11 +58,11 @@ flowchart LR
     B --> C["汇报<br/>保存并快速返回重点视角"]
 ```
 
-一个常见工作流是：先看完整地图，再逐步聚焦到一个或多个值得讲的地点，最后在会议或汇报中
-需要准确回到这些位置。**保存视角**补上了最后一步：它只记录浏览器本地的 Center + Zoom，保留
-固定“总览”，支持重命名和删除，并与地图数据及 MapSpec 构建契约保持分离。
+一个常见工作流是：先看完整地图，再逐步聚焦到一个或多个值得讲的地点，并在会议或汇报中
+快速回到这些位置。**保存视角**记录浏览器本地的 Center + Zoom，提供固定“总览”、重命名和
+删除，并与地图数据及 MapSpec 构建契约保持独立。
 
-## 直接描述成果，不必记住工具名称
+## 直接描述你想得到的成果
 
 下面这些表达都属于 Skill 应当识别的任务：
 
@@ -78,10 +77,10 @@ flowchart LR
 ```
 
 ```text
-同事电脑没有 ArcGIS，请把这些现有图层做成一个 HTML 文件，同时导出一张 16:9 汇报图。
+请把这些现有图层做成一个可发送的 HTML 文件，同时导出一张 16:9 汇报图。
 ```
 
-用户仍然可以显式调用 `$interactive-map-builder`，但在任务匹配时不需要知道 Skill 名称。
+支持显式调用 `$interactive-map-builder`，自然语言描述成果也能触发 Skill。
 
 ## 快速开始
 
@@ -93,9 +92,8 @@ flowchart LR
 $skill-installer 请从 https://github.com/xlbaoxl/interactive-map-builder 安装这个 Skill，并安装它需要的 Python 依赖。安装后运行 interactive-map-builder doctor 和 interactive-map-builder update --preflight。
 ```
 
-安装完成后新建任务。如果新任务中没有出现该 Skill，再重启一次 Codex。从 v0.4.3 开始，
-`$skill-installer` 产生的仓库复制件只有在所有 Release 管理文件与官方校验包完全一致时，才会
-自动转为可更新安装。
+安装完成后新建任务；若 Skill 尚未出现，可重启一次 Codex。从 v0.4.3 开始，Release 管理
+文件与官方校验包一致的 `$skill-installer` 仓库复制件可以自动进入受管更新状态。
 
 ### 2. 上传数据并描述目标
 
@@ -111,7 +109,7 @@ Skill 会先检查数据，并在仍有不确定项时维护一份简短需求�
 - [ ] Needs confirmation：构建前必须确认
 ```
 
-它只会集中询问一次真正影响结果的内容，例如 CRS、模板、主图层、分类含义、展示字段、输出
+它会集中确认一次真正影响构建的内容，例如 CRS、模板、主图层、分类含义、展示字段、输出
 格式和地图受众语言。
 
 ### 3. 验证安装结果
@@ -121,20 +119,19 @@ interactive-map-builder doctor
 interactive-map-builder update --preflight
 ```
 
-`doctor` 会在临时目录中生成一张坐标表，离线完成数据读取、地图构建、Leaflet 资源检查和输出
-哈希验证，返回 JSON 结果后删除临时文件。该命令不会下载底图，也不会发送使用统计。更新命令
-返回结构化 JSON，明确给出本地版本、可确认的官方版本、结果来源、安装类型和状态。仅需缓存状态
-查询时，运行 `interactive-map-builder update --check`。
+`doctor` 会在本地临时目录中离线完成数据读取、地图构建、Leaflet 资源检查和输出哈希验证，
+返回 JSON 结果后清理临时文件。更新命令返回结构化 JSON，明确给出本地版本、可确认的官方版本、
+结果来源、安装类型和状态；缓存状态查询可使用 `interactive-map-builder update --check`。
 
 安装后优先运行 `interactive-map-builder doctor`。若在源码目录中尚未生成该命令，可使用
-`python scripts/cli.py doctor`；`python scripts/map_builder.py --help` 只列出内部构建命令，
-不能据此判断正式安装包缺少 `doctor`。
+`python scripts/cli.py doctor`。正式 doctor 入口为 `interactive-map-builder doctor`，
+`python scripts/map_builder.py --help` 展示内部构建命令。
 
 <details>
 <summary><strong>适合持续自动更新的 Git 手动安装</strong></summary>
 
-Codex 只保留一个活动 Skill 目录，避免 `.codex` 与 `.agents` 同时存在重复副本。
-旧版 Windows 安装位置可能是 `$HOME\.agents\skills`；使用下方活动目录前先将其归档。
+Codex 保留一个活动 Skill 目录。旧版 Windows 安装位置可能是 `$HOME\.agents\skills`；
+使用下方活动目录前先将其归档。
 
 **Windows PowerShell**
 
@@ -174,8 +171,8 @@ interactive-map-builder update --preflight
 - Python wheel 与源码包：用于常规 Python 安装；
 - `SHA256SUMS.txt`：用于发行资产校验和受管 Skill 安全更新。
 
-精简 Skill 包不包含演示数据、截图、测试和 CI 文件。将它解压到 Agent Skills 目录后，运行
-`python -m pip install .`，再运行 `interactive-map-builder doctor`。
+精简 Skill 包聚焦运行与交付；演示数据、截图、测试和 CI 保留在完整仓库中。将它解压到
+Agent Skills 目录后，运行 `python -m pip install .`，再运行 `interactive-map-builder doctor`。
 
 </details>
 
@@ -190,14 +187,14 @@ python -m pip install .
 interactive-map-builder doctor
 ```
 
-工作流不依赖特定客户端界面：检查数据、维护需求清单、写入当前 MapSpec、使用打包引擎构建、
-验证并交付完整 `dist` 目录。
+多种 Agent Skills 客户端可以采用同一套工作流：检查数据、维护需求清单、写入当前 MapSpec、
+使用打包引擎构建、验证并交付完整 `dist` 目录。
 
 </details>
 
 ## 为可靠交付而构建
 
-面向用户的交互建立在同一条确定性构建路径之上，而不是每次临时拼一个不同的网页：
+面向用户的交互与成果交付统一使用同一条确定性构建路径：
 
 ```text
 用户需求 + 空间文件
@@ -228,35 +225,33 @@ interactive-map-builder doctor
  可发送 HTML + 汇报与论文图件
 ```
 
-打包的 [JSON Schema](scripts/mapcore/resources/map-spec.schema.json) 是 MapSpec 唯一的机器契约。
-配置只接受规范的 `snake_case` 字段；不支持的字段和 Schema 版本会被直接拒绝，不会静默迁移。
+打包的 [JSON Schema](scripts/mapcore/resources/map-spec.schema.json) 定义 MapSpec 的机器契约。
+配置采用规范的 `snake_case` 字段，Schema 对支持字段与版本进行严格校验。
 
 ## 版本更新、计划模式与公网发布
 
 每次 Skill 任务开始时，Agent 会从 Skill 根目录运行
-`interactive-map-builder update --preflight`。该命令只检查版本：有效结果最多缓存 24 小时，
-不会修改当前安装；版本已是最新时保持静默，只有发现新版本或检查失败时才提示。断网不会阻塞
-地图制作。设置 `IMB_DISABLE_AUTO_UPDATE=1` 可以关闭更新检查。
+`interactive-map-builder update --preflight`。该命令检查版本状态，有效结果最多缓存 24 小时，并
+保持当前安装原样；发现新版本或检查异常时给出提示。离线环境可继续地图制作，设置
+`IMB_DISABLE_AUTO_UPDATE=1` 可以关闭更新检查。
 
-安装更新属于独立维护动作。`update --apply` 与兼容保留的 `update --auto --force` 继续执行 Release
-校验、Manifest 校验、精确复制安装接管、本地修改保护、重复目录拒绝、安装后 doctor 和失败回滚，
-普通地图任务不再修改正在运行的 Skill。
+安装更新作为独立维护动作执行。`update --apply` 与兼容保留的 `update --auto --force` 提供 Release
+校验、Manifest 校验、精确复制安装接管、本地修改保护、重复目录检查、安装后 doctor 和失败回滚。
+地图制作与安装维护保持分离。
 
-v0.3.2—v0.4.2 本身尚未包含复制安装接管逻辑。已经安装的无 `.git`、无 Manifest 旧副本需要
-通过官方 v0.4.3 做一次重新安装；此后的兼容版本即可自动更新。
+v0.4.3 加入复制安装接管逻辑。已有的 v0.3.2—v0.4.2 无 `.git`、无 Manifest 副本可通过
+官方 v0.4.3 重新安装进入受管更新流程，此后的兼容版本即可自动更新。
 
-更新采用事务式处理：替换经过校验的版本后会重新安装引擎并运行离线 `doctor`；安装或体检失败
-时，自动恢复此前的 Git 提交或原清单管理的全部文件。应用失败时仍保留已经确认的官方版本、
-Release 地址和 `update_available=true`，不会再把“存在新版本”静默改写为“没有更新”。完整规则
-见[安全更新策略](references/update-policy.md)。
+更新采用事务式处理：替换经过校验的版本后重新安装引擎并运行离线 `doctor`；安装或体检未完成
+时，恢复此前的 Git 提交或原清单管理文件。恢复流程继续保留已确认的官方版本、Release 地址和
+`update_available=true`。完整规则见[安全更新策略](references/update-policy.md)。
 
-当 Codex 任务确实复杂，例如包含多个独立图层、多个待确认设计选项，或需要协调 HTML、汇报图和
-论文图时，Agent 可以在第一轮用一句话将 Plan mode 作为可选建议。用户不切换也会立即继续检查
-数据；明确的单图层任务不会收到这项提示。
+当 Codex 任务较复杂，例如包含多个独立图层、多个设计选项，或需要协调 HTML、汇报图和论文图
+时，Agent 可以在第一轮用一句话将 Plan mode 作为可选建议。数据检查会立即继续，明确的单图层
+任务则直接进入标准工作流。
 
-正常交付物是可移动、可发送的本地 `map.html`。“发给同事”表示发送文件，不等于把内嵌空间数据
-发布到互联网。只有用户明确提出公开网址时，才会在确认托管平台和数据公开权限后进入独立部署
-流程；公网托管不属于地图构建的默认输出。
+正常交付物是可移动、可发送的本地 `map.html`，可以直接发送给同事。公开网址需求会在确认
+托管平台和数据公开权限后进入独立部署流程；公网托管作为单独的成果发布流程处理。
 
 ## Atlas Studio Light 视觉系统
 
