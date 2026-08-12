@@ -27,7 +27,7 @@ def test_generate_current_readme_screenshots(tmp_path: Path) -> None:
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch()
         for locale, demo, names in CASES:
-            page = browser.new_page(viewport={"width": 1440, "height": 900})
+            page = browser.new_page(viewport={"width": 1600, "height": 900})
             page.goto((site / locale / demo / "index.html").resolve().as_uri())
             page.wait_for_function(
                 "document.documentElement.dataset.imbReady === 'true'",
