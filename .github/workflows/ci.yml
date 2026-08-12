@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -50,8 +50,6 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
-        with:
-          ref: qa/positive-copy-refresh
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
@@ -72,22 +70,6 @@ jobs:
           path: pytest-browser.log
           if-no-files-found: warn
           retention-days: 7
-      - name: Apply positive public copy refresh on QA branch
-        if: success() && github.event_name == 'pull_request' && github.head_ref == 'qa/positive-copy-refresh'
-        shell: bash
-        run: |
-          python scripts/qa_positive_copy_refresh.py
-          git fetch origin main --depth=1
-          git checkout FETCH_HEAD -- .github/workflows/ci.yml
-          git rm scripts/qa_positive_copy_refresh.py
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add README.md README.zh-CN.md \
-                  scripts/mapcore/resources/locales/en-US.json \
-                  scripts/mapcore/resources/locales/zh-CN.json \
-                  .github/workflows/ci.yml
-          git commit -m "Refresh public copy with positive product language [skip ci]"
-          git push origin HEAD:qa/positive-copy-refresh
 
   windows-smoke:
     runs-on: windows-latest
