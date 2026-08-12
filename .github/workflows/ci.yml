@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -50,6 +50,8 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: qa/readme-screenshots-v051
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
@@ -72,6 +74,23 @@ jobs:
             readme-screenshot-qa
           if-no-files-found: warn
           retention-days: 7
+      - name: Stage README screenshot candidates on QA branch
+        if: success() && github.event_name == 'pull_request' && github.head_ref == 'qa/readme-screenshots-v051'
+        shell: bash
+        run: |
+          cp readme-screenshot-qa/en-US-map-list.png assets/screenshots/en-US/map-list.png
+          cp readme-screenshot-qa/en-US-multilayer.png assets/screenshots/en-US/multilayer.png
+          cp readme-screenshot-qa/zh-CN-map-list.png assets/screenshots/zh-CN/map-list.png
+          cp readme-screenshot-qa/zh-CN-multilayer.png assets/screenshots/zh-CN/multilayer.png
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/screenshots/en-US/map-list.png assets/screenshots/en-US/multilayer.png \
+                  assets/screenshots/zh-CN/map-list.png assets/screenshots/zh-CN/multilayer.png
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "Stage v0.5.1 README screenshots [skip ci]"
+          git push origin HEAD:qa/readme-screenshots-v051
 
   windows-smoke:
     runs-on: windows-latest
