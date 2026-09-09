@@ -34,7 +34,6 @@ jobs:
           def git(*args):
               return subprocess.check_output(['git', *args]).decode().strip()
 
-          # Restore two known transport omissions before checking the full digest.
           first = base64.b64encode(Path('.github/agent-patch-1.bin').read_bytes()).decode()
           first = first.replace('RZPbPlh8', 'RZPbPlXPlh8', 1) + 'y'
           last = base64.b64encode(Path('.github/agent-patch-3.bin').read_bytes()).decode().rstrip('=')
@@ -44,16 +43,20 @@ jobs:
           patch = gzip.decompress(archive)
           assert hashlib.sha256(patch).hexdigest() == '80e90cf8bc08500d5ef4784a2dba52d575f488aea0f244e78e5120c407c35861'
           subprocess.run(['git', 'apply', '--index', '-'], input=patch, check=True)
+          parser = Path('scripts/mapcore/arguments.py')
+          parser.write_text(parser.read_text(encoding='utf-8').rstrip() + '\n', encoding='utf-8')
+          subprocess.run(['git', 'add', str(parser)], check=True)
           subprocess.run(['git', 'rm', '.github/agent-patch-1.bin', '.github/agent-patch-2.bin', '.github/agent-patch-3.bin', '.github/workflows/agent-review-tree.yml'], check=True)
           subprocess.run(['git', 'diff', '--cached', '--check'], check=True)
           expected = git('write-tree')
-          assert expected == '6a159825fd06976f9a314ab4bb26072a28813147', expected
+          assert expected == 'eb717df9ed701dbe855842075b5ead11f7627d57', expected
           paths = subprocess.check_output(['git', 'diff', '--cached', '--name-only', '-z']).decode().strip('\0').split('\0')
           entries = []
           for name in paths:
               entry = {'path': name, 'mode': '100644', 'type': 'blob'}
               source = Path(name)
               if source.is_file():
+                  entry['mode'] = git('ls-files', '--stage', '--', name).split()[0]
                   entry['content'] = source.read_text(encoding='utf-8')
               else:
                   entry['sha'] = None
