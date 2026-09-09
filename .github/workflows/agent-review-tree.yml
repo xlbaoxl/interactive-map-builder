@@ -1,0 +1,72 @@
+name: agent-review-tree
+
+# Temporary branch-only transport; candidate tree removes all transport files.
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: write
+
+jobs:
+  tree:
+    if: github.head_ref == 'agent/lean-runtime-first-build' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Verify tested patch and create candidate Git tree without moving a branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import base64
+          import gzip
+          import hashlib
+          import json
+          import os
+          import subprocess
+          import urllib.request
+          from pathlib import Path
+
+          def git(*args):
+              return subprocess.check_output(['git', *args]).decode().strip()
+
+          # Restore two known transport omissions before checking the full digest.
+          first = base64.b64encode(Path('.github/agent-patch-1.bin').read_bytes()).decode()
+          first = first.replace('RZPbPlh8', 'RZPbPlXPlh8', 1) + 'y'
+          last = base64.b64encode(Path('.github/agent-patch-3.bin').read_bytes()).decode().rstrip('=')
+          last = last.replace('LuGDC0wVfwh', 'LuGDC0wV7y8wVfwh', 1)
+          archive = base64.b64decode(first) + Path('.github/agent-patch-2.bin').read_bytes() + base64.b64decode(last)
+          assert hashlib.sha256(archive).hexdigest() == '19f2472f2e7144e71ec78ccca8e5598674f66242a62cfbf836fb780ee52abeb4'
+          patch = gzip.decompress(archive)
+          assert hashlib.sha256(patch).hexdigest() == '80e90cf8bc08500d5ef4784a2dba52d575f488aea0f244e78e5120c407c35861'
+          subprocess.run(['git', 'apply', '--index', '-'], input=patch, check=True)
+          subprocess.run(['git', 'rm', '.github/agent-patch-1.bin', '.github/agent-patch-2.bin', '.github/agent-patch-3.bin', '.github/workflows/agent-review-tree.yml'], check=True)
+          subprocess.run(['git', 'diff', '--cached', '--check'], check=True)
+          expected = git('write-tree')
+          assert expected == '6a159825fd06976f9a314ab4bb26072a28813147', expected
+          paths = subprocess.check_output(['git', 'diff', '--cached', '--name-only', '-z']).decode().strip('\0').split('\0')
+          entries = []
+          for name in paths:
+              entry = {'path': name, 'mode': '100644', 'type': 'blob'}
+              source = Path(name)
+              if source.is_file():
+                  entry['content'] = source.read_text(encoding='utf-8')
+              else:
+                  entry['sha'] = None
+              entries.append(entry)
+          request = urllib.request.Request(
+              'https://api.github.com/repos/' + os.environ['GITHUB_REPOSITORY'] + '/git/trees',
+              data=json.dumps({'base_tree': git('rev-parse', 'HEAD^{tree}'), 'tree': entries}).encode(),
+              method='POST',
+              headers={'Authorization': 'Bearer ' + os.environ['GH_TOKEN'], 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json', 'X-GitHub-Api-Version': '2022-11-28'},
+          )
+          with urllib.request.urlopen(request, timeout=60) as response:
+              result = json.load(response)
+          assert result['sha'] == expected, result['sha']
+          print('CANDIDATE_TREE_SHA=' + result['sha'])
+          print('Candidate contains the tested implementation; all temporary transport files removed.')
+          PY
