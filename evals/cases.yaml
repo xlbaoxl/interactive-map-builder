@@ -385,3 +385,39 @@ cases:
       planning turn.
     ask_user: false
     direct_build: true
+- id: resolved-multilayer-no-repeat-confirmation
+  category: explicit
+  locale: en-US
+  prompt: All three attached GeoJSON layers declare EPSG:4326 and have name fields. Put roads, facilities, and green space on one English HTML map with independent layer switches and name popups. Use sensible presentation defaults.
+  expected:
+    invocation: trigger
+    behavior: Inspect the layers, resolve multilayer from the requested independent switches, pass --template multilayer, and build without another template or layout question. Retain every supplied feature.
+    ask_user: false
+    direct_build: true
+- id: resolved-primary-list-no-repeat-confirmation
+  category: explicit
+  locale: zh-CN
+  prompt: 两个 GeoJSON 都声明了 EPSG:4326。以设施为主清单，道路为背景；按 name 搜索、type 筛选，做成中文 HTML，标题和布局由你决定。
+  expected:
+    invocation: trigger
+    behavior: Inspect both layers, resolve map-list with the facilities layer as the explicit primary layer, and build with reversible display defaults without asking the user to repeat the template or primary choice.
+    ask_user: false
+    direct_build: true
+- id: reversible-display-defaults-first-build
+  category: explicit
+  locale: zh-CN
+  prompt: 这个单图层 GeoJSON 已声明 EPSG:4326，有 name 和 type 字段。请生成中文可搜索、可按 type 筛选的地图，标题、底图和面板默认布局你先安排，之后再调。
+  expected:
+    invocation: trigger
+    behavior: Inspect and build HTML using visible reversible presentation defaults. Do not delay for a title/layout choice, add static outputs, or invent category meanings.
+    ask_user: false
+    direct_build: true
+- id: clear-intent-still-needs-crs
+  category: ambiguous
+  locale: en-US
+  prompt: Make an English searchable map-list of this CSV using name and type. Its x/y source coordinate system is unknown; do not assume one just to make the first draft.
+  expected:
+    invocation: trigger
+    behavior: Inspect the table and retain the resolved map-list intent, but stop before building and ask for the source CRS. Presentation defaults never authorize guessing spatial reference.
+    ask_user: true
+    direct_build: false

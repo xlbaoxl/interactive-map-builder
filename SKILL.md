@@ -112,10 +112,17 @@ between the user and Agent. Read [design-guidelines.md](references/design-guidel
    ```
 
    Derive it from the request and inspected data. Keep inferred decisions visible and easy to
-   correct. Ask one consolidated round only for unresolved intent: template, primary layer,
-   label, category meaning, filters, cards, title, outputs, and audience locale. Never guess a
-   missing CRS. Always confirm the template when inspection finds multiple layers. Build only
-   after no blocking `[ ]` item remains.
+   correct. Resolve the template from the user's stated outcome: independent layer switches mean
+   `multilayer`; an explicitly named primary record list means `map-list`. Multiple layers alone
+   do not require another user turn. Pass the resolved template and, for map-list, primary layer
+   explicitly to the CLI; `--template auto` remains conservative when intent is unavailable.
+
+   Ask one consolidated round only for genuine blockers: unknown CRS or geometry mapping,
+   ambiguous category meaning, an unresolved primary layer, destructive data changes, or public
+   exposure. Never guess a missing CRS or invent domain meaning. Treat reversible presentation
+   choices (title, layout, context opacity, visible display fields) as visible defaults that can
+   be refined after the first verified build. Respect any choice the user explicitly reserves.
+   Build after no blocking `[ ]` item remains. Do not ask the user to repeat resolved choices.
 
 4. Initialize `map_spec.json`, then apply confirmed choices. Read
    [map-spec.md](references/map-spec.md); the canonical Schema is
@@ -153,8 +160,8 @@ between the user and Agent. Read [design-guidelines.md](references/design-guidel
    simplification, performance warnings, online basemaps, font fallback, portability, and source
    attribution.
 
-Use the quick path only for one unambiguous layer, or after explicitly supplying the template and
-primary layer:
+Use the quick path for one unambiguous layer, or after resolving the template from the user's
+intent and supplying it explicitly (plus `--primary-layer` for a multilayer map-list):
 
 ```powershell
 python scripts/map_builder.py run <input> --output dist
@@ -163,7 +170,10 @@ python scripts/map_builder.py run <input> --output dist
 Follow the user's conversation language independently of the map audience. Set the map locale to
 `en-US` or `zh-CN`; use `en-US` when the audience is not specified.
 
-Install the deterministic engine once, then run the offline self-check:
+Install the deterministic engine once, then run the offline self-check. The base installation
+supports vector/CSV inputs and all existing map styles and static outputs. For Excel input, install
+`python -m pip install ".[excel]"` from the Skill root; `".[all]"` installs all supported readers.
+Inspect/build will name a missing Excel reader and the installation command rather than guessing:
 
 ```powershell
 python -m pip install .

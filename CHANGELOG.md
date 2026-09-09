@@ -27,6 +27,31 @@ first release with an automated tag, distribution assets, and GitHub Release wor
 
 ## [Unreleased] / 未发布
 
+### Changed / 调整
+
+- 版本、帮助和更新检查延迟加载 GIS 引擎；普通 HTML 构建按需加载配色和静态渲染模块。
+  Version, help, and updater commands defer the GIS runtime; ordinary HTML builds load color and
+  static-rendering modules only when needed. Existing graduated palette colors remain unchanged.
+- Excel 读取器改为 `excel`／`all` 可选依赖；检查与读取缺少依赖时给出一致的安装提示。
+  Excel readers move to the `excel`/`all` extras, with consistent installation guidance during
+  inspection and loading. Existing installed readers continue working. Matplotlib remains required
+  for interpolated graduated palettes; the geographic validation contract is unchanged.
+- 从明确的用户意图确定多图层模板，减少重复确认；保留坐标系、分类含义和数据公开等关键确认。
+  Resolve multilayer templates from explicit user intent, use reversible presentation defaults,
+  and retain confirmation for genuine data/meaning/exposure blockers.
+
+### Fixed / 修复
+
+- 向导统一使用只读更新预检，避免制图流程与独立安装维护混在一起；Excel 检查正确关闭工作簿。
+  The setup guide consistently uses read-only update preflight; workbook inspection closes its
+  reader after parsing the requested sheets.
+
+### Added / 新增
+
+- 增加依赖隔离、命令启动、Excel 缺失提示、配色兼容及明确多图层需求的回归覆盖。
+  Add regression coverage for import isolation, CLI startup, missing Excel readers, color
+  compatibility, and intent-resolved multilayer builds. Trigger evaluations cover 44 cases.
+
 ## [0.5.1] - 2026-08-11
 
 ### Fixed / 修复

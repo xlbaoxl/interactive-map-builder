@@ -17,8 +17,7 @@ from importlib.metadata import PackageNotFoundError, version as distribution_ver
 from pathlib import Path
 from typing import Any, Dict, Optional, Sequence
 
-import map_builder
-from mapcore.spec import current_schema_version
+from mapcore.arguments import build_parser
 from mapcore.version import __version__
 
 
@@ -36,6 +35,8 @@ def package_version() -> str:
 
 
 def _doctor_spec() -> Dict[str, Any]:
+    from mapcore.spec import current_schema_version
+
     return {
         "schema_version": current_schema_version(),
         "template": "map-list",
@@ -69,6 +70,8 @@ def _doctor_spec() -> Dict[str, Any]:
 
 def run_doctor() -> Dict[str, Any]:
     """Run an offline end-to-end build and verification smoke test."""
+
+    import map_builder
 
     with tempfile.TemporaryDirectory(prefix="interactive-map-builder-doctor-") as temp_dir:
         root = Path(temp_dir)
@@ -144,7 +147,7 @@ def _doctor_parser() -> argparse.ArgumentParser:
 
 
 def _print_root_help() -> None:
-    map_builder._parser(prog="interactive-map-builder").print_help()
+    build_parser(prog="interactive-map-builder").print_help()
     print()
     print("package commands:")
     print("  doctor              Run an offline installation and build self-check.")
@@ -190,6 +193,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 file=sys.stderr,
             )
             return 2
+    # argparse handles subcommand help/errors without importing the GIS engine.
+    # The builder retains its own parser entry point for source-checkout callers.
+    build_parser(prog="interactive-map-builder").parse_args(arguments)
+    import map_builder
+
     return map_builder.main(arguments, prog="interactive-map-builder")
 
 
