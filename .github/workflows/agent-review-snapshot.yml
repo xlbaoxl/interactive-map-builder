@@ -1,0 +1,24 @@
+name: agent-review-snapshot
+
+# Temporary review-only workflow; removed before merging the implementation.
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  source:
+    if: github.head_ref == 'agent/lean-runtime-first-build'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v6
+      - name: Archive tracked source for local regression testing
+        run: git archive --format=tar HEAD > /tmp/imb-review-source.tar
+      - uses: actions/upload-artifact@v4
+        with:
+          name: imb-review-source
+          path: /tmp/imb-review-source.tar
+          retention-days: 1
