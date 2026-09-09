@@ -1,6 +1,6 @@
 name: agent-review-tree
 
-# Temporary branch-only transport; candidate tree removes all transport files.
+# Temporary transport: create verified content blobs only; never move a ref.
 on:
   pull_request:
     branches: [main]
@@ -17,18 +17,12 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
-      - name: Verify tested patch and create candidate Git tree without moving a branch
+      - name: Verify tested source and upload content blobs
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           python - <<'PY'
-          import base64
-          import gzip
-          import hashlib
-          import json
-          import os
-          import subprocess
-          import urllib.request
+          import base64, gzip, hashlib, json, os, subprocess, urllib.request
           from pathlib import Path
 
           def git(*args):
@@ -53,23 +47,20 @@ jobs:
           paths = subprocess.check_output(['git', 'diff', '--cached', '--name-only', '-z']).decode().strip('\0').split('\0')
           entries = []
           for name in paths:
-              entry = {'path': name, 'mode': '100644', 'type': 'blob'}
               source = Path(name)
-              if source.is_file():
-                  entry['mode'] = git('ls-files', '--stage', '--', name).split()[0]
-                  entry['content'] = source.read_text(encoding='utf-8')
-              else:
-                  entry['sha'] = None
-              entries.append(entry)
-          request = urllib.request.Request(
-              'https://api.github.com/repos/' + os.environ['GITHUB_REPOSITORY'] + '/git/trees',
-              data=json.dumps({'base_tree': git('rev-parse', 'HEAD^{tree}'), 'tree': entries}).encode(),
-              method='POST',
-              headers={'Authorization': 'Bearer ' + os.environ['GH_TOKEN'], 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json', 'X-GitHub-Api-Version': '2022-11-28'},
-          )
-          with urllib.request.urlopen(request, timeout=60) as response:
-              result = json.load(response)
-          assert result['sha'] == expected, result['sha']
-          print('CANDIDATE_TREE_SHA=' + result['sha'])
-          print('Candidate contains the tested implementation; all temporary transport files removed.')
+              if not source.is_file():
+                  continue
+              data = source.read_bytes()
+              request = urllib.request.Request(
+                  'https://api.github.com/repos/' + os.environ['GITHUB_REPOSITORY'] + '/git/blobs',
+                  data=json.dumps({'content': base64.b64encode(data).decode(), 'encoding': 'base64'}).encode(),
+                  method='POST',
+                  headers={'Authorization': 'Bearer ' + os.environ['GH_TOKEN'], 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json', 'X-GitHub-Api-Version': '2022-11-28'},
+              )
+              with urllib.request.urlopen(request, timeout=60) as response:
+                  result = json.load(response)
+              assert result['sha'] == git('hash-object', name)
+              entries.append({'path': name, 'mode': git('ls-files', '--stage', '--', name).split()[0], 'type': 'blob', 'sha': result['sha']})
+          print('VERIFIED_BLOBS=' + json.dumps(entries))
+          print('EXPECTED_FINAL_TREE=' + expected)
           PY
