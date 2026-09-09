@@ -102,6 +102,20 @@ Create a new task after installation. If the Skill does not appear, restart Code
 Starting with v0.4.3, repository-copy installs whose Release-owned files match the checksum-verified
 official package can enter managed updates automatically.
 
+The base installation supports vector/CSV inputs and all existing map styles and static outputs.
+Excel readers are installed on demand. From the Skill root, choose the installation that fits the input:
+
+```bash
+python -m pip install .           # Vector/CSV inputs
+python -m pip install ".[excel]" # Add .xlsx and .xls readers
+python -m pip install ".[all]"   # All supported readers
+```
+
+Existing environments keep readers already installed. Missing Excel readers produce an actionable
+message during inspection or loading. Matplotlib remains a declared dependency because interpolated
+graduated palettes use its color semantics; ordinary HTML builds load neither its plotting backend
+nor Excel readers. Version/help commands and updater checks defer loading the GIS runtime.
+
 ### 2. Attach spatial data and describe the result
 
 ```text
@@ -117,8 +131,12 @@ remain unresolved:
 - [ ] Needs confirmation: required before the build can start
 ```
 
-It groups build-critical choices into one confirmation round, including CRS, template, primary
-layer, category meaning, display fields, output formats, and audience locale.
+The Agent resolves the template from the requested outcome. Independent layer switches select
+`multilayer`; an identified primary record list selects `map-list`. Clear requests proceed after
+inspection, including requests with several layers. Only genuine blockers such as an unknown CRS,
+ambiguous category meaning, an unresolved primary layer, or data-exposure permission require a
+confirmation round. Reversible presentation defaults remain visible and can be refined after the
+first verified build.
 
 ### 3. Verify the installation
 

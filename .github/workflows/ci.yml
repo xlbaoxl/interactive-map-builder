@@ -87,6 +87,7 @@ jobs:
           python -m pytest -q
           tests/test_spec.py
           tests/test_loaders.py
+          tests/test_lean_runtime.py
           tests/test_cli_integration.py
           tests/test_delivery_transaction.py
           tests/test_safe_zip.py
@@ -112,6 +113,11 @@ jobs:
           /tmp/imb-wheel/bin/python -m pip install --force-reinstall dist/*.whl
           /tmp/imb-wheel/bin/interactive-map-builder --version
           /tmp/imb-wheel/bin/interactive-map-builder doctor
+          /tmp/imb-wheel/bin/python - <<'PYCODE'
+          from importlib.util import find_spec
+          assert find_spec("openpyxl") is None, "Base wheel unexpectedly installed openpyxl"
+          assert find_spec("xlrd") is None, "Base wheel unexpectedly installed xlrd"
+          PYCODE
       - name: Build outside the repository from the installed wheel
         run: |
           mkdir -p /tmp/imb-project

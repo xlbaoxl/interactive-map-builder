@@ -8,7 +8,6 @@ from typing import Any, Dict, Mapping, Sequence, Tuple
 import geopandas as gpd
 import numpy as np
 import pandas as pd
-from matplotlib.colors import LinearSegmentedColormap, to_hex
 
 from .semantic_styles import infer_semantic_role, semantic_categories
 from .visual_defaults import SEQUENTIAL_PALETTE
@@ -59,6 +58,10 @@ def _colors(values: Sequence[str], count: int) -> Sequence[str]:
     configured = [str(value) for value in values] if values else list(SEQUENTIAL_PALETTE)
     if len(configured) == count:
         return configured
+    # Interpolated graduated palettes retain Matplotlib's exact color semantics.
+    # Single/categorical styles and already-sized palettes do not need it loaded.
+    from matplotlib.colors import LinearSegmentedColormap, to_hex
+
     cmap = LinearSegmentedColormap.from_list("interactive-map-builder", configured)
     if count == 1:
         return [to_hex(cmap(0.5), keep_alpha=False)]

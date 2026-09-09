@@ -1,40 +1,45 @@
 """Core data utilities for Interactive Map Builder.
 
-The package deliberately keeps loading, normalization, validation, and remote
-acquisition separate so callers can inspect data before deciding how to build
-a map.
+Public helpers are imported on first access. Version queries, updater checks,
+and CLI help can therefore run before the GIS runtime is loaded or repaired.
 """
 
-from .arcgis import ArcGISDownloadResult, ArcGISError, download_feature_service, fetch_arcgis
-from .delivery import DELIVERY_MANIFEST_NAME
-from .loaders import DataLoadError, load_geodata, load_input, load_source
-from .normalize import NormalizationReport, normalize_geodata, stable_feature_id
-from .spec import current_schema_version
-from .version import __version__
-from .validate import (
-    ValidationError,
-    ValidationReport,
-    ensure_count_consistency,
-    validate_geodata,
-)
+from importlib import import_module
 
-__all__ = [
-    "ArcGISDownloadResult",
-    "ArcGISError",
-    "DataLoadError",
-    "DELIVERY_MANIFEST_NAME",
-    "NormalizationReport",
-    "ValidationError",
-    "ValidationReport",
-    "current_schema_version",
-    "download_feature_service",
-    "ensure_count_consistency",
-    "fetch_arcgis",
-    "load_geodata",
-    "load_input",
-    "load_source",
-    "normalize_geodata",
-    "stable_feature_id",
-    "validate_geodata",
-    "__version__",
-]
+from .version import __version__
+
+
+_EXPORTS = {
+    "ArcGISDownloadResult": ".arcgis",
+    "ArcGISError": ".arcgis",
+    "DataLoadError": ".loaders",
+    "DELIVERY_MANIFEST_NAME": ".delivery",
+    "NormalizationReport": ".normalize",
+    "ValidationError": ".validate",
+    "ValidationReport": ".validate",
+    "current_schema_version": ".spec",
+    "download_feature_service": ".arcgis",
+    "ensure_count_consistency": ".validate",
+    "fetch_arcgis": ".arcgis",
+    "load_geodata": ".loaders",
+    "load_input": ".loaders",
+    "load_source": ".loaders",
+    "normalize_geodata": ".normalize",
+    "stable_feature_id": ".normalize",
+    "validate_geodata": ".validate",
+}
+
+__all__ = [*_EXPORTS, "__version__"]
+
+
+def __getattr__(name: str):
+    module_name = _EXPORTS.get(name)
+    if module_name is None:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    value = getattr(import_module(module_name, __name__), name)
+    globals()[name] = value
+    return value
+
+
+def __dir__():
+    return sorted(set(globals()) | set(__all__))

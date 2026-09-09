@@ -2,9 +2,10 @@
 
 ## Preflight
 
-Run `python scripts/update_skill.py --auto` from the Skill root before inspection. The check is
-cached for 24 hours and must remain non-blocking when offline, modified, read-only, or installed
-from an unsupported source. If an update is applied, re-read `SKILL.md` before continuing.
+Run `python scripts/update_skill.py --preflight` from the Skill root before inspection. The check
+is cached for 24 hours and remains non-blocking when offline, modified, read-only, or installed
+from an unsupported source. It never modifies the installation. Applying updates is a separate,
+explicit maintenance action; follow [update-policy.md](update-policy.md).
 
 In Codex, optionally mention Plan mode once when a request contains multiple independent layers,
 more than one blocking design choice, or several coordinated outputs. Continue immediately whether
@@ -24,7 +25,7 @@ Run `inspect` before asking questions. Report each candidate layer with:
 
 Do not ask for facts the inspection already establishes.
 
-## Round 2: confirm intent
+## Round 2: resolve intent and genuine blockers
 
 Show and maintain a compact Markdown requirements checklist while choices remain unresolved:
 
@@ -35,15 +36,19 @@ Show and maintain a compact Markdown requirements checklist while choices remain
 ```
 
 Populate it from the user request and inspection result. Keep inferred decisions visible and
-revisable. Do not build while any blocking `[ ]` item remains.
+revisable. Do not build while any blocking `[ ]` item remains. When the request is complete,
+proceed directly; the checklist is not an extra approval ceremony.
 
-Ask one compact group of questions covering only unresolved choices:
+Resolve `multilayer` from a request for independently switchable layers. Resolve `map-list` when
+the user has identified a primary record list. Pass these choices to `init-spec` or `run`; do not
+ask users to choose technical template names after they have already described the outcome.
+Keep CLI `auto` conservative when no conversational intent is available.
 
-1. Which layer is primary?
-2. Which field names each feature?
-3. Which field controls color, and what do its values mean?
-4. Which fields should be searchable, filterable, sortable, or visible on cards?
-5. What title, subtitle, source note, outputs, and audience locale are needed?
+Ask once for genuine blockers: missing CRS or geometry mapping, category meanings the user wants
+interpreted, an unresolved primary layer, destructive changes, or permission to expose data.
+Respect choices the user explicitly reserves. Use reversible presentation defaults for title,
+layout, context opacity, and display fields, show them briefly, then build and refine. Unknown
+category codes may be displayed literally; scientific meanings must come from the user or source.
 
 Treat HTML as the default output. Enable `slide-16x9` or `paper` only after the user explicitly
 requests that deliverable; do not infer static figures from a request for a website or map.

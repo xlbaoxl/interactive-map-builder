@@ -10,7 +10,7 @@ from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 import geopandas as gpd
 import pandas as pd
 
-from .loaders import DataLoadError, load_geodata
+from .loaders import DataLoadError, excel_engine, load_geodata
 from .locales import merged_input_aliases
 from .report import sha256_file
 
@@ -431,12 +431,12 @@ def inspect_inputs(
                         "Could not decode CSV input as UTF-8. Re-run with --encoding."
                     ) from exc
             else:
-                workbook = pd.ExcelFile(source_path)
-                names = [sheet] if sheet is not None else list(workbook.sheet_names)
-                tables = [
-                    (str(name), pd.read_excel(source_path, sheet_name=name))
-                    for name in names
-                ]
+                with pd.ExcelFile(source_path, engine=excel_engine(source_path)) as workbook:
+                    names = [sheet] if sheet is not None else list(workbook.sheet_names)
+                    tables = [
+                        (str(name), workbook.parse(sheet_name=name))
+                        for name in names
+                    ]
             for table_name, table in tables:
                 source: Dict[str, Any] = {
                     "input_index": input_index,

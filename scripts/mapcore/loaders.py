@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from importlib import import_module
 import tempfile
 import zipfile
 from pathlib import Path, PurePosixPath
@@ -18,6 +19,23 @@ PathLike = Union[str, Path]
 
 class DataLoadError(ValueError):
     """Raised when an input cannot be loaded without guessing its meaning."""
+
+
+def excel_engine(path: Path) -> str:
+    """Resolve the optional Excel reader with an actionable installation error."""
+
+    engine = "xlrd" if path.suffix.lower() == ".xls" else "openpyxl"
+    try:
+        import_module(engine)
+    except ModuleNotFoundError as exc:
+        if exc.name != engine:
+            raise  # A broken reader/transitive dependency is not an absent extra.
+        raise DataLoadError(
+            f"Excel input {path.name!r} requires the optional {engine} reader. "
+            'Install the excel extra from your installation source; from the Skill root run: '
+            'python -m pip install ".[excel]".'
+        ) from exc
+    return engine
 
 
 def _validate_zip_member(info: zipfile.ZipInfo) -> None:
@@ -211,8 +229,9 @@ def load_geodata(
     elif suffix in {".xlsx", ".xls"}:
         if layer is not None:
             raise DataLoadError("layer is not supported for Excel inputs.")
+        engine = excel_engine(source)
         try:
-            table = pd.read_excel(str(source), sheet_name=sheet_name)
+            table = pd.read_excel(str(source), sheet_name=sheet_name, engine=engine)
         except Exception as exc:
             raise DataLoadError("Could not read Excel input: {}".format(source)) from exc
         frame = _tabular_geometry(

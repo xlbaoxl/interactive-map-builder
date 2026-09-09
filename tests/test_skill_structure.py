@@ -58,7 +58,7 @@ def test_openai_interface_mentions_skill_and_user_intent():
 def test_behavior_evals_and_localized_readmes_are_present():
     evals = yaml.safe_load((ROOT / "evals" / "cases.yaml").read_text(encoding="utf-8"))
     assert evals["version"] == 2
-    assert len(evals["cases"]) == 40
+    assert len(evals["cases"]) == 44
     invocations = {case["expected"]["invocation"] for case in evals["cases"]}
     assert invocations == {"trigger", "do_not_use"}
     categories = {case["category"] for case in evals["cases"]}
@@ -167,3 +167,18 @@ def test_atlas_visual_guidance_is_documented_without_expanding_mapspec():
     assert "Explicit MapSpec values always win" in spec
     assert json.loads(schema)["properties"]["schema_version"]["const"] == "1.1"
     assert "MapSpec 1.2" not in spec
+
+
+def test_resolved_intent_and_readonly_preflight_are_consistent():
+    skill = (ROOT / "SKILL.md").read_text(encoding="utf-8")
+    wizard = (ROOT / "references" / "wizard-flow.md").read_text(encoding="utf-8")
+    assert "Multiple layers alone" in skill
+    assert "do not require another user turn" in skill
+    assert "Always confirm the template" not in skill
+    assert "Never guess a missing CRS" in skill
+    assert "explicitly reserves" in skill
+    assert "scripts/update_skill.py --preflight" in wizard
+    assert "scripts/update_skill.py --auto" not in wizard
+    assert "reversible presentation defaults" in wizard
+    for path in ("README.md", "README.zh-CN.md", "SKILL.md"):
+        assert '.[excel]' in (ROOT / path).read_text(encoding="utf-8")

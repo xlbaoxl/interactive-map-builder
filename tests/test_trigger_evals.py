@@ -13,15 +13,15 @@ def test_trigger_suite_has_balanced_intent_and_boundary_coverage():
     assert summary == {
         "status": "pass",
         "version": 2,
-        "case_count": 40,
+        "case_count": 44,
         "categories": {
-            "ambiguous": 8,
+            "ambiguous": 9,
             "do_not_use": 10,
-            "explicit": 11,
+            "explicit": 14,
             "implicit": 11,
         },
-        "invocations": {"do_not_use": 10, "trigger": 30},
-        "locales": {"en-US": 19, "zh-CN": 21},
+        "invocations": {"do_not_use": 10, "trigger": 34},
+        "locales": {"en-US": 21, "zh-CN": 23},
     }
 
 
@@ -65,4 +65,4 @@ def test_trigger_scorer_reports_accuracy_coverage_and_stability():
     assert result["metrics"]["invocation_accuracy"] == 1.0
     assert result["metrics"]["false_positive_rate"] == 0.0
     assert result["metrics"]["stable_repeated_cases"] == 1.0
-    assert len(result["missing_cases"]) == 38
+    assert len(result["missing_cases"]) == 42

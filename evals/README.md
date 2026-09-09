@@ -6,7 +6,7 @@ or another Agent Skills client can run the same prompts and record results in on
 
 ## Case manifest
 
-`cases.yaml` contains 40 English and Chinese cases across four categories:
+`cases.yaml` contains 44 English and Chinese cases across four categories:
 
 - `explicit`: the prompt names a supported format or map behavior;
 - `implicit`: the prompt describes the desired outcome without GIS or Skill terminology;
@@ -70,3 +70,25 @@ stability for cases with repeated runs.
 
 Raw experimental results are not treated as product usage counts. Record the Agent client, tested
 model, date, and run conditions before comparing releases.
+
+## Task quality and added value
+
+Trigger accuracy is not evidence that the Skill improves map delivery. Compare three arms using
+one fixed Agent/model, the same source data and request, and equal time/tool budgets:
+
+- A: normal development environment and standard libraries, without this project;
+- B: the packaged engine plus minimal CLI usage, without the Skill conversation instructions;
+- C: the same engine plus the full Skill and its referenced guidance.
+
+Use the repository CSV points and multilayer examples, then include a missing-CRS case and a
+follow-up request that changes filters or replaces source records. Predefine expected IDs, counts,
+field meanings, requested interactions, and a follow-up edit before running any arm. A renderer
+choice is not itself a pass criterion. Verify the delivered artifact independently of each arm's
+own build report, and judge visual quality without showing the evaluator which arm produced it.
+Record total elapsed time, time to first usable map, user-intervention turns, correctness failures,
+rework, and tool/token cost. Separate clean installation from already-installed execution; repeat
+and alternate the order of runs. Record the commit, environment, dependencies, model and date.
+
+B versus A measures engine reuse; C versus B measures the incremental instructions. Publish real
+observations and their limitations, not fabricated model runs or conclusions inferred from the
+number of tests. No A/B/C outcome is asserted by this repository change.
