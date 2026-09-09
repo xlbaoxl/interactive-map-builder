@@ -329,5 +329,19 @@
     "cta_primary": "打开在线演示",
     "cta_secondary": "查看 GitHub",
     "footer": "Interactive Map Builder · MIT 许可证"
+  },
+  "view_state": {
+    "share": "分享当前视图",
+    "close": "关闭",
+    "html": "下载当前视图 HTML",
+    "export": "导出视图 JSON",
+    "import": "导入视图 JSON",
+    "help": "HTML 打开后直接恢复当前视图。视图 JSON 需要在相同地图和数据中导入。",
+    "privacy": "HTML 包含全部内嵌对象，包括隐藏和被筛除的记录。筛选不等于脱敏。视图 JSON 可能包含搜索词和选中对象 ID，请仅分享给有权接收的人。",
+    "restored": "视图已恢复。",
+    "invalid": "视图无法恢复，当前地图保持不变。",
+    "mismatch": "此视图来自另一张地图或不同的数据版本。",
+    "oversized": "视图文件超过 1 MiB 大小限制。",
+    "downloaded": "下载已准备。原始构建清单不覆盖这份浏览器导出的副本。"
   }
 }

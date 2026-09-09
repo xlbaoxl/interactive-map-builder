@@ -153,5 +153,6 @@ def test_multilayer_assets_include_control_stack_and_visual_qa_only_for_that_tem
     assert "is-controls-collapsed" in multilayer["css"]
 
     map_list = _template_assets("map-list")
-    assert "imb-controls-collapse" not in map_list["javascript"]
+    # Shared view-state code references this control but never creates it for map-list.
+    assert 'toggle.id = "imb-controls-collapse"' not in map_list["javascript"]
     assert "is-controls-collapsed" not in map_list["css"]

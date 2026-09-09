@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import math
 import re
@@ -214,8 +215,10 @@ def _template_assets(template_name: str) -> Dict[str, str]:
 
     javascript = read_resource_text("templates", "shared.js")
     javascript += "\n" + read_resource_text("templates", "saved-views.js")
+    javascript += "\n" + read_resource_text("templates", "view-state.js")
     css = read_resource_text("templates", "atlas-studio-light.css")
     css += "\n" + read_resource_text("templates", "saved-views.css")
+    css += "\n" + read_resource_text("templates", "view-state.css")
     if template_name == "multilayer":
         javascript += "\n" + read_resource_text(
             "templates", "multilayer-enhancements.js"
@@ -266,6 +269,10 @@ def render_html(
         "layers": layers,
         "catalog": catalog,
     }
+    # Bind view files to this exact data/configuration, independently of the HTML file's location.
+    payload["view_state_key"] = hashlib.sha256(
+        _safe_json_script(payload).encode("utf-8")
+    ).hexdigest()
     assets = _template_assets(selected_template)
     rendered = template.render(
         language=locale,

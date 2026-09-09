@@ -674,7 +674,11 @@
       });
       return index >= 0 ? activate(index) : false;
     };
-    return { basemaps: basemaps, activate: activate };
+    return {
+      basemaps: basemaps,
+      activate: activate,
+      getActiveIndex: function () { return activeIndex; }
+    };
   }
 
   function fitToGroups(map, groups) {

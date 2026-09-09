@@ -225,6 +225,16 @@ when the user requests paper PNG/SVG/PDF. Never expand an HTML-only request into
 Treat an unbundled `map_spec.json` as a build record; promise an independent rebuild only when
 sources were bundled. Public hosting is not part of this output contract.
 
+## Sharing an explored view
+
+When the user wants a colleague to open the map at the current search/filter/view, use the page's
+**Share view** control after verifying that state. Download the HTML snapshot for direct opening,
+or export/import view JSON for the same data/configuration. Read
+[view-state.md](references/view-state.md). A snapshot contains all embedded data, including filtered
+and hidden objects; filters do not redact data. Keep the manifest-controlled original `dist`
+unchanged. Browser exports are separate artifacts, not newly verified build bundles. Named local
+bookmarks and other browser history are not included. Public hosting remains a separate workflow.
+
 ## Resources
 
 - Read [wizard-flow.md](references/wizard-flow.md) for non-expert setup.
