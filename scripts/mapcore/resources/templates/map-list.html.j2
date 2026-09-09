@@ -196,7 +196,7 @@
       });
 
       var map = IMB.setupMap();
-      IMB.addBasemap(map, spec, payload.catalog.shared);
+      var basemapController = IMB.addBasemap(map, spec, payload.catalog.shared);
       var basemapSelect = document.querySelector(".imb-map-tool-select");
       if (basemapSelect) {
         basemapSelect.setAttribute("aria-label", t("basemap"));
@@ -1217,6 +1217,22 @@
         if (button) { button.click(); return true; }
         return false;
       };
+      IMB.attachViewState(map, {
+        template: "map-list", basemap: basemapController,
+        state: state, search: search, sortSelect: sortSelect,
+        filterModels: filterModels, recordById: recordById,
+        clearSelection: function () {
+          var previousId = state.selectedId;
+          state.selectedId = "";
+          state.hoveredId = "";
+          IMB.qa.selectedId = "";
+          restoreVisual(previousId);
+          closeDetail();
+        },
+        closeDetail: closeDetail,
+        select: function (identifier) { return selectFeature(identifier, "map"); },
+        refresh: function () { updateSortUi(); applyFilters(); }
+      });
       IMB.finish("map-list", {
         recordCount: records.length,
         visibleRecordCount: state.filtered.length,

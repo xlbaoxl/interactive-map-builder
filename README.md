@@ -67,6 +67,19 @@ those exact map positions during a meeting or review. **Saved Views** completes 
 browser-local Center + Zoom state, keeping a fixed Overview entry, supporting rename/delete, and
 remaining separate from the map's data and MapSpec contract.
 
+
+## Share the current view
+
+Use **Share view → Download map HTML** to send a standalone copy that opens with the current
+map center and zoom, search, filters, sorting, selected object, layer visibility, and panel state.
+**Export view JSON** saves just the viewing state; **Import view JSON** restores it on the same
+map and data version. These files work independently of the local named-view bookmarks.
+
+The HTML includes **all embedded features**, including hidden and filtered-out records. Filters
+are not redaction. Share only with authorized recipients. Online basemaps still need network
+access. The browser-exported copy is separate from the original build manifest and rebuild bundle;
+keep the original `dist` unchanged. See [portable view state](references/view-state.md).
+
 ## Describe the outcome
 
 The Skill is designed to activate from requests like these:

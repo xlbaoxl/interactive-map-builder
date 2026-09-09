@@ -48,6 +48,13 @@ first release with an automated tag, distribution assets, and GitHub Release wor
 
 ### Added / 新增
 
+- 新增“分享当前视图”：下载可直接打开的 HTML 快照，或导出／导入同一地图的视图 JSON。
+  Share the current view as standalone HTML or export/import versioned view JSON. Restore camera,
+  filters, sorting, selection, layer visibility, and panels without sharing local named bookmarks.
+- 视图绑定完整地图数据与配置，错误版本、未知字段及超大文件在修改界面前被拒绝。
+  Bind view state to the complete map payload; validate version, fields, IDs, and size before
+  applying it. The sharing dialog explains that filtered/hidden data remain embedded in HTML.
+
 - 增加依赖隔离、命令启动、Excel 缺失提示、配色兼容及明确多图层需求的回归覆盖。
   Add regression coverage for import isolation, CLI startup, missing Excel readers, color
   compatibility, and intent-resolved multilayer builds. Trigger evaluations cover 44 cases.

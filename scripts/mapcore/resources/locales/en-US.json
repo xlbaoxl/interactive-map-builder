@@ -339,5 +339,19 @@
     "cta_primary": "Open live demos",
     "cta_secondary": "View GitHub",
     "footer": "Interactive Map Builder · MIT License"
+  },
+  "view_state": {
+    "share": "Share view",
+    "close": "Close",
+    "html": "Download map HTML",
+    "export": "Export view JSON",
+    "import": "Import view JSON",
+    "help": "The HTML opens directly at this view. A view JSON needs the same map and data to restore it.",
+    "privacy": "The HTML includes ALL embedded features, including hidden and filtered-out records. Filters are not redaction. View JSON may include search terms and selected IDs. Share only with authorized recipients.",
+    "restored": "View restored.",
+    "invalid": "View could not be restored. The current map is unchanged.",
+    "mismatch": "This view belongs to a different map or data version.",
+    "oversized": "View file exceeds the 1 MiB limit.",
+    "downloaded": "Download prepared. The original build manifest does not cover this browser-exported copy."
   }
 }

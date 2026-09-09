@@ -139,7 +139,7 @@
         label("search_layer");
 
       var map = IMB.setupMap();
-      IMB.addBasemap(map, spec, payload.catalog.shared);
+      var basemapController = IMB.addBasemap(map, spec, payload.catalog.shared);
       var mapControls = spec.map && spec.map.controls && typeof spec.map.controls === "object"
         ? spec.map.controls
         : {};
@@ -261,11 +261,13 @@
       }));
       window.setTimeout(function () {
         map.invalidateSize();
-        IMB.fitToGroups(map, runtimeLayers.filter(function (runtime) {
-          return runtime.enabled;
-        }).map(function (runtime) {
-          return runtime.group;
-        }));
+        if (!IMB.qa.viewState || !IMB.qa.viewState.restored) {
+          IMB.fitToGroups(map, runtimeLayers.filter(function (runtime) {
+            return runtime.enabled;
+          }).map(function (runtime) {
+            return runtime.group;
+          }));
+        }
       }, 220);
 
       var layerOptions = document.getElementById("imb-layer-options");
@@ -695,6 +697,14 @@
         setLegendCollapsed(Boolean(collapsed));
         return true;
       };
+      IMB.attachViewState(map, {
+        template: "multilayer", basemap: basemapController,
+        state: state, search: search, runtimeLayers: runtimeLayers,
+        registry: globalRegistry, setActiveLayer: setActiveLayer,
+        setLayerEnabled: setLayerEnabled, clearSelection: clearSelection,
+        select: function (identifier) { selectFeature(identifier, "map"); },
+        refresh: function () { applySearch(); updateSummary(); }
+      });
       IMB.finish("multilayer", {
         recordCount: totalFeatures,
         visibleRecordCount: state.matches.length,

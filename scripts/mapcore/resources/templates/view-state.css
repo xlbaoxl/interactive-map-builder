@@ -1,0 +1,29 @@
+.imb-share-view { flex: 0 0 auto; white-space: nowrap; }
+.imb-share-dialog {
+  width: min(560px, calc(100vw - 32px));
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 20px;
+  border: 1px solid var(--imb-line-strong);
+  border-radius: 16px;
+  background: var(--imb-panel-solid);
+  color: var(--imb-ink);
+  box-shadow: var(--imb-shadow-md);
+  font: inherit;
+}
+.imb-share-dialog::backdrop { background: rgba(23, 35, 38, 0.28); }
+.imb-share-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.imb-share-header h2 { margin: 0; font-size: 1.1rem; }
+.imb-share-dialog p { line-height: 1.6; overflow-wrap: anywhere; }
+.imb-share-notice { padding: 12px; border: 1px solid var(--imb-line-strong); border-radius: 8px; }
+.imb-share-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.imb-share-status { min-height: 1.6em; margin-bottom: 0; }
+[data-imb-restoring] *, [data-imb-restoring] *::before, [data-imb-restoring] *::after {
+  transition: none !important;
+  animation: none !important;
+}
+@media (max-width: 600px) {
+  .imb-share-actions { flex-direction: column; }
+  .imb-share-view { font-size: 0.75rem; padding: 6px 8px; }
+}
