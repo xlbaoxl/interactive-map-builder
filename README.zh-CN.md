@@ -94,6 +94,13 @@ HTML 包含**全部内嵌对象**，包括隐藏和被筛除的记录；筛选�
 
 支持显式调用 `$interactive-map-builder`，自然语言描述成果也能触发 Skill。
 
+## 当前版本：v0.6.0
+
+本版整合命令启动优化、明确意图直接构建和“分享当前视图”HTML／JSON 交付。
+MapSpec 保持 1.1；已有地图需重新构建才能获得分享入口。筛选和隐藏图层不会删除分享 HTML
+中的内嵌数据。全新安装需要读取 Excel 时安装 `.[excel]`，已安装的 Excel 读取器继续有效。
+详见[正式发布说明](https://github.com/xlbaoxl/interactive-map-builder/releases/tag/v0.6.0)。
+
 ## 快速开始
 
 ### 1. 在 Codex 中安装 Skill

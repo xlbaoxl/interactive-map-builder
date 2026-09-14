@@ -14,10 +14,15 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
   release:
     if: >-
       (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.event == 'push' &&
        github.event.workflow_run.conclusion == 'success' &&
        github.event.workflow_run.head_branch == 'main') ||
       github.event_name == 'workflow_dispatch'
@@ -56,7 +61,14 @@ jobs:
           from pathlib import Path
 
           data = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
-          print(data["project"]["version"])
+          import ast
+          version = data["project"]["version"]
+          module = ast.parse(Path("scripts/mapcore/version.py").read_text(encoding="utf-8"))
+          engine = next(ast.literal_eval(node.value) for node in module.body
+                        if isinstance(node, ast.Assign)
+                        and any(isinstance(t, ast.Name) and t.id == "__version__" for t in node.targets))
+          assert version == engine, "Package and engine versions differ"
+          print(version)
           PY
           )
           TAG="v$VERSION"
@@ -108,6 +120,64 @@ jobs:
             echo "state=incomplete" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Prepare release notes and asset integrity checker
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          python - <<'PYNOTES'
+          import os, re
+          from pathlib import Path
+          text = Path("CHANGELOG.md").read_text(encoding="utf-8")
+          version = re.escape(os.environ["VERSION"])
+          section = re.search(r"^## \[" + version + r"\][^\n]*\n(.*?)(?=^## |\Z)", text, re.M | re.S)
+          assert section and section.group(1).strip(), "Versioned release notes are missing"
+          Path(os.environ["RUNNER_TEMP"], "release-notes.md").write_text(section.group(1).strip() + "\n", encoding="utf-8")
+          PYNOTES
+          cat > "$RUNNER_TEMP/verify-release.py" <<'PYVERIFY'
+          import ast, hashlib, json, sys, tarfile, zipfile
+          from pathlib import Path
+          root, version = Path(sys.argv[1]), sys.argv[2]
+          skill_name = f"interactive-map-builder-skill-v{version}.zip"
+          wheel_name = f"interactive_map_builder-{version}-py3-none-any.whl"
+          source_name = f"interactive_map_builder-{version}.tar.gz"
+          expected = {skill_name, wheel_name, source_name}
+          lines = (root / "SHA256SUMS.txt").read_text().splitlines()
+          sums = {}
+          for line in lines:
+              digest, name = line.split(maxsplit=1)
+              name = name.lstrip("*")
+              assert name in expected and name not in sums, "Unexpected checksum entry"
+              assert hashlib.sha256((root / name).read_bytes()).hexdigest() == digest, name
+              sums[name] = digest
+          assert set(sums) == expected, "Missing checksum entry"
+          with zipfile.ZipFile(root / skill_name) as skill, zipfile.ZipFile(root / wheel_name) as wheel:
+              prefix = "interactive-map-builder/"
+              manifest = json.loads(skill.read(prefix + "PACKAGE_MANIFEST.json"))
+              assert manifest["name"] == "interactive-map-builder" and manifest["version"] == version
+              paths = [entry["path"] for entry in manifest["files"]]
+              assert len(paths) == len(set(paths))
+              names = skill.namelist()
+              assert len(names) == len(set(names))
+              assert set(names) == {prefix + p for p in paths} | {prefix + "PACKAGE_MANIFEST.json"}
+              for entry in manifest["files"]:
+                  data = skill.read(prefix + entry["path"])
+                  assert len(data) == entry["bytes"]
+                  assert hashlib.sha256(data).hexdigest() == entry["sha256"], entry["path"]
+                  if entry["path"].startswith("scripts/"):
+                      assert data == wheel.read(entry["path"][8:]), entry["path"]
+              code = ast.parse(skill.read(prefix + "scripts/mapcore/version.py"))
+              engine = next(ast.literal_eval(n.value) for n in code.body if isinstance(n, ast.Assign)
+                            and any(isinstance(t, ast.Name) and t.id == "__version__" for t in n.targets))
+              assert engine == version
+              if tuple(map(int, version.split("."))) >= (0, 6, 0):
+                  assert {"scripts/mapcore/arguments.py", "scripts/mapcore/resources/templates/view-state.js",
+                          "scripts/mapcore/resources/templates/view-state.css", "references/view-state.md"} <= set(paths)
+              with tarfile.open(root / source_name) as source:
+                  metadata = source.extractfile(f"interactive_map_builder-{version}/pyproject.toml")
+                  assert metadata and metadata.read() == skill.read(prefix + "pyproject.toml")
+          print(json.dumps({"status": "pass", "version": version, "sha256": sums, "manifest_files": len(paths)}, indent=2))
+          PYVERIFY
+
       - name: Build release assets
         if: steps.existing.outputs.state != 'complete'
         run: |
@@ -117,6 +187,19 @@ jobs:
           python scripts/build_skill_package.py \
             --output "dist/interactive-map-builder-skill-v${{ steps.version.outputs.version }}.zip"
           (cd dist && sha256sum *.whl *.tar.gz "interactive-map-builder-skill-v${{ steps.version.outputs.version }}.zip" > SHA256SUMS.txt)
+
+      - name: Verify candidate assets and clean wheel installation
+        if: steps.existing.outputs.state != 'complete'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          python "$RUNNER_TEMP/verify-release.py" dist "$VERSION"
+          python -m venv "$RUNNER_TEMP/imb-candidate"
+          "$RUNNER_TEMP/imb-candidate/bin/python" -m pip install dist/*.whl
+          cd "$RUNNER_TEMP"
+          test "$("$RUNNER_TEMP/imb-candidate/bin/interactive-map-builder" --version)" = "$VERSION"
+          "$RUNNER_TEMP/imb-candidate/bin/interactive-map-builder" doctor
 
       - name: Create GitHub Release
         if: steps.existing.outputs.state == 'missing'
@@ -130,7 +213,7 @@ jobs:
             dist/SHA256SUMS.txt \
             --target "${{ steps.identity.outputs.sha }}" \
             --title "Interactive Map Builder v${{ steps.version.outputs.version }}" \
-            --generate-notes \
+            --notes-file "$RUNNER_TEMP/release-notes.md" \
             --latest
 
       - name: Repair incomplete GitHub Release
@@ -157,3 +240,29 @@ jobs:
           grep -Fxq "SHA256SUMS.txt" <<<"$ASSETS"
           grep -Eq '\.whl$' <<<"$ASSETS"
           grep -Eq '\.tar\.gz$' <<<"$ASSETS"
+
+      - name: Download and verify the published assets
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          set -euo pipefail
+          PUBLISHED="$RUNNER_TEMP/imb-published"
+          mkdir -p "$PUBLISHED"
+          gh release download "$TAG" --dir "$PUBLISHED" \
+            --pattern '*.whl' --pattern '*.tar.gz' \
+            --pattern "interactive-map-builder-skill-v${VERSION}.zip" --pattern 'SHA256SUMS.txt'
+          python "$RUNNER_TEMP/verify-release.py" "$PUBLISHED" "$VERSION" | tee "$PUBLISHED/verification.json"
+          python -m venv "$RUNNER_TEMP/imb-published-install"
+          "$RUNNER_TEMP/imb-published-install/bin/python" -m pip install "$PUBLISHED"/*.whl
+          cd "$RUNNER_TEMP"
+          test "$("$RUNNER_TEMP/imb-published-install/bin/interactive-map-builder" --version)" = "$VERSION"
+          "$RUNNER_TEMP/imb-published-install/bin/interactive-map-builder" doctor | tee "$PUBLISHED/doctor.json"
+
+      - name: Retain verified published assets for audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: verified-release-${{ steps.version.outputs.tag }}
+          path: ${{ runner.temp }}/imb-published/
+          if-no-files-found: error
+          retention-days: 7

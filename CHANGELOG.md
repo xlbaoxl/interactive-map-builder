@@ -27,6 +27,8 @@ first release with an automated tag, distribution assets, and GitHub Release wor
 
 ## [Unreleased] / 未发布
 
+## [0.6.0] - 2026-09-15
+
 ### Changed / 调整
 
 - 版本、帮助和更新检查延迟加载 GIS 引擎；普通 HTML 构建按需加载配色和静态渲染模块。
@@ -58,6 +60,17 @@ first release with an automated tag, distribution assets, and GitHub Release wor
 - 增加依赖隔离、命令启动、Excel 缺失提示、配色兼容及明确多图层需求的回归覆盖。
   Add regression coverage for import isolation, CLI startup, missing Excel readers, color
   compatibility, and intent-resolved multilayer builds. Trigger evaluations cover 44 cases.
+
+### Release and upgrade / 发布与升级
+
+- 正式发布 v0.6.0；MapSpec 保持 1.1，已有地图需重新构建才能获得分享入口。
+  Release v0.6.0 while retaining MapSpec 1.1. Rebuild existing maps to add the Share view control.
+- 全新安装读取 Excel 时使用 `python -m pip install ".[excel]"`；已安装的 Excel 读取器继续有效。
+  Fresh source/Skill installations that read Excel use `python -m pip install ".[excel]"`.
+  Existing Excel readers remain usable after upgrading.
+- 发布前验证发行包校验和、清单和干净环境安装，发布后重新下载官方附件进行相同校验。
+  Verify checksums, manifests, and clean installation before publishing; download the official
+  assets again after publishing and repeat integrity and installation checks.
 
 ## [0.5.1] - 2026-08-11
 
