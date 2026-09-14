@@ -16,6 +16,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def test_package_version_and_cli_version_are_current(capsys):
     assert project_version() == __version__
+    assert f"The current stable release is **v{__version__}**" in (ROOT / "README.md").read_text(encoding="utf-8")
+    assert f"当前稳定版本为 **v{__version__}**" in (ROOT / "README.zh-CN.md").read_text(encoding="utf-8")
     assert package_version() == __version__
     assert cli_main(["--version"]) == 0
     assert capsys.readouterr().out.strip() == __version__

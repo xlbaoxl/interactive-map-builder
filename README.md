@@ -101,14 +101,6 @@ Turn these existing layers into one portable HTML file and export a 16:9 figure 
 Users can invoke `$interactive-map-builder` explicitly, and natural-language outcome requests also
 activate the Skill.
 
-## Current release: v0.6.0
-
-This release combines leaner command startup, intent-resolved first builds, and **Share view**
-HTML/JSON handoff. MapSpec stays at 1.1. Rebuild existing maps to add the sharing control;
-filters and hidden layers do not remove embedded data from shared HTML.
-For a new installation that reads Excel, install `.[excel]`; existing Excel readers remain usable.
-See [release notes](https://github.com/xlbaoxl/interactive-map-builder/releases/tag/v0.6.0).
-
 ## Quick start
 
 ### 1. Install the Skill in Codex
@@ -427,10 +419,12 @@ but does not silently switch rendering engines.
 
 ## Project status
 
-The current stable release is **v0.5.1**. Version 0.5 introduced browser-persistent Saved Views to
-both existing map products; 0.5.1 keeps Overview, Save View, and management controls visible when a
-larger saved-view list needs horizontal scrolling. MapSpec remains 1.1 and the two template families
-remain unchanged.
+The current stable release is **v0.6.0**. It combines leaner command startup,
+intent-resolved first builds, and portable **Share view** HTML/JSON handoff. Existing local
+Saved Views remain available; MapSpec stays at 1.1 and both template families are unchanged.
+Rebuild existing maps to add the sharing control. For fresh installations that read Excel,
+install `.[excel]`; existing readers remain usable.
+See [release notes](https://github.com/xlbaoxl/interactive-map-builder/releases/tag/v0.6.0).
 
 See the [changelog](CHANGELOG.md) for completed work.
 
