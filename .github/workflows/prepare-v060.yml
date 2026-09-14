@@ -1,0 +1,35 @@
+name: prepare-v060
+
+# Branch-only release preparation; neither this workflow nor its helper is merged.
+on:
+  push:
+    branches: [agent/release-v0.6.0]
+permissions:
+  contents: write
+jobs:
+  prepare:
+    if: github.repository == 'xlbaoxl/interactive-map-builder'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+          path: transport
+          persist-credentials: false
+      - uses: actions/checkout@v6
+        with:
+          ref: 39130597f6cfa74cac2be68d95dcc483ad96a3fd
+          path: source
+          persist-credentials: false
+      - name: Prepare exact release source and upload verified Git blobs only
+        working-directory: source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python ../transport/.github/prepare-v060.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: imb-release-prepared
+          path: ${{ runner.temp }}/imb-release-prepared/
+          if-no-files-found: error
+          retention-days: 1
