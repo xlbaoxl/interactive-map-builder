@@ -4,7 +4,7 @@ import json
 import zipfile
 from pathlib import Path
 
-from build_skill_package import build_skill_package
+from build_skill_package import build_skill_package, project_version
 from cli import main as cli_main
 from cli import package_version, run_doctor
 from map_builder import _parser as builder_parser
@@ -15,6 +15,9 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_package_version_and_cli_version_are_current(capsys):
+    assert project_version() == __version__
+    assert f"The current stable release is **v{__version__}**" in (ROOT / "README.md").read_text(encoding="utf-8")
+    assert f"当前稳定版本为 **v{__version__}**" in (ROOT / "README.zh-CN.md").read_text(encoding="utf-8")
     assert package_version() == __version__
     assert cli_main(["--version"]) == 0
     assert capsys.readouterr().out.strip() == __version__
@@ -71,6 +74,10 @@ def test_skill_package_is_lean_complete_and_deterministic(tmp_path: Path):
         "interactive-map-builder/scripts/mapcore/delivery.py",
         "interactive-map-builder/scripts/mapcore/safe_zip.py",
         "interactive-map-builder/scripts/mapcore/version.py",
+        "interactive-map-builder/scripts/mapcore/arguments.py",
+        "interactive-map-builder/scripts/mapcore/resources/templates/view-state.js",
+        "interactive-map-builder/scripts/mapcore/resources/templates/view-state.css",
+        "interactive-map-builder/references/view-state.md",
         "interactive-map-builder/scripts/mapcore/semantic_styles.py",
         "interactive-map-builder/scripts/mapcore/resources/map-spec.schema.json",
         "interactive-map-builder/scripts/mapcore/resources/templates/atlas-studio-light.css",

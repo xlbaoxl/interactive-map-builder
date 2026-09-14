@@ -419,10 +419,12 @@ but does not silently switch rendering engines.
 
 ## Project status
 
-The current stable release is **v0.5.1**. Version 0.5 introduced browser-persistent Saved Views to
-both existing map products; 0.5.1 keeps Overview, Save View, and management controls visible when a
-larger saved-view list needs horizontal scrolling. MapSpec remains 1.1 and the two template families
-remain unchanged.
+The current stable release is **v0.6.0**. It combines leaner command startup,
+intent-resolved first builds, and portable **Share view** HTML/JSON handoff. Existing local
+Saved Views remain available; MapSpec stays at 1.1 and both template families are unchanged.
+Rebuild existing maps to add the sharing control. For fresh installations that read Excel,
+install `.[excel]`; existing readers remain usable.
+See [release notes](https://github.com/xlbaoxl/interactive-map-builder/releases/tag/v0.6.0).
 
 See the [changelog](CHANGELOG.md) for completed work.
 
