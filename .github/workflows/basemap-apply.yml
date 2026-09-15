@@ -1,0 +1,54 @@
+name: basemap-apply
+# Temporary source transport; does not move refs or publish a release.
+on:
+  push:
+    branches: [agent/basemap-local-html]
+    paths: [.github/workflows/basemap-apply.yml, .github/basemap-parts/**]
+permissions:
+  contents: write
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Verify and prepare the exact locally reviewed tree
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import base64, gzip, hashlib, json, os, subprocess, urllib.request
+          from pathlib import Path
+          def git(*args):
+              return subprocess.check_output(['git', *args]).decode().strip()
+          encoded = ''.join(p.read_text() for p in sorted(Path('.github/basemap-parts').iterdir()))
+          data = base64.b64decode(encoded, validate=True)
+          assert hashlib.sha256(data).hexdigest() == '278d2642d798d1c9b305f9c8e1951969d770531b2827c1a61005b688ec7abf38'
+          subprocess.run(['git', 'apply', '--index', '-'], input=gzip.decompress(data), check=True)
+          subprocess.run(['git', 'rm', '-r', '.github/basemap-parts', '.github/workflows/basemap-apply.yml'], check=True)
+          subprocess.run(['git', 'diff', '--cached', '--check'], check=True)
+          tree = git('write-tree')
+          assert tree == '232be89e435a4904cc2928d1e77d9569a7337e74', tree
+          entries = []
+          paths = subprocess.check_output(['git', 'diff', '--cached', '--name-only', '-z']).decode().strip('\0').split('\0')
+          for name in paths:
+              p = Path(name)
+              if not p.is_file(): continue
+              content = p.read_bytes()
+              request = urllib.request.Request('https://api.github.com/repos/' + os.environ['GITHUB_REPOSITORY'] + '/git/blobs',
+                  data=json.dumps({'content':base64.b64encode(content).decode(), 'encoding':'base64'}).encode(), method='POST',
+                  headers={'Authorization':'Bearer '+os.environ['GH_TOKEN'], 'Content-Type':'application/json', 'Accept':'application/vnd.github+json'})
+              with urllib.request.urlopen(request, timeout=60) as response: result=json.load(response)
+              assert result['sha'] == git('hash-object', name)
+              entries.append({'path':name,'mode':git('ls-files','--stage','--',name).split()[0],'type':'blob','sha':result['sha']})
+          root=Path('/tmp/imb-prepared');root.mkdir()
+          (root/'entries.json').write_text(json.dumps({'tree':tree,'entries':entries},indent=2))
+          print('VERIFIED_TREE='+tree)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: imb-basemap-prepared
+          path: /tmp/imb-prepared
+          retention-days: 7
