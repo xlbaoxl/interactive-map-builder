@@ -53,4 +53,4 @@ Template adapters call the existing search/filter/selection logic; product execu
 call test actions. `captureViewState`, `restoreViewState` and `exportViewHTML` are available through
 the existing QA interface for regression testing.
 
-MapSpec remains version 1.1. Portable-view version 1 is a browser-state format, not a new MapSpec.
+MapSpec 1.2 accepts older 1.1 inputs. Portable-view version 1 is a browser-state format, not a new MapSpec.

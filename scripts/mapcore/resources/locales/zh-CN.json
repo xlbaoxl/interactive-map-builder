@@ -50,7 +50,14 @@
     "interactive_multilayer_map": "交互式多图层地图",
     "layer_control": "图层控制",
     "no_basemap": "无底图",
-    "basemap_unavailable": "在线底图加载失败，已切换为无底图。"
+    "basemap_unavailable": "在线底图暂不可用，已显示纯净背景；业务数据和地图控件仍可使用。可选择其他已配置底图重试。",
+    "basemap_error_key": "CARTO 需要有效授权密钥，已停止请求此匿名源。请迁移旧预设或配置已授权服务。",
+    "basemap_error_local": "OSM 官方公共瓦片不用于本地 HTML 交付，已停止请求。请迁移旧预设至 OpenFreeMap，或使用符合服务政策的网站部署。",
+    "basemap_error_renderer": "矢量底图渲染器未能启动。请检查 WebGL 支持，或选择已授权的图片底图；业务数据仍可使用。",
+    "basemap_error_webgl": "WebGL 渲染中断；业务数据仍可使用。可重新选择底图重试。",
+    "basemap_error_timeout": "底图在 20 秒内未完成加载。请检查网络后重新选择底图重试。",
+    "basemap_positron": "浅色分析 · OpenFreeMap",
+    "basemap_liberty": "标准街道 · OpenFreeMap"
   },
   "saved_views": {
     "region": "保存视角",

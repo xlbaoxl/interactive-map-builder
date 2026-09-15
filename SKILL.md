@@ -156,7 +156,13 @@ between the user and Agent. Read [design-guidelines.md](references/design-guidel
    control produces an observable result, the focal layer reads first, dense symbols remain legible,
    and HTML/static colors agree. Read [design-guidelines.md](references/design-guidelines.md).
 
-9. Deliver the whole `dist` directory. Summarize repairs, generated IDs, null display values,
+9. For legacy anonymous basemaps, use `migrate-basemaps --spec old.json --out migrated.json`
+   after confirming replacement of the old presets. It leaves the original and custom URLs intact.
+   Read [basemaps.md](references/basemaps.md). Build/verify do not prove live basemap availability:
+   inspect real file:// output online before claiming the backdrop works. Missing-key, local-OSM,
+   WebGL and network failures must leave business controls usable and show a localized reason.
+
+10. Deliver the whole `dist` directory. Summarize repairs, generated IDs, null display values,
    simplification, performance warnings, online basemaps, font fallback, portability, and source
    attribution.
 

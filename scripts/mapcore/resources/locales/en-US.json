@@ -60,7 +60,14 @@
     "interactive_multilayer_map": "Interactive multilayer map",
     "layer_control": "Layer control",
     "no_basemap": "No basemap",
-    "basemap_unavailable": "Basemap tiles could not be loaded. Showing no basemap."
+    "basemap_unavailable": "The online basemap is unavailable. Showing a plain background; map data and controls remain usable. Choose another configured basemap to retry.",
+    "basemap_error_key": "CARTO requires an authorized API key. This anonymous source was not requested. Migrate old presets or configure your provider.",
+    "basemap_error_local": "OSM public tiles are disabled for local HTML. Migrate old presets to OpenFreeMap or use a policy-compliant hosted deployment.",
+    "basemap_error_renderer": "The vector basemap renderer could not start. Check WebGL support or select an authorized raster basemap; your map data remain usable.",
+    "basemap_error_webgl": "The WebGL context was lost. Your map data remain usable; select a basemap to retry.",
+    "basemap_error_timeout": "The basemap did not finish loading within 20 seconds. Check the network and select a basemap to retry.",
+    "basemap_positron": "Light analysis · OpenFreeMap",
+    "basemap_liberty": "Street context · OpenFreeMap"
   },
   "saved_views": {
     "region": "Saved views",

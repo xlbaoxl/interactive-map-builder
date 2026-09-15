@@ -73,12 +73,12 @@ def test_init_spec_consumes_inspection_and_builds_csv_end_to_end(tmp_path: Path)
         "y_field": "纬度",
     }
     assert [item["name"] for item in spec["basemaps"]] == [
-        "CARTO Positron",
-        "OpenStreetMap Standard",
+        "OpenFreeMap Positron",
+        "OpenFreeMap Liberty",
     ]
     assert spec["basemaps"][0]["visible"] is True
     assert spec["basemaps"][1]["url"] == (
-        "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+        "https://tiles.openfreemap.org/styles/liberty"
     )
     assert sum(bool(item.get("visible")) for item in spec["basemaps"]) == 1
     assert "static" not in spec

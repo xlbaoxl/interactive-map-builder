@@ -164,7 +164,7 @@ def _landing_page(
       </div>
     </section>
   </main>
-  <footer class="shell footer"><span>{values["footer"]}</span><span>MapSpec 1.1 · en-US / zh-CN</span></footer>
+  <footer class="shell footer"><span>{values["footer"]}</span><span>MapSpec 1.2 · en-US / zh-CN</span></footer>
 </body>
 </html>
 """

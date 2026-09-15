@@ -157,7 +157,7 @@ def test_verified_update_policy_is_packaged_and_linked():
         assert expected in policy
 
 
-def test_atlas_visual_guidance_is_documented_without_expanding_mapspec():
+def test_atlas_visual_guidance_keeps_visual_fields_optional():
     skill = (ROOT / "SKILL.md").read_text(encoding="utf-8")
     design = (ROOT / "references" / "design-guidelines.md").read_text(encoding="utf-8")
     spec = (ROOT / "references" / "map-spec.md").read_text(encoding="utf-8")
@@ -165,8 +165,9 @@ def test_atlas_visual_guidance_is_documented_without_expanding_mapspec():
     assert "Atlas Studio Light" in skill
     assert "coarse density" in design
     assert "Explicit MapSpec values always win" in spec
-    assert json.loads(schema)["properties"]["schema_version"]["const"] == "1.1"
-    assert "MapSpec 1.2" not in spec
+    assert json.loads(schema)["properties"]["schema_version"]["const"] == "1.2"
+    assert "normalizes 1.1 inputs" in spec
+    assert "style" not in json.loads(schema)["$defs"]["layer"]["required"]
 
 
 def test_resolved_intent_and_readonly_preflight_are_consistent():

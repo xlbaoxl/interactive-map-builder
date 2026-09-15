@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "interactive-map-builder"
-version = "0.6.0"
+version = "0.7.0"
 description = "Turn existing spatial data into verified interactive maps and report-ready figures with AI agents."
 requires-python = ">=3.9"
 license = "MIT"
@@ -59,6 +59,8 @@ mapcore = [
   "resources/templates/*.css",
   "resources/templates/*.js",
   "resources/vendor/leaflet-1.9.4/*",
+  "resources/vendor/maplibre-gl-5.6.2/*",
+  "resources/vendor/maplibre-gl-leaflet-0.1.4/*",
 ]
 
 [tool.pytest.ini_options]

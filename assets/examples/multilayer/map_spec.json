@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.1",
+  "schema_version": "1.2",
   "template": "multilayer",
   "title": "Downtown Brooklyn Cycling and Transit",
   "subtitle": "4 neighborhood areas · 36 bicycle routes · 16 subway stations",
@@ -116,18 +116,20 @@
   ],
   "basemaps": [
     {
-      "name": "CARTO Positron",
-      "url": "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
-      "attribution": "© OpenStreetMap contributors © CARTO",
+      "name": "OpenFreeMap Positron",
+      "kind": "vector",
+      "url": "https://tiles.openfreemap.org/styles/positron",
+      "attribution": "OpenFreeMap © OpenMapTiles · Data from © OpenStreetMap contributors",
       "visible": true,
       "max_zoom": 20
     },
     {
-      "name": "OpenStreetMap Standard",
-      "url": "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-      "attribution": "© OpenStreetMap contributors",
+      "name": "OpenFreeMap Liberty",
+      "kind": "vector",
+      "url": "https://tiles.openfreemap.org/styles/liberty",
+      "attribution": "OpenFreeMap © OpenMapTiles · Data from © OpenStreetMap contributors",
       "visible": false,
-      "max_zoom": 19
+      "max_zoom": 20
     }
   ],
   "map": {

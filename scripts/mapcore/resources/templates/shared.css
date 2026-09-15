@@ -895,18 +895,27 @@ summary:focus-visible,
   position: absolute;
   right: 7px;
   bottom: 5px;
-  z-index: 500;
-  max-width: min(70%, 720px);
+  z-index: 800;
+  max-width: min(85%, 720px);
   padding: 3px 6px;
-  overflow: hidden;
+  overflow: visible;
   color: #425557;
   border-radius: 5px;
   background: rgba(255, 255, 255, 0.78);
   font-size: 9px;
-  line-height: 1.25;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  pointer-events: none;
+  line-height: 1.35;
+  white-space: normal;
+  pointer-events: auto;
+}
+
+.imb-map-attribution a {
+  color: inherit;
+  text-decoration: underline;
+}
+
+.imb-map-attribution a:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
 }
 
 .imb-leaflet-tool {
@@ -1360,10 +1369,14 @@ summary:focus-visible,
     inset: 8px;
   }
 
+  .imb-map-attribution {
+    max-width: calc(100% - 82px);
+  }
+
   .imb-sidebar {
     position: absolute;
     right: 12px;
-    bottom: 12px;
+    bottom: 44px;
     left: 12px;
     z-index: 720;
     max-height: min(46vh, 390px);
@@ -1383,7 +1396,7 @@ summary:focus-visible,
     position: absolute;
     top: auto;
     right: 12px;
-    bottom: 12px;
+    bottom: 44px;
     left: 12px;
     z-index: 780;
     width: auto;

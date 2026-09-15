@@ -121,6 +121,8 @@ def test_map_list_renders_single_safe_html(tmp_path):
         "template": "map-list",
         "single_file": True,
         "leaflet_embedded": True,
+        "vector_renderer_embedded": False,
+        "basemap_live_check": "not_performed",
         "qa_interface": "__interactiveMapBuilderQA",
         "feature_count": 2,
         "layer_counts": {"homes": 2},

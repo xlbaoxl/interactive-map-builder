@@ -1,0 +1,58 @@
+{
+  "packages": [
+    {
+      "package": "maplibre-gl",
+      "version": "5.6.2",
+      "url": "https://registry.npmjs.org/maplibre-gl/-/maplibre-gl-5.6.2.tgz",
+      "integrity": "sha512-SEqYThhUCFf6Lm0TckpgpKnto5u4JsdPYdFJb6g12VtuaFsm3nYdBO+fOmnUYddc8dXihgoGnuXvPPooUcRv5w=="
+    },
+    {
+      "package": "@maplibre/maplibre-gl-leaflet",
+      "version": "0.1.4",
+      "url": "https://registry.npmjs.org/@maplibre/maplibre-gl-leaflet/-/maplibre-gl-leaflet-0.1.4.tgz",
+      "integrity": "sha512-k57wcndZIvq3m08g2je4pjUPGr43ffNW3j+gXbymt8Vi2l1lUERUi1UmdTZcTPN8LuDDYOMWRNBaSLwpAu02ew=="
+    }
+  ],
+  "entries": [
+    {
+      "path": "scripts/mapcore/resources/vendor/maplibre-gl-5.6.2/maplibre-gl.js",
+      "type": "blob",
+      "mode": "100644",
+      "sha": "462833a36cd0c6c5dfad2511f8883f4407f99ece",
+      "bytes": 937395,
+      "sha256": "1525f971223d81f169f049f1ce50083e6f1643aa6b0ea0716653a550d2d57fc2"
+    },
+    {
+      "path": "scripts/mapcore/resources/vendor/maplibre-gl-5.6.2/maplibre-gl.css",
+      "type": "blob",
+      "mode": "100644",
+      "sha": "3f867477d52e734e9f9c3b93826e629b5ebbb744",
+      "bytes": 69430,
+      "sha256": "43c1d886b5fdf0aac4e7135bd6f84b823d9f48283a648012665f9be52c01389f"
+    },
+    {
+      "path": "scripts/mapcore/resources/vendor/maplibre-gl-5.6.2/LICENSE.txt",
+      "type": "blob",
+      "mode": "100644",
+      "sha": "1e8acbb54fa7baddc844377507cc5a79353174fb",
+      "bytes": 5984,
+      "sha256": "ee5fc05a0677eaf69601d2c7db0d9ecd6cc27c3abc1d0733bc9ed34707cf8ef2"
+    },
+    {
+      "path": "scripts/mapcore/resources/vendor/maplibre-gl-leaflet-0.1.4/leaflet-maplibre-gl.js",
+      "type": "blob",
+      "mode": "100644",
+      "sha": "35b37f2249fd7108e698cb15e1261f25c2a3af92",
+      "bytes": 9296,
+      "sha256": "1e6cf8cb3eb5fd909879aa1bf36a383fb506c9a5b2dbbfababce65a294dd1fcb"
+    },
+    {
+      "path": "scripts/mapcore/resources/vendor/maplibre-gl-leaflet-0.1.4/LICENSE",
+      "type": "blob",
+      "mode": "100644",
+      "sha": "416e0edb959cd9efedf99878d9fad9764f8844d8",
+      "bytes": 767,
+      "sha256": "eaa721ba158cbeff47ad53b1035dfc26ff744df66662c93ff715c9885197ebf3"
+    }
+  ]
+}

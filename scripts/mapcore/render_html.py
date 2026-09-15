@@ -274,7 +274,20 @@ def render_html(
         _safe_json_script(payload).encode("utf-8")
     ).hexdigest()
     assets = _template_assets(selected_template)
+    vector = any(item.get("kind") == "vector" for item in spec.get("basemaps", []))
+    basemap_js = read_resource_text("templates", "basemap-layer.js")
+    basemap_css = ""
+    if vector:
+        basemap_js = (
+            "/*\n" + read_resource_text("vendor", "maplibre-gl-5.6.2", "LICENSE.txt").replace("*/", "* /") + "\n*/\n" +
+            "/*\n" + read_resource_text("vendor", "maplibre-gl-leaflet-0.1.4", "LICENSE").replace("*/", "* /") + "\n*/\n" +
+            read_resource_text("vendor", "maplibre-gl-5.6.2", "maplibre-gl.js") + "\n" +
+            read_resource_text("vendor", "maplibre-gl-leaflet-0.1.4", "leaflet-maplibre-gl.js") + "\n" + basemap_js
+        )
+        basemap_css = read_resource_text("vendor", "maplibre-gl-5.6.2", "maplibre-gl.css")
     rendered = template.render(
+        basemap_js=_safe_script_source(basemap_js),
+        basemap_css=_safe_style_source(basemap_css),
         language=locale,
         catalog=catalog,
         page_title=str(spec.get("title") or "Interactive map"),
@@ -302,6 +315,8 @@ def render_html(
         "template": selected_template,
         "single_file": True,
         "leaflet_embedded": True,
+        "vector_renderer_embedded": vector,
+        "basemap_live_check": "not_performed",
         "qa_interface": "__interactiveMapBuilderQA",
         "feature_count": sum(layer_counts.values()),
         "layer_counts": layer_counts,

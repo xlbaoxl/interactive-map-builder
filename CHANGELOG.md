@@ -27,6 +27,20 @@ first release with an automated tag, distribution assets, and GitHub Release wor
 
 ## [Unreleased] / 未发布
 
+## [0.7.0] - 2026-09-16
+
+### Fixed / 修复
+
+- 本地 HTML 默认底图改用 OpenFreeMap Positron / Liberty；矢量渲染组件按需内嵌。
+  Local HTML defaults use OpenFreeMap Positron/Liberty; vector runtime assets are embedded only when needed.
+- 禁止本地文件请求 OSM 官方公共瓦片，缺少密钥时不请求 CARTO；失败显示具体原因并保留业务交互。
+  Block known missing-key CARTO and local-file OSM requests; keep business controls usable on failure.
+- 新增旧匿名预设的显式迁移；保留原配置与自定义地址，MapSpec 1.2 接受 1.1 输入。
+  Add explicit anonymous-preset migration without overwriting inputs/custom URLs. MapSpec 1.2 accepts 1.1.
+- 区分离线构建校验与真实底图验收，新增本地文件联网、分享重开和失败恢复测试。
+  Separate offline build checks from live-provider acceptance, with local-file, sharing and failure tests.
+
+
 ## [0.6.0] - 2026-09-15
 
 ### Changed / 调整

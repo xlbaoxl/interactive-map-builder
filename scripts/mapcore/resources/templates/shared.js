@@ -478,7 +478,7 @@
     var activeLayer = null;
     var activeIndex = -1;
     var selectNode = null;
-    var tileErrorCount = 0;
+    var activation = 0;
     var basemapWarningVisible = false;
     var attribution = document.getElementById("imb-map-attribution");
     var messageNode = document.getElementById("imb-map-message");
@@ -494,6 +494,17 @@
         return;
       }
       attribution.textContent = text(value);
+      if (text(value).indexOf("OpenFreeMap") === 0) {
+        attribution.replaceChildren();
+        [["OpenFreeMap", "https://openfreemap.org/"],
+          ["© OpenMapTiles", "https://www.openmaptiles.org/"],
+          ["Data from © OpenStreetMap contributors", "https://www.openstreetmap.org/copyright"]
+        ].forEach(function (entry, index) {
+          if (index) { attribution.appendChild(document.createTextNode(" · ")); }
+          var link = document.createElement("a"); link.textContent = entry[0]; link.href = entry[1];
+          link.target = "_blank"; link.rel = "noopener noreferrer"; attribution.appendChild(link);
+        });
+      }
       attribution.hidden = !attribution.textContent;
     }
 
@@ -503,12 +514,13 @@
       if (requestedIndex >= 0 && !basemap) {
         return false;
       }
-      if (activeLayer && map.hasLayer(activeLayer)) {
-        map.removeLayer(activeLayer);
-      }
+      activation += 1;
+      var ticket = activation;
+      if (activeLayer) { activeLayer.remove(); }
       activeLayer = null;
       activeIndex = basemap ? requestedIndex : -1;
-      tileErrorCount = 0;
+      qa.basemapStatus = basemap ? "loading" : "none";
+      qa.basemapDiagnostics = null;
       if (!(options && options.fallback)) {
         qa.basemapFallback = false;
         if (basemapWarningVisible && messageNode) {
@@ -518,29 +530,18 @@
         basemapWarningVisible = false;
       }
       if (basemap) {
-        var requestedLayer = L.tileLayer(
-          text(basemap.url),
-          {
-            minZoom: 0,
-            maxZoom: Number(firstDefined(basemap.max_zoom, 19)),
-            attribution: ""
+        activeLayer = window.IMBBasemapLayer.create(map, basemap, function (diagnostic) {
+          if (ticket !== activation) { return; }
+          qa.basemapStatus = diagnostic.status;
+          qa.basemapDiagnostics = diagnostic;
+          if (diagnostic.status === "unavailable") {
+            // Defer teardown so constructor/Leaflet event delivery can unwind safely.
+            window.setTimeout(function () {
+              if (ticket !== activation) { return; }
+              activate(-1, { fallback: true, diagnostic: diagnostic });
+            }, 0);
           }
-        );
-        requestedLayer.on("tileerror", function () {
-          if (activeLayer !== requestedLayer) {
-            return;
-          }
-          tileErrorCount += 1;
-          if (tileErrorCount < 3 || activeIndex < 0) {
-            return;
-          }
-          activate(-1, { fallback: true });
         });
-        activeLayer = requestedLayer;
-        activeLayer.addTo(map);
-        if (activeLayer.bringToBack) {
-          activeLayer.bringToBack();
-        }
         setAttribution(firstDefined(
           basemap.attribution,
           spec.static && spec.static.source_note,
@@ -555,9 +556,12 @@
       qa.activeBasemap = basemap ? text(firstDefined(basemap.name, activeIndex)) : noBasemapLabel;
       if (options && options.fallback) {
         qa.basemapFallback = true;
+        qa.basemapStatus = "unavailable";
+        qa.basemapDiagnostics = options.diagnostic || null;
         basemapWarningVisible = true;
         if (messageNode) {
-          messageNode.textContent = unavailableLabel;
+          var code = options.diagnostic && options.diagnostic.code;
+          messageNode.textContent = (code && labels["basemap_error_" + code]) || unavailableLabel;
           messageNode.classList.add("is-visible");
         }
       }
@@ -582,7 +586,15 @@
       basemaps.forEach(function (candidate, index) {
         var option = document.createElement("option");
         option.value = String(index);
-        option.textContent = text(firstDefined(candidate.name, "Basemap " + (index + 1)));
+        var label = text(firstDefined(candidate.name, "Basemap " + (index + 1)));
+        if (candidate.kind === "vector" && candidate.name === "OpenFreeMap Positron" &&
+            candidate.url === "https://tiles.openfreemap.org/styles/positron") {
+          label = text(firstDefined(labels.basemap_positron, label));
+        } else if (candidate.kind === "vector" && candidate.name === "OpenFreeMap Liberty" &&
+            candidate.url === "https://tiles.openfreemap.org/styles/liberty") {
+          label = text(firstDefined(labels.basemap_liberty, label));
+        }
+        option.textContent = label;
         select.appendChild(option);
       });
       var none = document.createElement("option");
@@ -663,6 +675,7 @@
       });
     }
 
+    qa.basemapSummary = function () { return activeLayer ? activeLayer.summary() : null; };
     qa.actions.setBasemap = function (value) {
       var target = text(value);
       if (target === "-1" || target.toLocaleLowerCase() === "none" || target === noBasemapLabel) {

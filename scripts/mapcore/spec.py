@@ -22,7 +22,7 @@ def load_schema() -> Dict[str, Any]:
 
 
 def current_schema_version() -> str:
-    """Return the only MapSpec version accepted by the packaged Schema."""
+    """Return the current output version declared by the packaged Schema."""
 
     schema = load_schema()
     value = schema.get("properties", {}).get("schema_version", {}).get("const")
@@ -62,6 +62,8 @@ def _apply_defaults(instance: Any, schema: Dict[str, Any], root: Dict[str, Any])
 def validate_spec(spec: Dict[str, Any]) -> Dict[str, Any]:
     schema = load_schema()
     resolved = deepcopy(spec)
+    if isinstance(resolved, dict) and resolved.get("schema_version") == "1.1":
+        resolved["schema_version"] = "1.2"
     _apply_defaults(resolved, schema, schema)
     errors = sorted(Draft202012Validator(schema).iter_errors(resolved), key=lambda e: list(e.path))
     if errors:
