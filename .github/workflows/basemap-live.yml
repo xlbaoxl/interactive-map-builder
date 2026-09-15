@@ -6,6 +6,7 @@ on:
       - 'scripts/mapcore/basemaps.py'
       - 'scripts/mapcore/resources/templates/basemap-layer.js'
       - 'scripts/mapcore/resources/templates/shared.js'
+      - 'scripts/mapcore/resources/templates/shared.css'
       - 'scripts/mapcore/resources/vendor/maplibre*/**'
       - 'scripts/check_live_basemaps.py'
       - '.github/workflows/basemap-live.yml'

@@ -54,7 +54,9 @@
           };
           layer.addTo(map);
           gl = layer.getMaplibreMap();
-          gl.on("idle", function () { if (!ready && errors === 0) { loaded(); } });
+          gl.on("idle", function () {
+            if (!ready && errors === 0 && gl.isStyleLoaded() && gl.loaded()) { loaded(); }
+          });
           gl.on("error", resourceError);
           gl.on("webglcontextlost", function () { failed("webgl"); });
           layer.getContainer().style.pointerEvents = "none";

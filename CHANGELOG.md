@@ -27,6 +27,8 @@ first release with an automated tag, distribution assets, and GitHub Release wor
 
 ## [Unreleased] / 未发布
 
+## [0.7.0] - 2026-09-16
+
 ### Fixed / 修复
 
 - 本地 HTML 默认底图改用 OpenFreeMap Positron / Liberty；矢量渲染组件按需内嵌。

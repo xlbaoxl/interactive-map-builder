@@ -109,6 +109,13 @@ def test_vector_render_switch_share_and_reopen(tmp_path,browser,template):
  assert other.locator('.maplibregl-canvas').count()==1
  assert other.evaluate('window.__interactiveMapBuilderQA.errors')==[]
  assert other.locator('#imb-map-attribution a').count()==3
+ other.set_viewport_size({'width':390,'height':844})
+ other.wait_for_timeout(500)
+ assert other.locator('#imb-map-attribution a').evaluate_all('''elements => elements.every(el => {
+   const r = el.getClientRects()[0];
+   return r && r.width > 0 && r.top >= 0 && r.bottom <= innerHeight &&
+     document.elementFromPoint(r.x + r.width/2, r.y + r.height/2) === el;
+ })''')
  context.close()
 
 

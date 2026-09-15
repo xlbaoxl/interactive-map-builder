@@ -418,13 +418,13 @@ but does not silently switch rendering engines.
 
 ## Project status
 
-The current stable release is **v0.6.0**. It combines leaner command startup,
-intent-resolved first builds, and portable **Share view** HTML/JSON handoff. Existing local
-Saved Views remain available; v0.6.0 uses MapSpec 1.1. The basemap repair on this branch
-writes MapSpec 1.2 and accepts existing 1.1 inputs; both template families are unchanged.
+The current stable release is **v0.7.0**. OpenFreeMap Positron/Liberty replace the old
+anonymous basemap defaults for local HTML. Existing visual styles, local Saved Views and
+portable Share view remain available. MapSpec 1.2 accepts existing 1.1 inputs; both template
+families are unchanged. Migrate old factory basemaps explicitly before rebuilding.
 Rebuild existing maps to add the sharing control. For fresh installations that read Excel,
 install `.[excel]`; existing readers remain usable.
-See [release notes](https://github.com/xlbaoxl/interactive-map-builder/releases/tag/v0.6.0).
+See [release notes](https://github.com/xlbaoxl/interactive-map-builder/releases/tag/v0.7.0).
 
 See the [changelog](CHANGELOG.md) for completed work.
 

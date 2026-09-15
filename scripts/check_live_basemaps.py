@@ -65,6 +65,12 @@ def main() -> None:
                     assert reopened.evaluate('window.__interactiveMapBuilderQA.actions.captureViewState().map.basemap')==1
                     assert reopened.evaluate('window.__interactiveMapBuilderQA.basemapSummary().rendered_features')>20
                     assert reopened.evaluate('window.__interactiveMapBuilderQA.errors')==[]
+                    assert reopened.locator('#imb-map-attribution a').evaluate_all('''elements =>
+                      elements.length === 3 && elements.every(el => {
+                        const r = el.getClientRects()[0];
+                        return r && r.top >= 0 && r.bottom <= innerHeight &&
+                          document.elementFromPoint(r.x+r.width/2, r.y+r.height/2) === el;
+                      })''')
                     reopened.screenshot(path=str(directory/'reopened-mobile.png'))
                     fresh.close()
                     assert not fatal, fatal

@@ -389,11 +389,11 @@ Interactive Map Builder 专注于**已有空间数据 → 可交付地图成品*
 
 ## 项目状态
 
-当前稳定版本为 **v0.6.0**。本版整合命令启动优化、明确意图直接构建和“分享当前视图”
-HTML／JSON 交付。原有本地保存视角继续可用；v0.6.0 使用 MapSpec 1.1。此分支的底图修复
-输出 MapSpec 1.2，同时兼容读取 1.1；两种既有模板不变。
+当前稳定版本为 **v0.7.0**。本地 HTML 的默认底图改为 OpenFreeMap Positron／Liberty，
+保留已有视觉系统、本地保存视角和分享功能。MapSpec 1.2 兼容读取 1.1；两种既有模板不变。
+旧地图需要显式迁移原有匿名底图预设，再重新构建。
 已有地图需重新构建才能获得分享入口；全新安装需要读取 Excel 时安装 `.[excel]`，已安装的
-读取器继续有效。详见[正式发布说明](https://github.com/xlbaoxl/interactive-map-builder/releases/tag/v0.6.0)。
+读取器继续有效。详见[正式发布说明](https://github.com/xlbaoxl/interactive-map-builder/releases/tag/v0.7.0)。
 
 已经完成的变化见[更新日志](CHANGELOG.md)。
 
