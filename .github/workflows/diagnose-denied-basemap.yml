@@ -30,7 +30,7 @@ jobs:
               path=_build(Path(temp))
               browser=p.chromium.launch(headless=True,args=['--enable-unsafe-swiftshader'])
               context=browser.new_context()
-              events=[]
+              events=[];states=[]
               def deny(route):
                   events.append({'denied':route.request.url})
                   route.fulfill(status=403,body='Denied')
@@ -38,25 +38,30 @@ jobs:
               page=context.new_page()
               page.on('pageerror',lambda e:events.append({'pageerror':str(e)}))
               page.on('console',lambda m:events.append({'console':m.type,'text':m.text}))
-              page.goto(path.as_uri())
-              page.wait_for_function('window.__interactiveMapBuilderQA && window.__interactiveMapBuilderQA.ready')
-              states=[]
-              for delay in [0,1000,4000,16000,1000]:
-                  page.wait_for_timeout(delay)
-                  states.append(page.evaluate('''() => {
-                    const q=window.__interactiveMapBuilderQA;
-                    return {status:q.basemapStatus,diagnostics:q.basemapDiagnostics,fallback:q.basemapFallback,
-                      active:q.activeBasemap,errors:q.errors,summary:q.actions.getBasemapSummary(),
-                      message:document.getElementById('imb-map-message').textContent,
-                      selector:document.getElementById('imb-basemap-select').value,
-                      canvases:document.querySelectorAll('.maplibregl-canvas').length};
-                  }'''))
-              page.screenshot(path=str(out/'denied.png'))
-              (out/'diagnosis.json').write_text(json.dumps({'states':states,'events':events},indent=2))
-              print(json.dumps({'states':states,'events':events},indent=2))
-              browser.close()
+              try:
+                  page.goto(path.as_uri())
+                  page.wait_for_function('window.__interactiveMapBuilderQA && window.__interactiveMapBuilderQA.ready')
+                  for delay in [0,1000,4000,16000,1000]:
+                      page.wait_for_timeout(delay)
+                      states.append(page.evaluate('''() => {
+                        const q=window.__interactiveMapBuilderQA;
+                        let summary;try { summary=q.basemapSummary(); } catch(e) { summary=String(e); }
+                        const message=document.getElementById('imb-map-message');
+                        const selector=document.getElementById('imb-basemap-select');
+                        return {status:q.basemapStatus,diagnostics:q.basemapDiagnostics,fallback:q.basemapFallback,
+                          active:q.activeBasemap,errors:q.errors,summary,
+                          message:message && message.textContent,selector:selector && selector.value,
+                          canvases:document.querySelectorAll('.maplibregl-canvas').length};
+                      }'''))
+                      (out/'diagnosis.json').write_text(json.dumps({'states':states,'events':events},indent=2))
+                  page.screenshot(path=str(out/'denied.png'))
+              finally:
+                  (out/'diagnosis.json').write_text(json.dumps({'states':states,'events':events},indent=2))
+                  print(json.dumps({'states':states,'events':events},indent=2))
+                  browser.close()
           PY
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: denied-basemap-diagnosis
           path: /tmp/denied-basemap
