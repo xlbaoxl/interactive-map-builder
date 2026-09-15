@@ -1,0 +1,46 @@
+name: basemap-finalize
+on:
+  push:
+    branches: [agent/basemap-local-html]
+    paths: [.github/workflows/basemap-finalize.yml, .github/basemap-finalize.py]
+permissions:
+  contents: write
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - run: python .github/basemap-finalize.py
+      - name: Verify exact source and upload changed blobs only
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import base64, json, os, subprocess, urllib.request
+          from pathlib import Path
+          def git(*args): return subprocess.check_output(['git', *args]).decode().strip()
+          subprocess.run(['git','rm','.github/basemap-finalize.py','.github/workflows/basemap-finalize.yml'], check=True)
+          subprocess.run(['git','add','-A'],check=True)
+          subprocess.run(['git','diff','--cached','--check'],check=True)
+          tree=git('write-tree'); assert tree=='0da6c596d6a269c0a167668016fcad2eacd820e6',tree
+          entries=[]
+          for path in git('diff','--cached','--name-only').splitlines():
+              p=Path(path)
+              if not p.is_file(): continue
+              request=urllib.request.Request('https://api.github.com/repos/'+os.environ['GITHUB_REPOSITORY']+'/git/blobs',
+                  data=json.dumps({'content':base64.b64encode(p.read_bytes()).decode(),'encoding':'base64'}).encode(),method='POST',
+                  headers={'Authorization':'Bearer '+os.environ['GH_TOKEN'],'Content-Type':'application/json','Accept':'application/vnd.github+json'})
+              with urllib.request.urlopen(request,timeout=60) as r: result=json.load(r)
+              assert result['sha']==git('hash-object',path)
+              entries.append({'path':path,'sha':result['sha'],'mode':git('ls-files','--stage','--',path).split()[0],'type':'blob'})
+          root=Path('/tmp/imb-final');root.mkdir()
+          (root/'entries.json').write_text(json.dumps({'tree':tree,'entries':entries},indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: imb-final-basemap-source
+          path: /tmp/imb-final
+          retention-days: 7
