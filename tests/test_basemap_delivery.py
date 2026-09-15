@@ -4,6 +4,7 @@ from __future__ import annotations
 import copy
 import json
 import os
+import re
 from pathlib import Path
 
 import pytest
@@ -13,6 +14,8 @@ from mapcore.spec import validate_spec, SpecError
 from test_view_state import _project, _payload
 
 ROOT = Path(__file__).resolve().parents[1]
+NETWORK = re.compile(r'^https?://')
+STYLES = re.compile(r'^https://tiles\.openfreemap\.org/styles/')
 LEGACY = [
  {'name': 'CARTO Positron', 'url': 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', 'visible': True, 'attribution': 'CARTO'},
  {'name': 'OpenStreetMap Standard', 'url': 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', 'visible': False, 'attribution': 'OSM'},
@@ -90,8 +93,12 @@ def _open(page,path):
 def test_vector_render_switch_share_and_reopen(tmp_path,browser,template):
  path=_build(tmp_path,template)
  context=browser.new_context(viewport={'width':1360,'height':850})
- def style(route):route.fulfill(json=STYLE,headers={'Access-Control-Allow-Origin':'*'})
- context.route('https://tiles.openfreemap.org/styles/*',style)
+ unexpected=[];intercepted=[]
+ context.route(NETWORK,lambda route:(unexpected.append(route.request.url),route.abort()))
+ def style(route):
+  intercepted.append(route.request.url)
+  route.fulfill(json=STYLE,headers={'Access-Control-Allow-Origin':'*'})
+ context.route(STYLES,style)
  page=context.new_page();_open(page,path)
  page.wait_for_function('window.__interactiveMapBuilderQA.basemapStatus === "ready"')
  assert page.locator('.maplibregl-canvas').count()==1
@@ -108,6 +115,7 @@ def test_vector_render_switch_share_and_reopen(tmp_path,browser,template):
  assert other.evaluate('window.__interactiveMapBuilderQA.actions.captureViewState().map.basemap')==1
  assert other.locator('.maplibregl-canvas').count()==1
  assert other.evaluate('window.__interactiveMapBuilderQA.errors')==[]
+ assert intercepted and not unexpected
  assert other.locator('#imb-map-attribution a').count()==3
  other.set_viewport_size({'width':390,'height':844})
  other.wait_for_timeout(500)
@@ -124,7 +132,7 @@ def test_vector_render_switch_share_and_reopen(tmp_path,browser,template):
 def test_legacy_provider_not_requested_for_local_html(tmp_path,browser,code):
  path=_build(tmp_path,maps=[LEGACY[0 if code=='key' else 1]])
  context=browser.new_context();requests=[]
- context.route('https://**',lambda route:(requests.append(route.request.url),route.abort()))
+ context.route(NETWORK,lambda route:(requests.append(route.request.url),route.abort()))
  page=context.new_page();_open(page,path)
  page.wait_for_function('window.__interactiveMapBuilderQA.basemapFallback === true')
  assert requests==[]
@@ -136,12 +144,19 @@ def test_legacy_provider_not_requested_for_local_html(tmp_path,browser,code):
 @pytest.mark.browser
 def test_vector_failure_keeps_business_controls_and_can_retry(tmp_path,browser):
  path=_build(tmp_path)
- context=browser.new_context();context.route('https://**',lambda r:r.fulfill(status=403,body='Denied'))
+ context=browser.new_context();denied=[]
+ def reject(route):
+  denied.append(route.request.url)
+  route.fulfill(status=403,body='Denied')
+ context.route(NETWORK,reject)
  page=context.new_page();_open(page,path)
  page.wait_for_function('window.__interactiveMapBuilderQA.basemapFallback === true')
  assert page.locator('.maplibregl-canvas').count()==0
  assert page.evaluate('window.__interactiveMapBuilderQA.errors')==[]
- context.unroute('https://**');context.route('https://tiles.openfreemap.org/styles/*',lambda r:r.fulfill(json=STYLE))
+ assert denied, 'The denied-provider test must actually intercept a request'
+ assert page.evaluate('window.__interactiveMapBuilderQA.basemapDiagnostics.code')=='network'
+ context.unroute(NETWORK);context.route(NETWORK,lambda r:r.abort())
+ context.route(STYLES,lambda r:r.fulfill(json=STYLE))
  page.evaluate('window.__interactiveMapBuilderQA.actions.setBasemap("0")')
  page.wait_for_function('window.__interactiveMapBuilderQA.basemapStatus === "ready"')
  page.locator('#imb-search').fill('Place 01')
