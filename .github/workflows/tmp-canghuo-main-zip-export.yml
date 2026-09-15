@@ -1,0 +1,52 @@
+name: Temporary Canghuo main ZIP export
+
+on:
+  push:
+    branches:
+      - tmp/canghuo-main-zip-export
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Try authenticated cross-repository checkout and archive
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set +e
+          git clone --filter=blob:none --no-checkout \
+            "https://x-access-token:${GH_TOKEN}@github.com/xlbaoxl/canghuo-story-engine.git" \
+            canghuo-story-engine 2>clone.stderr
+          status=$?
+          printf 'clone_status=%s\n' "$status" > export-status.txt
+          if [ "$status" -eq 0 ]; then
+            git -C canghuo-story-engine fetch --depth=1 origin a098552790c3dffce719e7b0ca3ef47d7f62ef6b
+            git -C canghuo-story-engine archive \
+              --format=zip \
+              --prefix=canghuo-story-engine-main-a098552/ \
+              --output=../canghuo-story-engine-main-a098552.zip \
+              a098552790c3dffce719e7b0ca3ef47d7f62ef6b
+            sha256sum canghuo-story-engine-main-a098552.zip > canghuo-story-engine-main-a098552.zip.sha256
+          fi
+          cat clone.stderr >> export-status.txt
+          exit 0
+
+      - name: Upload export result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: canghuo-main-export-result
+          path: |
+            canghuo-story-engine-main-a098552.zip
+            canghuo-story-engine-main-a098552.zip.sha256
+            export-status.txt
+          if-no-files-found: warn
+          retention-days: 1
+
+      - name: Require successful checkout
+        shell: bash
+        run: grep -q '^clone_status=0$' export-status.txt
