@@ -12,26 +12,18 @@ jobs:
   export:
     runs-on: ubuntu-latest
     steps:
-      - name: Create short-lived token when shared app credentials exist
-        id: app-token
-        if: vars.TRAFFIC_APP_ID != '' && secrets.TRAFFIC_APP_PRIVATE_KEY != ''
-        uses: actions/create-github-app-token@v2
-        with:
-          app-id: ${{ vars.TRAFFIC_APP_ID }}
-          private-key: ${{ secrets.TRAFFIC_APP_PRIVATE_KEY }}
-          owner: xlbaoxl
-
-      - name: Try available authenticated checkout and archive
+      - name: Try available token and archive
         env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.TRAFFIC_TOKEN || github.token }}
-          HAS_APP_ID: ${{ vars.TRAFFIC_APP_ID != '' }}
-          HAS_APP_KEY: ${{ secrets.TRAFFIC_APP_PRIVATE_KEY != '' }}
-          HAS_TRAFFIC_TOKEN: ${{ secrets.TRAFFIC_TOKEN != '' }}
+          GH_TOKEN: ${{ secrets.TRAFFIC_TOKEN || github.token }}
+          TRAFFIC_TOKEN_VALUE: ${{ secrets.TRAFFIC_TOKEN }}
         shell: bash
         run: |
           set +e
-          printf 'has_app_id=%s\nhas_app_key=%s\nhas_traffic_token=%s\n' \
-            "$HAS_APP_ID" "$HAS_APP_KEY" "$HAS_TRAFFIC_TOKEN" > export-status.txt
+          if [ -n "$TRAFFIC_TOKEN_VALUE" ]; then
+            echo 'has_traffic_token=true' > export-status.txt
+          else
+            echo 'has_traffic_token=false' > export-status.txt
+          fi
           git clone --filter=blob:none --no-checkout \
             "https://x-access-token:${GH_TOKEN}@github.com/xlbaoxl/canghuo-story-engine.git" \
             canghuo-story-engine 2>clone.stderr
