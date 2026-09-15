@@ -63,6 +63,10 @@ def build_parser(*, prog: str = "python scripts/map_builder.py") -> argparse.Arg
         help="Copy source files into dist/data and rewrite MapSpec paths.",
     )
 
+    migrate = subparsers.add_parser("migrate-basemaps", help="Write a new spec replacing old anonymous presets; preserve the input.")
+    migrate.add_argument("--spec", required=True)
+    migrate.add_argument("--output", "--out", dest="output", required=True)
+
     verify_parser = subparsers.add_parser("verify", help="Verify a built output directory.")
     verify_parser.add_argument("--dist", default="dist")
 

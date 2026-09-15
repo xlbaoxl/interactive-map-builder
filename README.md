@@ -7,7 +7,7 @@
 [![CI](https://github.com/xlbaoxl/interactive-map-builder/actions/workflows/ci.yml/badge.svg)](https://github.com/xlbaoxl/interactive-map-builder/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/xlbaoxl/interactive-map-builder)](https://github.com/xlbaoxl/interactive-map-builder/releases)
 [![Python 3.9+](https://img.shields.io/badge/Python-3.9%2B-3776AB?logo=python&logoColor=white)](pyproject.toml)
-[![MapSpec 1.1](https://img.shields.io/badge/MapSpec-1.1-0f766e)](references/map-spec.md)
+[![MapSpec 1.2](https://img.shields.io/badge/MapSpec-1.2-0f766e)](references/map-spec.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-2ea44f.svg)](LICENSE)
 
 [Product homepage](https://xlbaoxl.github.io/interactive-map-builder/) ·
@@ -251,7 +251,7 @@ User request + spatial files
   confirm unresolved intent once
            │
            ▼
-        MapSpec 1.1
+        MapSpec 1.2
            │
            ▼
  Atlas Studio Light resolver
@@ -328,12 +328,11 @@ map keeps **search focus** separate from **visibility**: choosing one layer to b
 other context layers. Both products include Saved Views, and both use the same resolved visual plan
 for map rendering and legends.
 
-New MapSpec files include two credential-free online basemaps: **CARTO Positron** as the quiet
-default and **OpenStreetMap Standard** for detailed street context. The selector also includes
-**No basemap**, and repeated tile failures automatically fall back to it, so business layers and
-interactions remain usable without tiles. **Esri World Imagery** can be added only when the user
-provides an authorized service URL or token and accepts that browser-delivered credentials can be
-visible in the generated HTML.
+New MapSpec files use **OpenFreeMap Positron** (light analysis) and **OpenFreeMap Liberty**
+(street context), plus a plain-background fallback. Vector rendering uses pinned, embedded
+MapLibre/Leaflet assets only when a vector basemap is configured. Styles, tiles, glyphs and sprites
+still require network access and WebGL. CARTO needs your authorized key; OSM public tiles are
+not requested from local-file delivery. See [basemap policy and migration](references/basemaps.md).
 
 In the multilayer product, visibility switches are kept in a fixed upper section. The legend is
 stacked below them, scrolls when long, and starts collapsed at narrow widths, so a large categorical
@@ -421,7 +420,8 @@ but does not silently switch rendering engines.
 
 The current stable release is **v0.6.0**. It combines leaner command startup,
 intent-resolved first builds, and portable **Share view** HTML/JSON handoff. Existing local
-Saved Views remain available; MapSpec stays at 1.1 and both template families are unchanged.
+Saved Views remain available; v0.6.0 uses MapSpec 1.1. The basemap repair on this branch
+writes MapSpec 1.2 and accepts existing 1.1 inputs; both template families are unchanged.
 Rebuild existing maps to add the sharing control. For fresh installations that read Excel,
 install `.[excel]`; existing readers remain usable.
 See [release notes](https://github.com/xlbaoxl/interactive-map-builder/releases/tag/v0.6.0).

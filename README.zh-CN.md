@@ -7,7 +7,7 @@
 [![CI](https://github.com/xlbaoxl/interactive-map-builder/actions/workflows/ci.yml/badge.svg)](https://github.com/xlbaoxl/interactive-map-builder/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/xlbaoxl/interactive-map-builder)](https://github.com/xlbaoxl/interactive-map-builder/releases)
 [![Python 3.9+](https://img.shields.io/badge/Python-3.9%2B-3776AB?logo=python&logoColor=white)](pyproject.toml)
-[![MapSpec 1.1](https://img.shields.io/badge/MapSpec-1.1-0f766e)](references/map-spec.md)
+[![MapSpec 1.2](https://img.shields.io/badge/MapSpec-1.2-0f766e)](references/map-spec.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-2ea44f.svg)](LICENSE)
 
 [产品主页](https://xlbaoxl.github.io/interactive-map-builder/zh-CN/) ·
@@ -234,7 +234,7 @@ interactive-map-builder doctor
   一次性确认无法自动判断的选项
           │
           ▼
-       MapSpec 1.1
+       MapSpec 1.2
           │
           ▼
  Atlas Studio Light 解析器
@@ -304,10 +304,10 @@ v0.4 引入的是轻量视觉默认值解析器，不是一套全包式自动设
 和**图层显隐**：选择当前重点浏览的图层不会自动隐藏其他空间上下文。两种产品都支持保存视角，
 并使用同一份解析后的视觉方案生成地图与图例。
 
-新建 MapSpec 默认包含两张不需要用户凭证的在线底图：以浅色、低干扰的 **CARTO Positron**
-为默认底图，**OpenStreetMap Standard** 用于查看详细道路与地名。底图选择器还提供**无底图**，
-在线瓦片连续失败时会自动回退，因此业务图层、搜索和图层控制仍然可用。**Esri World Imagery**
-仅在用户提供经过授权的服务地址或令牌，并接受浏览器端凭证可能出现在 HTML 中时加入。
+新建地图默认提供 **OpenFreeMap Positron（浅色分析）** 和 **OpenFreeMap Liberty（标准街道）**，
+无底图只作为用户选择或故障兜底。矢量底图按需内嵌固定版本的 MapLibre/Leaflet 渲染组件，
+样式、瓦片、地图字体与图标仍需联网，并需要 WebGL。CARTO 需配置自己的授权密钥；本地 HTML
+不请求 OSM 官方公共瓦片。旧配置使用显式迁移命令，详见[底图策略](references/basemaps.md)。
 
 多图层产品将图层开关固定在控制区上方，图例排列在下方；图例内容过长时内部滚动，窄屏默认
 收起，因此大量分类不会再遮挡图层关闭按钮。
@@ -390,7 +390,8 @@ Interactive Map Builder 专注于**已有空间数据 → 可交付地图成品*
 ## 项目状态
 
 当前稳定版本为 **v0.6.0**。本版整合命令启动优化、明确意图直接构建和“分享当前视图”
-HTML／JSON 交付。原有本地保存视角继续可用；MapSpec 保持 1.1，两种既有模板不变。
+HTML／JSON 交付。原有本地保存视角继续可用；v0.6.0 使用 MapSpec 1.1。此分支的底图修复
+输出 MapSpec 1.2，同时兼容读取 1.1；两种既有模板不变。
 已有地图需重新构建才能获得分享入口；全新安装需要读取 Excel 时安装 `.[excel]`，已安装的
 读取器继续有效。详见[正式发布说明](https://github.com/xlbaoxl/interactive-map-builder/releases/tag/v0.6.0)。
 

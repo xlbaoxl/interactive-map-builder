@@ -6,6 +6,7 @@
   <meta name="color-scheme" content="light">
   <title>{{ page_title }}</title>
   <style>{{ leaflet_css | safe }}</style>
+  {% if basemap_css %}<style>{{ basemap_css | safe }}</style>{% endif %}
   <style>{{ shared_css | safe }}</style>
   <style>{{ theme_css | safe }}</style>
 </head>
@@ -95,6 +96,7 @@
 
   <script id="imb-data" type="application/json">{{ payload_json | safe }}</script>
   <script>{{ leaflet_js | safe }}</script>
+  <script>{{ basemap_js | safe }}</script>
   <script>{{ shared_js | safe }}</script>
   <script>
   (function () {

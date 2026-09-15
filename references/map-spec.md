@@ -1,18 +1,18 @@
-# Map specification 1.1
+# Map specification 1.2
 
 Treat `scripts/mapcore/resources/map-spec.schema.json` as the only machine-readable
 contract. Use canonical `snake_case` keys only. Resolve source paths relative to the
 specification file; output names are fixed by the builder.
 
 Set `schema_version` to the constant declared by the packaged Schema. The current accepted
-value is `1.1`; unsupported values fail normal Schema validation. Set `locale` to `en-US` or
+value is `1.2`; the loader accepts and normalizes existing `1.1` inputs. Other versions fail validation. Set `locale` to `en-US` or
 `zh-CN`; the default is `en-US`.
 
 ## Minimal map and list
 
 ```json
 {
-  "schema_version": "1.1",
+  "schema_version": "1.2",
   "template": "map-list",
   "title": "Candidate places",
   "primary_layer": "places",
@@ -47,7 +47,7 @@ value is `1.1`; unsupported values fail normal Schema validation. Set `locale` t
 
 ```json
 {
-  "schema_version": "1.1",
+  "schema_version": "1.2",
   "template": "multilayer",
   "title": "Project context",
   "layers": [
@@ -95,7 +95,7 @@ value is `1.1`; unsupported values fail normal Schema validation. Set `locale` t
 
 ## Atlas Studio Light visual defaults
 
-MapSpec 1.1 remains the public contract. Version 0.4 does not add required visual keys. When a
+MapSpec 1.2 is the current contract; the loader also accepts and normalizes 1.1 inputs. Version 0.4 does not add required visual keys. When a
 layer omits `color`, `fill_color`, `weight`, `opacity`, `fill_opacity`, or `radius`, the builder
 resolves a lightweight visual plan from:
 
@@ -117,14 +117,9 @@ without cycling colors; ask the user which classes should be grouped or emphasiz
 
 ## Basemap defaults and provider credentials
 
-`init-spec` and `run` create two credential-free online basemaps: CARTO Positron as the quiet
-default and OpenStreetMap Standard as the detailed street reference. The browser UI also creates a
-neutral `No basemap` choice; it is not stored as a tile provider in MapSpec.
-
-Add aerial imagery or another provider only through an explicit, user-authorized HTTPS service
-configuration with complete attribution. Never invent, commit, or log a provider credential. A
-token placed in a browser tile URL can be visible to anyone who receives the generated HTML, so
-confirm that exposure and any origin restrictions before adding it.
+`init-spec` and `run` use OpenFreeMap Positron and Liberty vector styles. Basemaps may set
+`kind: "vector"` to interpret the HTTPS `url` as a MapLibre style; omitted kind keeps the existing
+raster XYZ behavior. See [basemaps.md](basemaps.md) for policy, migration, dependencies and acceptance.
 
 ## Interactive controls
 
@@ -154,5 +149,6 @@ interactive-map-builder inspect data.geojson --output inspection.json
 interactive-map-builder init-spec inspection.json --template map-list --primary-layer sites --locale en-US --output map_spec.json
 ```
 
-One inspected layer may use `--template auto`. Multiple layers always require explicit
-template confirmation.
+One inspected layer may use `--template auto`. For multiple layers, the Agent resolves an explicit
+user intent to `map-list` or `multilayer`; ask only when the intended expression is still ambiguous.
+The CLI itself has no conversation context and keeps multi-layer auto selection conservative.

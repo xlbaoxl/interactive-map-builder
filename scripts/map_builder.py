@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import os
 import shutil
 import sys
 import tempfile
@@ -21,6 +22,7 @@ import shapely
 from shapely.geometry import mapping
 
 from mapcore.arguments import build_parser as _parser
+from mapcore.basemaps import basemap_warnings, migrate_legacy_basemaps
 from mapcore.arcgis import ArcGISError, download_feature_service
 from mapcore.delivery import (
     CORE_OUTPUTS,
@@ -51,7 +53,7 @@ from mapcore.report import (
     write_usage_guide,
     write_json,
 )
-from mapcore.spec import SpecError, load_spec, write_resolved_spec
+from mapcore.spec import SpecError, load_spec, validate_spec, write_resolved_spec
 from mapcore.spec_init import SpecInitError, init_spec_from_inspection
 from mapcore.style import StyleError, resolve_layer_style
 from mapcore.validate import ValidationError, ensure_count_consistency, validate_geodata
@@ -418,7 +420,7 @@ def _build_map_in_place(
             for layer in spec["layers"]
         )
     )
-    warnings: List[str] = []
+    warnings: List[str] = basemap_warnings(spec)
     prepared_layers: List[Dict[str, Any]] = []
     static_layers: Dict[str, gpd.GeoDataFrame] = {}
     layer_reports: List[Dict[str, Any]] = []
@@ -625,6 +627,7 @@ def _build_map_in_place(
             ),
         },
         "warnings": warnings,
+        "basemap_live_check": "not_performed",
         "network_dependencies": [
             {"name": item["name"], "url": item["url"], "attribution": item["attribution"]}
             for item in spec.get("basemaps", [])
@@ -960,6 +963,23 @@ def main(
                     indent=2,
                 )
             )
+        elif args.command == "migrate-basemaps":
+            source, target = Path(args.spec).resolve(), Path(args.output).resolve()
+            raw = json.loads(source.read_text(encoding="utf-8"))
+            validate_spec(raw)  # Reject invalid input before rebasing any source path.
+            migrated, changes = migrate_legacy_basemaps(raw)
+            if not changes:
+                print(json.dumps({"status": "unchanged", "changes": []}))
+                return 0
+            for layer in migrated["layers"]:
+                original = (source.parent / layer["source"]["path"]).resolve()
+                layer["source"]["path"] = Path(os.path.relpath(original, target.parent)).as_posix()
+            migrated = validate_spec(migrated)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            with target.open("x", encoding="utf-8") as handle:
+                json.dump(migrated, handle, ensure_ascii=False, indent=2)
+                handle.write("\n")
+            print(json.dumps({"status": "pass", "changes": changes, "output": str(target)}, ensure_ascii=False))
         elif args.command == "verify":
             print(json.dumps(verify_dist(Path(args.dist)), ensure_ascii=False, indent=2))
         elif args.command == "run":

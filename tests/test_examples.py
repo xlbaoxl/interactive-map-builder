@@ -24,7 +24,7 @@ def test_checked_in_example_specs_validate_and_sources_exist() -> None:
 
     for path in specs:
         spec, base_dir = load_spec(path)
-        assert spec["schema_version"] == "1.1"
+        assert spec["schema_version"] == "1.2"
         for layer in spec["layers"]:
             source = base_dir / layer["source"]["path"]
             assert source.is_file(), source

@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.1",
+  "schema_version": "1.2",
   "template": "map-list",
   "title": "CSV 经纬度点示例",
   "subtitle": "从非空间表格直接生成可搜索地图",
@@ -47,11 +47,12 @@
   ],
   "basemaps": [
     {
-      "name": "OpenStreetMap Standard",
-      "url": "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-      "attribution": "© OpenStreetMap contributors",
+      "name": "OpenFreeMap Liberty",
+      "kind": "vector",
+      "url": "https://tiles.openfreemap.org/styles/liberty",
+      "attribution": "OpenFreeMap © OpenMapTiles · Data from © OpenStreetMap contributors",
       "visible": true,
-      "max_zoom": 19
+      "max_zoom": 20
     }
   ],
   "list": {

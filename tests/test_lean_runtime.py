@@ -96,7 +96,7 @@ from mapcore import normalize_geodata, load_source, ValidationError, current_sch
 from mapcore.normalize import normalize_geodata as canonical
 assert normalize_geodata is canonical
 assert mapcore.normalize_geodata is canonical
-assert current_schema_version() == "1.1"
+assert current_schema_version() == "1.2"
 try:
     mapcore.does_not_exist
 except AttributeError:

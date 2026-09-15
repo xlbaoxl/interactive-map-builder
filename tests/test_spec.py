@@ -24,7 +24,7 @@ def minimal_spec(template: str = "map-list"):
 
 
 def test_current_schema_version_comes_from_packaged_contract():
-    assert current_schema_version() == "1.1"
+    assert current_schema_version() == "1.2"
 
 
 def test_defaults_are_applied():

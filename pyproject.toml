@@ -59,6 +59,8 @@ mapcore = [
   "resources/templates/*.css",
   "resources/templates/*.js",
   "resources/vendor/leaflet-1.9.4/*",
+  "resources/vendor/maplibre-gl-5.6.2/*",
+  "resources/vendor/maplibre-gl-leaflet-0.1.4/*",
 ]
 
 [tool.pytest.ini_options]
